@@ -9,44 +9,24 @@ import { fr } from "date-fns/locale";
 
 export function StudentClasses() {
   const [search, setSearch] = useState("");
-  const { data: enrollmentsData, isLoading } = useGetMyEnrollments();
-  
-  // Provide demo fallback data if API returns empty/errors
-  const enrollments = enrollmentsData?.length ? enrollmentsData : [
-    {
-      id: 1, studentId: 3, classId: 101, status: "active", createdAt: new Date().toISOString(),
-      class: {
-        id: 101, professorId: 2, title: "Mathématiques 101: Analyse et Algèbre", subject: "Mathématiques",
-        gradeLevel: "Baccalauréat", city: "Tunis", description: "Cours complet", price: 45, durationHours: 2,
-        isRecurring: true, isPublished: true, enrolledCount: 15, createdAt: new Date().toISOString(),
-        professor: { id: 1, userId: 2, fullName: "Dr. Sami Trabelsi", rating: 4.8, subjects: [], gradeLevels: [], status: "approved", totalReviews: 45, totalStudents: 120, isVerified: true, createdAt: "" },
-        nextSession: { id: 1, classId: 101, title: "Chapitre 3: Les suites réelles", description: "", price: 45, durationHours: 2, scheduledAt: new Date(Date.now() + 86400000).toISOString(), status: "scheduled", enrolledCount: 15, createdAt: "" }
-      }
-    },
-    {
-      id: 2, studentId: 3, classId: 102, status: "active", createdAt: new Date().toISOString(),
-      class: {
-        id: 102, professorId: 3, title: "Physique: Mécanique Quantique", subject: "Physique",
-        gradeLevel: "Baccalauréat", city: "Sfax", description: "Cours complet", price: 40, durationHours: 1.5,
-        isRecurring: true, isPublished: true, enrolledCount: 8, createdAt: new Date().toISOString(),
-        professor: { id: 2, userId: 3, fullName: "Mme. Rym Jlassi", rating: 4.9, subjects: [], gradeLevels: [], status: "approved", totalReviews: 32, totalStudents: 80, isVerified: true, createdAt: "" },
-      }
-    }
-  ];
+  const { data: enrollments, isLoading } = useGetMyEnrollments();
 
-  const activeClasses = enrollments.filter(e => e.status === 'active').map(e => e.class);
+  const activeClasses = (enrollments ?? [])
+    .filter(e => e.status === "active")
+    .map(e => e.class)
+    .filter(Boolean);
 
-  const filteredClasses = activeClasses.filter(c => 
-    c.title.toLowerCase().includes(search.toLowerCase()) || 
+  const filtered = activeClasses.filter(c =>
+    c.title.toLowerCase().includes(search.toLowerCase()) ||
     c.subject.toLowerCase().includes(search.toLowerCase()) ||
-    c.professor?.fullName.toLowerCase().includes(search.toLowerCase())
+    (c.professor?.fullName ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <DashboardLayout>
       <FadeIn>
-        <PageHeader 
-          title="Mes Cours" 
+        <PageHeader
+          title="Mes Cours"
           description="Gérez vos inscriptions et accédez à vos contenus."
           action={
             <Link href="/student/browse">
@@ -58,8 +38,8 @@ export function StudentClasses() {
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input 
-              placeholder="Rechercher dans mes cours..." 
+            <Input
+              placeholder="Rechercher dans mes cours..."
               className="pl-12 bg-card"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -70,21 +50,31 @@ export function StudentClasses() {
           </Button>
         </div>
 
-        {filteredClasses.length === 0 ? (
+        {isLoading ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2].map(i => <div key={i} className="h-56 bg-muted rounded-2xl animate-pulse" />)}
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-20 bg-card rounded-2xl border border-dashed border-border">
             <div className="w-24 h-24 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6">
               <BookOpen className="w-10 h-10 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-bold mb-2">Aucun cours trouvé</h3>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto">Vous n'êtes inscrit à aucun cours correspondant à votre recherche.</p>
+            <h3 className="text-xl font-bold mb-2">
+              {search ? "Aucun cours trouvé" : "Vous n'êtes inscrit à aucun cours"}
+            </h3>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              {search
+                ? `Aucun résultat pour "${search}".`
+                : "Parcourez le catalogue pour trouver un cours qui vous convient."}
+            </p>
             <Link href="/student/browse">
               <Button>Découvrir les cours</Button>
             </Link>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredClasses.map((cls, i) => (
-              <FadeIn key={cls.id} delay={i * 0.1}>
+            {filtered.map((cls, i) => (
+              <FadeIn key={cls.id} delay={i * 0.05}>
                 <Card className="flex flex-col h-full hover:shadow-lg hover:border-primary/50 transition-all duration-300">
                   <div className="h-32 bg-gradient-to-br from-secondary to-muted p-4 flex flex-col justify-between border-b border-border">
                     <Badge className="w-fit">{cls.subject}</Badge>
@@ -92,7 +82,7 @@ export function StudentClasses() {
                   </div>
                   <div className="p-5 flex-1 flex flex-col">
                     <p className="font-semibold text-sm mb-4">Prof. {cls.professor?.fullName}</p>
-                    
+
                     {cls.nextSession ? (
                       <div className="bg-primary/5 rounded-xl p-3 mb-6 flex items-start gap-3 border border-primary/10">
                         <PlayCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
@@ -110,7 +100,7 @@ export function StudentClasses() {
                         <p className="text-sm text-muted-foreground text-center">Aucune session programmée</p>
                       </div>
                     )}
-                    
+
                     <div className="mt-auto pt-4 border-t border-border/50">
                       <Link href={`/student/classes/${cls.id}`}>
                         <Button className="w-full">Accéder au cours</Button>
