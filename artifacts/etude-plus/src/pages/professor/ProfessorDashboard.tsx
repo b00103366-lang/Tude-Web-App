@@ -5,6 +5,7 @@ import { useGetProfessorStats } from "@workspace/api-client-react";
 import { Users, BookOpen, DollarSign, Star, ArrowUpRight, Video } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn, formatTND } from "@/lib/utils";
+import { Link } from "wouter";
 
 export function ProfessorDashboard() {
   const { user } = useAuth();
@@ -33,7 +34,7 @@ export function ProfessorDashboard() {
         <PageHeader 
           title="Tableau de Bord Professeur" 
           description="Gérez vos cours et suivez vos revenus."
-          action={<Button>Créer un cours</Button>}
+          action={<Link href="/professor/create-class"><Button>Créer un cours</Button></Link>}
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -88,18 +89,22 @@ export function ProfessorDashboard() {
           <Card className="p-6 flex flex-col">
             <h3 className="font-bold text-lg mb-4">Actions Rapides</h3>
             <div className="space-y-3 flex-1">
-              <Button variant="outline" className="w-full justify-start h-14 text-left">
-                <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center mr-3">
-                  <BookOpen className="w-4 h-4 text-primary" />
-                </div>
-                Ajouter un support de cours
-              </Button>
-              <Button variant="outline" className="w-full justify-start h-14 text-left">
-                <div className="w-8 h-8 rounded bg-accent/10 flex items-center justify-center mr-3">
-                  <Video className="w-4 h-4 text-accent" />
-                </div>
-                Programmer une session live
-              </Button>
+              <Link href="/professor/classes/101" className="w-full">
+                <Button variant="outline" className="w-full justify-start h-14 text-left">
+                  <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center mr-3">
+                    <BookOpen className="w-4 h-4 text-primary" />
+                  </div>
+                  Ajouter un support de cours
+                </Button>
+              </Link>
+              <Link href="/professor/classes/101" className="w-full">
+                <Button variant="outline" className="w-full justify-start h-14 text-left">
+                  <div className="w-8 h-8 rounded bg-accent/10 flex items-center justify-center mr-3">
+                    <Video className="w-4 h-4 text-accent" />
+                  </div>
+                  Programmer une session live
+                </Button>
+              </Link>
             </div>
             
             <div className="mt-8 pt-6 border-t border-border">
