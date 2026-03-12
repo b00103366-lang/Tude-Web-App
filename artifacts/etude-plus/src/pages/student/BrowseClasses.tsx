@@ -81,13 +81,18 @@ export function BrowseClasses() {
                     {cls.description}
                   </p>
                   
-                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/50">
-                    <div className="flex items-center gap-1 text-sm font-medium text-foreground">
+                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/50 gap-2">
+                    <div className="flex items-center gap-1 text-sm font-medium text-foreground shrink-0">
                       <Clock className="w-4 h-4 text-muted-foreground" /> {cls.durationHours}h
                     </div>
-                    <Link href={`/checkout/${cls.id}`}>
-                      <Button size="sm">S'inscrire</Button>
-                    </Link>
+                    <div className="flex gap-2">
+                      <Link href={`/student/classes/${cls.id}`}>
+                        <Button size="sm" variant="outline">Détails</Button>
+                      </Link>
+                      <Link href={`/checkout/${cls.id}`}>
+                        <Button size="sm">S'inscrire</Button>
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </Card>

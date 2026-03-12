@@ -23,6 +23,7 @@ const NAV_ITEMS = {
     { icon: Calendar, label: "Calendrier", href: "/professor/calendar" },
     { icon: Users, label: "Étudiants", href: "/professor/students" },
     { icon: DollarSign, label: "Revenus", href: "/professor/earnings" },
+    { icon: Settings, label: "Paramètres", href: "/professor/settings" },
   ],
   admin: [
     { icon: LayoutDashboard, label: "Vue d'ensemble", href: "/admin/dashboard" },

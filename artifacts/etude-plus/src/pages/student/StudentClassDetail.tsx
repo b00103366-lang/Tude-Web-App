@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Button, Badge } from "@/components/ui/Premium";
-import { PlayCircle, FileText, FileQuestion, Calendar, Download, Clock, Video, CheckCircle2 } from "lucide-react";
+import { PlayCircle, FileText, FileQuestion, Calendar, Download, Clock, Video, CheckCircle2, BookOpen, Upload } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -29,11 +29,17 @@ export function StudentClassDetail() {
     ]
   };
 
+  const assignments = [
+    { id: 1, title: "Devoir 1: Problèmes de suites", instructions: "Résoudre les 5 problèmes du polycopié. Présentation soignée obligatoire.", dueDate: new Date(Date.now() + 4 * 86400000).toISOString(), submitted: false },
+    { id: 2, title: "Devoir 2: Intégrales définies", instructions: "Calculer les intégrales des exercices 12 à 18 du manuel.", dueDate: new Date(Date.now() + 10 * 86400000).toISOString(), submitted: true },
+  ];
+
   const tabs = [
     { id: "live", label: "Session Live" },
     { id: "overview", label: "Aperçu" },
     { id: "materials", label: "Supports" },
     { id: "quizzes", label: "Quiz & Tests" },
+    { id: "assignments", label: "Devoirs" },
   ];
 
   return (
@@ -207,6 +213,49 @@ export function StudentClassDetail() {
                     <Button variant={q.isCompleted ? "outline" : "default"} className="w-full">
                       {q.isCompleted ? "Voir la correction" : "Commencer le quiz"}
                     </Button>
+                  </Card>
+                ))}
+              </div>
+            </FadeIn>
+          )}
+          {activeTab === "assignments" && (
+            <FadeIn>
+              <div className="space-y-4">
+                {assignments.map(a => (
+                  <Card key={a.id} className="p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <BookOpen className="w-6 h-6 text-green-600" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-3 mb-1 flex-wrap">
+                            <h4 className="font-bold text-lg">{a.title}</h4>
+                            {a.submitted ? (
+                              <Badge variant="success">Rendu</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50">À rendre</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">{a.instructions}</p>
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Calendar className="w-4 h-4" />
+                            À rendre avant le {format(new Date(a.dueDate), "dd MMMM yyyy", { locale: fr })}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
+                        {a.submitted ? (
+                          <Button variant="outline" size="sm">
+                            <Download className="w-4 h-4 mr-2" /> Mon rendu
+                          </Button>
+                        ) : (
+                          <Button size="sm">
+                            <Upload className="w-4 h-4 mr-2" /> Remettre
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </Card>
                 ))}
               </div>
