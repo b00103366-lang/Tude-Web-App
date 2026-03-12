@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button, Card, Input, Label, FadeIn } from "@/components/ui/Premium";
-import { BookPlus, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
+import { BookPlus, ArrowLeft, Loader2, CheckCircle2, ExternalLink, ShieldCheck, ArrowRight, Clock } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,13 +39,13 @@ const studentSchema = baseSchema.extend({
 const professorSchema = baseSchema.extend({
   bio: z.string().min(10, "Une courte bio est requise"),
   yearsExperience: z.coerce.number().min(0).max(50),
-  subjects: z.array(z.string()).min(1, "Sélectionnez au moins une matière"),
-  gradeLevels: z.array(z.string()).min(1, "Sélectionnez au moins un niveau")
 });
+
+type KycStep = "form" | "kblox-redirect" | "kblox-waiting" | "success";
 
 export function Register() {
   const { registerFn } = useAuth();
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   
   const searchParams = new URLSearchParams(window.location.search);
@@ -53,17 +53,16 @@ export function Register() {
   
   const [role, setRole] = useState<"student" | "professor">(initialRole as any);
   const [isLoading, setIsLoading] = useState(false);
-  const [showKyc, setShowKyc] = useState(false);
-  const [kycStatus, setKycStatus] = useState<"pending" | "success">("pending");
+  const [kycStep, setKycStep] = useState<KycStep>("form");
+  const [registeredData, setRegisteredData] = useState<any>(null);
   
-  // Selected arrays for Professor checkboxes
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedGrades, setSelectedGrades] = useState<string[]>([]);
 
   const schema = role === "student" ? studentSchema : professorSchema;
   type FormValues = z.infer<typeof schema>;
   
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<FormValues>({
+  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       city: "Tunis",
@@ -74,7 +73,6 @@ export function Register() {
   const onSubmit = async (data: any) => {
     setIsLoading(true);
     
-    // Add arrays for professor
     if (role === "professor") {
       data.subjects = selectedSubjects;
       data.gradeLevels = selectedGrades;
@@ -90,24 +88,18 @@ export function Register() {
 
     try {
       if (role === "professor") {
-        setShowKyc(true);
-        // Simulate KYC verification
-        setTimeout(async () => {
-          setKycStatus("success");
-          setTimeout(async () => {
-             await registerFn(data);
-             setLocation("/professor/dashboard");
-          }, 1500);
-        }, 2500);
+        // Register the account first, then redirect to KBlox for KYC
+        await registerFn(data);
+        setRegisteredData(data);
+        setKycStep("kblox-redirect");
       } else {
         await registerFn(data);
         setLocation("/student/dashboard");
       }
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message || "Erreur lors de l'inscription", variant: "destructive" });
-      setShowKyc(false);
     } finally {
-      if (role !== "professor") setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -119,38 +111,135 @@ export function Register() {
     setSelectedGrades(prev => prev.includes(grade) ? prev.filter(g => g !== grade) : [...prev, grade]);
   };
 
-  if (showKyc) {
+  const handleOpenKblox = () => {
+    window.open("https://kblox.replit.app/login", "_blank", "noopener,noreferrer");
+    setKycStep("kblox-waiting");
+  };
+
+  // KBlox redirect step — explain and open KBlox
+  if (kycStep === "kblox-redirect") {
     return (
       <div className="min-h-screen bg-secondary/30 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md p-8 text-center shadow-xl">
-          <div className="mb-6 flex justify-center">
-            {kycStatus === "pending" ? (
-              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
-                <Loader2 className="w-10 h-10 text-primary animate-spin" />
+        <FadeIn className="w-full max-w-lg">
+          <Card className="shadow-xl overflow-hidden">
+            {/* KBlox branded header */}
+            <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-8 pt-8 pb-6 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-2xl mb-4">
+                <ShieldCheck className="w-8 h-8 text-white" />
               </div>
-            ) : (
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
-                <CheckCircle2 className="w-10 h-10 text-green-600" />
+              <h2 className="text-2xl font-bold text-white">Vérification d'identité requise</h2>
+              <p className="text-slate-300 mt-1 text-sm">Powered by <span className="text-white font-semibold">KBlox</span></p>
+            </div>
+
+            <div className="p-8">
+              <div className="mb-6">
+                <p className="text-muted-foreground text-sm leading-relaxed mb-6">
+                  Pour garantir la qualité et la sécurité de notre plateforme, tous les professeurs doivent compléter une vérification d'identité via <strong>KBlox</strong>, notre partenaire KYC de confiance.
+                </p>
+
+                <div className="space-y-3 mb-6">
+                  {[
+                    { step: "01", text: "Cliquez sur le bouton ci-dessous pour ouvrir KBlox" },
+                    { step: "02", text: "Créez un compte avec la même adresse email que celle utilisée ici" },
+                    { step: "03", text: "Soumettez votre pièce d'identité et les documents requis" },
+                    { step: "04", text: "Notre équipe validera votre profil sous 24–48h" },
+                  ].map(({ step, text }) => (
+                    <div key={step} className="flex items-start gap-3">
+                      <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">{step}</span>
+                      <p className="text-sm text-foreground pt-0.5">{text}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                  <p className="text-amber-800 text-xs font-medium">
+                    ⚠️ Utilisez la même adresse email : <strong>{registeredData?.email}</strong>
+                  </p>
+                </div>
               </div>
-            )}
-          </div>
-          
-          <h2 className="text-2xl font-bold mb-2">
-            {kycStatus === "pending" ? "Vérification KYC en cours" : "Identité Vérifiée !"}
-          </h2>
-          
-          <p className="text-muted-foreground mb-6">
-            {kycStatus === "pending" 
-              ? "Veuillez patienter pendant que nous vérifions vos informations (Mock KYCblox)..." 
-              : "Votre compte professeur a été créé avec succès. Redirection..."}
-          </p>
-          
-          <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-            <div 
-              className={`h-full bg-primary transition-all duration-1000 ease-in-out ${kycStatus === 'pending' ? 'w-2/3' : 'w-full'}`}
-            />
-          </div>
-        </Card>
+
+              <Button
+                onClick={handleOpenKblox}
+                className="w-full gap-2"
+                size="lg"
+              >
+                Continuer vers KBlox
+                <ExternalLink className="w-4 h-4" />
+              </Button>
+
+              <button
+                onClick={() => setKycStep("kblox-waiting")}
+                className="w-full mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+              >
+                J'ai déjà complété la vérification →
+              </button>
+            </div>
+          </Card>
+        </FadeIn>
+      </div>
+    );
+  }
+
+  // KBlox waiting step — user has opened KBlox and is completing verification
+  if (kycStep === "kblox-waiting") {
+    return (
+      <div className="min-h-screen bg-secondary/30 flex items-center justify-center p-4">
+        <FadeIn className="w-full max-w-md">
+          <Card className="shadow-xl p-8 text-center">
+            <div className="mb-6">
+              <div className="w-20 h-20 mx-auto bg-gradient-to-br from-slate-800 to-slate-700 rounded-2xl flex items-center justify-center mb-4">
+                <Clock className="w-10 h-10 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold">En attente de vérification</h2>
+              <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+                Votre compte a été créé. Votre vérification KBlox est en cours de traitement par notre équipe de conformité.
+              </p>
+            </div>
+
+            <div className="bg-muted rounded-xl p-4 mb-6 text-left space-y-2">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <span className="text-sm">Compte Étude+ créé</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full border-2 border-amber-400 flex-shrink-0 flex items-center justify-center">
+                  <Loader2 className="w-2.5 h-2.5 text-amber-500 animate-spin" />
+                </div>
+                <span className="text-sm text-muted-foreground">Vérification KBlox en cours...</span>
+              </div>
+              <div className="flex items-center gap-2 opacity-40">
+                <div className="w-4 h-4 rounded-full border-2 border-border flex-shrink-0" />
+                <span className="text-sm text-muted-foreground">Accès au tableau de bord professeur</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <a
+                href="https://kblox.replit.app/login"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 border-border hover:border-primary/30 text-sm font-medium transition-colors"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                Ouvrir KBlox
+                <ExternalLink className="w-3 h-3" />
+              </a>
+              
+              <Button
+                onClick={() => setLocation("/professor/dashboard")}
+                className="w-full gap-2"
+                size="lg"
+              >
+                Accéder au tableau de bord
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-4">
+              Votre compte est en attente d'approbation. Certaines fonctionnalités seront disponibles après validation.
+            </p>
+          </Card>
+        </FadeIn>
       </div>
     );
   }
@@ -189,6 +278,12 @@ export function Register() {
               <p className="text-muted-foreground mt-1">
                 {role === "student" ? "Rejoignez la plateforme et commencez à apprendre" : "Rejoignez notre réseau de professeurs d'excellence"}
               </p>
+              {role === "professor" && (
+                <div className="mt-3 inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 text-xs font-medium px-3 py-1.5 rounded-full">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  Vérification KBlox requise pour les professeurs
+                </div>
+              )}
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -296,7 +391,8 @@ export function Register() {
               )}
               
               <Button type="submit" className="w-full mt-6" size="lg" isLoading={isLoading}>
-                {role === "student" ? "Créer mon compte" : "Soumettre ma candidature"}
+                {role === "student" ? "Créer mon compte" : "Continuer vers la vérification KBlox"}
+                {role === "professor" && !isLoading && <ShieldCheck className="w-4 h-4 ml-2" />}
               </Button>
             </form>
 
