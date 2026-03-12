@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button, Card, Input, Label, FadeIn } from "@/components/ui/Premium";
-import { BookPlus, ArrowLeft, Loader2, CheckCircle2, ExternalLink, ShieldCheck, ArrowRight, Clock } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle2, ExternalLink, ShieldCheck, ArrowRight, Clock, Home } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -42,6 +42,43 @@ const professorSchema = baseSchema.extend({
 });
 
 type KycStep = "form" | "kblox-redirect" | "kblox-waiting" | "success";
+
+const KYC_STEPS = [
+  { id: "form", label: "Inscription" },
+  { id: "kblox-redirect", label: "Vérification KBlox" },
+  { id: "kblox-waiting", label: "En attente" },
+] as const;
+
+function StepProgress({ current, onStepClick }: { current: KycStep; onStepClick: (step: KycStep) => void }) {
+  const currentIdx = KYC_STEPS.findIndex(s => s.id === current);
+  return (
+    <div className="w-full max-w-lg mb-6 flex items-center justify-between">
+      {KYC_STEPS.map((step, idx) => {
+        const done = idx < currentIdx;
+        const active = idx === currentIdx;
+        const clickable = idx < currentIdx;
+        return (
+          <div key={step.id} className="flex items-center flex-1 last:flex-none">
+            <button
+              type="button"
+              disabled={!clickable}
+              onClick={() => clickable && onStepClick(step.id as KycStep)}
+              className={`flex items-center gap-2 group ${clickable ? "cursor-pointer" : "cursor-default"}`}
+            >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${active ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" : done ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"} ${clickable ? "group-hover:scale-110" : ""}`}>
+                {done ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
+              </div>
+              <span className={`text-xs font-medium hidden sm:block ${active ? "text-foreground" : done ? "text-green-600" : "text-muted-foreground"}`}>{step.label}</span>
+            </button>
+            {idx < KYC_STEPS.length - 1 && (
+              <div className={`flex-1 h-0.5 mx-2 rounded-full transition-colors ${idx < currentIdx ? "bg-green-400" : "bg-border"}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export function Register() {
   const { registerFn } = useAuth();
@@ -119,8 +156,24 @@ export function Register() {
   // KBlox redirect step — explain and open KBlox
   if (kycStep === "kblox-redirect") {
     return (
-      <div className="min-h-screen bg-secondary/30 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-secondary/30 flex flex-col items-center justify-center p-4">
         <FadeIn className="w-full max-w-lg">
+          {/* Top nav bar */}
+          <div className="flex items-center justify-between mb-4 w-full">
+            <button
+              type="button"
+              onClick={() => setKycStep("form")}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" /> Étape précédente
+            </button>
+            <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+              <Home className="w-4 h-4" /> Accueil
+            </Link>
+          </div>
+
+          <StepProgress current="kblox-redirect" onStepClick={setKycStep} />
+
           <Card className="shadow-xl overflow-hidden">
             {/* KBlox branded header */}
             <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-8 pt-8 pb-6 text-center">
@@ -183,8 +236,24 @@ export function Register() {
   // KBlox waiting step — user has opened KBlox and is completing verification
   if (kycStep === "kblox-waiting") {
     return (
-      <div className="min-h-screen bg-secondary/30 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-secondary/30 flex flex-col items-center justify-center p-4">
         <FadeIn className="w-full max-w-md">
+          {/* Top nav bar */}
+          <div className="flex items-center justify-between mb-4 w-full">
+            <button
+              type="button"
+              onClick={() => setKycStep("kblox-redirect")}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" /> Étape précédente
+            </button>
+            <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+              <Home className="w-4 h-4" /> Accueil
+            </Link>
+          </div>
+
+          <StepProgress current="kblox-waiting" onStepClick={setKycStep} />
+
           <Card className="shadow-xl p-8 text-center">
             <div className="mb-6">
               <div className="w-20 h-20 mx-auto bg-gradient-to-br from-slate-800 to-slate-700 rounded-2xl flex items-center justify-center mb-4">
@@ -250,9 +319,14 @@ export function Register() {
       <div className="absolute inset-0 bg-math-pattern opacity-[0.03] pointer-events-none" />
       
       <FadeIn className="w-full max-w-xl">
-        <Link href="/select-role" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary mb-6 transition-colors">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Retour
-        </Link>
+        <div className="flex items-center justify-between mb-6">
+          <Link href="/select-role" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="w-4 h-4" /> Retour
+          </Link>
+          <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+            <Home className="w-4 h-4" /> Accueil
+          </Link>
+        </div>
         
         <Card className="shadow-xl overflow-hidden">
           <div className="bg-muted p-2 flex border-b border-border">
