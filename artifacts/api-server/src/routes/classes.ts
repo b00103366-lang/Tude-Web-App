@@ -126,6 +126,40 @@ router.delete("/:id", requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+// Get a single session by session ID (used by classroom page)
+router.get("/sessions/:sessionId", async (req, res) => {
+  const sessionId = parseInt(req.params.sessionId);
+  const [session] = await db.select().from(liveSessionsTable).where(eq(liveSessionsTable.id, sessionId));
+  if (!session) {
+    res.status(404).json({ error: "Session not found" });
+    return;
+  }
+  const [cls] = await db.select().from(classesTable).where(eq(classesTable.id, session.classId));
+  const enrollments = await db.select({
+    enrollment: enrollmentsTable,
+    student: usersTable,
+  }).from(enrollmentsTable)
+    .innerJoin(usersTable, eq(enrollmentsTable.studentId, usersTable.id))
+    .where(eq(enrollmentsTable.classId, session.classId));
+
+  const profRows = cls ? await db.select({ prof: professorsTable, user: usersTable })
+    .from(professorsTable)
+    .innerJoin(usersTable, eq(professorsTable.userId, usersTable.id))
+    .where(eq(professorsTable.id, cls.professorId)) : [];
+
+  const professor = profRows[0] ? {
+    ...profRows[0].prof,
+    fullName: profRows[0].user.fullName,
+  } : null;
+
+  res.json({
+    session,
+    class: cls ?? null,
+    professor,
+    students: enrollments.map(e => ({ id: e.student.id, fullName: e.student.fullName, email: e.student.email })),
+  });
+});
+
 // Live Sessions
 router.get("/:id/sessions", async (req, res) => {
   const classId = parseInt(req.params.id);

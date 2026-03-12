@@ -1,90 +1,123 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Badge } from "@/components/ui/Premium";
-import { Trophy, ArrowUpRight, ArrowDownRight, Award, LineChart } from "lucide-react";
+import { Trophy, Award, LineChart, FileQuestion } from "lucide-react";
+import { useGetMyGrades } from "@workspace/api-client-react";
+
+function pct(score: number, total: number) {
+  return Math.round((score / total) * 100);
+}
+
+function getColor(score: number, total: number) {
+  const p = pct(score, total);
+  if (p >= 80) return "text-green-600";
+  if (p >= 60) return "text-primary";
+  if (p >= 40) return "text-orange-500";
+  return "text-red-500";
+}
 
 export function StudentGrades() {
-  const grades = [
-    { id: 1, subject: "Mathématiques", class: "Mathématiques 101", title: "Test des prérequis", type: "Test", score: 18, total: 20, average: 14, date: "12 Oct 2023", comment: "Excellent travail, continuez ainsi !" },
-    { id: 2, subject: "Physique", class: "Mécanique Quantique", title: "Devoir n°1", type: "Devoir", score: 15.5, total: 20, average: 12.5, date: "05 Oct 2023", comment: "Bonne compréhension globale." },
-    { id: 3, subject: "Mathématiques", class: "Mathématiques 101", title: "Quiz Nombres Complexes", type: "Quiz", score: 12, total: 20, average: 13, date: "28 Sep 2023", comment: "Attention aux erreurs de calcul." },
-  ];
+  const { data: grades = [], isLoading } = useGetMyGrades() as any;
 
-  const averages = [
-    { subject: "Mathématiques", avg: 15, trend: "up" },
-    { subject: "Physique", avg: 15.5, trend: "up" }
-  ];
+  const avg = grades.length
+    ? grades.reduce((s: number, g: any) => s + (g.score / g.total) * 20, 0) / grades.length
+    : null;
 
   return (
     <DashboardLayout>
       <FadeIn>
-        <PageHeader 
-          title="Mes Notes" 
+        <PageHeader
+          title="Mes Notes"
           description="Suivez votre progression et vos résultats d'évaluation."
         />
 
+        {/* Summary cards */}
         <div className="grid md:grid-cols-3 gap-6 mb-10">
           <Card className="p-6 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-none shadow-xl shadow-primary/20">
-            <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
                 <Trophy className="w-6 h-6 text-white" />
               </div>
               <div>
                 <p className="text-primary-foreground/80 font-medium">Moyenne Générale</p>
-                <p className="text-3xl font-bold">15.25 <span className="text-lg font-normal opacity-70">/20</span></p>
+                {avg !== null
+                  ? <p className="text-3xl font-bold">{avg.toFixed(1)}<span className="text-lg font-normal opacity-70">/20</span></p>
+                  : <p className="text-2xl font-semibold opacity-70">—</p>
+                }
               </div>
-            </div>
-            <div className="bg-black/10 rounded-lg p-3 text-sm flex items-center justify-between">
-              <span>+1.5 pts par rapport au mois dernier</span>
-              <ArrowUpRight className="w-4 h-4" />
             </div>
           </Card>
-          
-          {averages.map((avg, i) => (
-            <Card key={i} className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-                  <LineChart className="w-5 h-5 text-muted-foreground" />
-                </div>
-                <Badge variant={avg.trend === 'up' ? 'success' : 'secondary'} className="rounded-md">
-                  {avg.trend === 'up' ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
-                  {avg.subject}
-                </Badge>
+          <Card className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center">
+                <LineChart className="w-6 h-6 text-muted-foreground" />
               </div>
-              <p className="text-sm text-muted-foreground font-medium mb-1">Moyenne {avg.subject}</p>
-              <p className="text-2xl font-bold text-foreground">{avg.avg}/20</p>
-            </Card>
-          ))}
+              <div>
+                <p className="text-muted-foreground font-medium">Évaluations passées</p>
+                <p className="text-3xl font-bold">{grades.length}</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                <Award className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <p className="text-muted-foreground font-medium">Meilleures notes</p>
+                <p className="text-3xl font-bold">
+                  {grades.length ? `${Math.max(...grades.map((g: any) => pct(g.score, g.total)))}%` : "—"}
+                </p>
+              </div>
+            </div>
+          </Card>
         </div>
 
         <h2 className="text-xl font-bold mb-6">Historique des évaluations</h2>
-        
-        <div className="grid lg:grid-cols-2 gap-6">
-          {grades.map((g, i) => (
-            <FadeIn key={g.id} delay={i * 0.1}>
-              <Card className="p-6">
-                <div className="flex justify-between items-start mb-4 pb-4 border-b border-border">
-                  <div>
-                    <Badge variant="outline" className="mb-2">{g.type}</Badge>
-                    <h3 className="font-bold text-lg">{g.title}</h3>
-                    <p className="text-sm text-muted-foreground">{g.class}</p>
+
+        {isLoading ? (
+          <div className="grid lg:grid-cols-2 gap-6">
+            {[1, 2].map(i => <div key={i} className="h-40 bg-muted rounded-2xl animate-pulse" />)}
+          </div>
+        ) : grades.length === 0 ? (
+          <Card className="p-12 text-center">
+            <FileQuestion className="w-12 h-12 text-muted-foreground opacity-30 mx-auto mb-4" />
+            <h3 className="text-xl font-bold mb-2">Aucune note disponible</h3>
+            <p className="text-muted-foreground">Vos notes apparaîtront ici après que vos professeurs les auront publiées.</p>
+          </Card>
+        ) : (
+          <div className="grid lg:grid-cols-2 gap-6">
+            {grades.map((g: any, i: number) => (
+              <FadeIn key={g.id} delay={i * 0.05}>
+                <Card className="p-6">
+                  <div className="flex justify-between items-start mb-4 pb-4 border-b border-border">
+                    <div>
+                      <Badge variant="outline" className="mb-2">{g.type ?? "Évaluation"}</Badge>
+                      <h3 className="font-bold text-lg">{g.title}</h3>
+                      <p className="text-sm text-muted-foreground">{g.class?.title ?? g.className ?? ""}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-2xl font-bold ${getColor(g.score, g.total)}`}>
+                        {g.score}<span className="text-sm text-muted-foreground">/{g.total}</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-1.5 mt-2">
+                        <div className={`h-1.5 rounded-full bg-current ${getColor(g.score, g.total)}`} style={{ width: `${pct(g.score, g.total)}%` }} />
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-primary">{g.score}<span className="text-sm text-muted-foreground">/{g.total}</span></div>
-                    <p className="text-xs text-muted-foreground mt-1">Moy. classe: {g.average}</p>
-                  </div>
-                </div>
-                
-                <div className="bg-secondary/50 rounded-xl p-4 flex gap-3">
-                  <Award className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Commentaire du professeur</p>
-                    <p className="text-sm font-medium italic">"{g.comment}"</p>
-                  </div>
-                </div>
-              </Card>
-            </FadeIn>
-          ))}
-        </div>
+                  {g.comment && (
+                    <div className="bg-secondary/50 rounded-xl p-4 flex gap-3">
+                      <Award className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Commentaire</p>
+                        <p className="text-sm font-medium italic">"{g.comment}"</p>
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              </FadeIn>
+            ))}
+          </div>
+        )}
       </FadeIn>
     </DashboardLayout>
   );
