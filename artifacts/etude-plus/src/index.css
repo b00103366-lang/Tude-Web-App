@@ -1,0 +1,145 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&display=swap');
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Playfair Display', serif;
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-card-border: hsl(var(--card-border));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+
+  --animate-fade-in: fade-in 0.5s ease-out;
+  --animate-slide-up: slide-up 0.5s ease-out;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+:root {
+  /* Premium Academic SaaS Palette */
+  --background: 0 0% 99%;
+  --foreground: 222 47% 11%; /* Dark Navy */
+  
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --card-border: 214 32% 91%;
+  
+  --primary: 43 96% 56%; /* Golden Yellow */
+  --primary-foreground: 222 47% 11%; /* Dark Navy text on yellow */
+  
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222 47% 11%;
+  
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  
+  --accent: 214 84% 56%; /* Light Blue */
+  --accent-foreground: 0 0% 100%;
+  
+  --destructive: 3 84% 60%; /* Coral/Light Red */
+  --destructive-foreground: 0 0% 100%;
+  
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 43 96% 56%;
+  
+  --sidebar: 222 47% 11%; /* Dark Navy Sidebar */
+  --sidebar-foreground: 210 40% 96%;
+  --sidebar-border: 222 47% 16%;
+  --sidebar-primary: 43 96% 56%;
+  --sidebar-primary-foreground: 222 47% 11%;
+  --sidebar-accent: 222 47% 18%;
+  --sidebar-accent-foreground: 210 40% 98%;
+
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: 222 47% 11%;
+  --foreground: 210 40% 98%;
+  
+  --card: 222 47% 13%;
+  --card-foreground: 210 40% 98%;
+  --card-border: 222 47% 20%;
+  
+  --primary: 43 96% 56%;
+  --primary-foreground: 222 47% 11%;
+  
+  --secondary: 222 47% 18%;
+  --secondary-foreground: 210 40% 98%;
+  
+  --muted: 222 47% 18%;
+  --muted-foreground: 215 20% 65%;
+  
+  --accent: 214 84% 56%;
+  --accent-foreground: 0 0% 100%;
+  
+  --destructive: 3 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  
+  --border: 222 47% 20%;
+  --input: 222 47% 20%;
+  --ring: 43 96% 56%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased selection:bg-primary/30 selection:text-foreground;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif tracking-tight text-foreground;
+  }
+}
+
+/* Math background pattern for landing page */
+.bg-math-pattern {
+  background-image: radial-gradient(circle at 2px 2px, rgba(0,0,0,0.05) 1px, transparent 0);
+  background-size: 32px 32px;
+}
+.dark .bg-math-pattern {
+  background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0);
+}
+
+/* Premium glassmorphism */
+.glass {
+  @apply bg-background/70 backdrop-blur-xl border-b border-border/50;
+}

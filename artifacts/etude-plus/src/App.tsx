@@ -1,0 +1,178 @@
+import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import NotFound from "@/pages/not-found";
+
+// Pages
+import { Landing } from "@/pages/Landing";
+import { SelectRole } from "@/pages/SelectRole";
+import { Login } from "@/pages/auth/Login";
+import { Register } from "@/pages/auth/Register";
+
+// Student Pages
+import { StudentDashboard } from "@/pages/student/StudentDashboard";
+import { BrowseClasses } from "@/pages/student/BrowseClasses";
+import { StudentClasses } from "@/pages/student/StudentClasses";
+import { StudentClassDetail } from "@/pages/student/StudentClassDetail";
+import { StudentCalendar } from "@/pages/student/StudentCalendar";
+import { StudentGrades } from "@/pages/student/StudentGrades";
+import { StudentPayments } from "@/pages/student/StudentPayments";
+import { StudentNotifications } from "@/pages/student/StudentNotifications";
+import { StudentSettings } from "@/pages/student/StudentSettings";
+
+// Professor Pages
+import { ProfessorDashboard } from "@/pages/professor/ProfessorDashboard";
+import { ProfessorClasses } from "@/pages/professor/ProfessorClasses";
+import { ProfessorClassManagement } from "@/pages/professor/ProfessorClassManagement";
+import { CreateClass } from "@/pages/professor/CreateClass";
+import { ProfessorCalendar } from "@/pages/professor/ProfessorCalendar";
+import { ProfessorEarnings } from "@/pages/professor/ProfessorEarnings";
+import { ProfessorStudents } from "@/pages/professor/ProfessorStudents";
+import { ProfessorSettings } from "@/pages/professor/ProfessorSettings";
+
+// Admin Pages
+import { AdminDashboard } from "@/pages/admin/AdminDashboard";
+import { AdminUsers } from "@/pages/admin/AdminUsers";
+import { AdminProfessors } from "@/pages/admin/AdminProfessors";
+import { AdminClasses } from "@/pages/admin/AdminClasses";
+import { AdminTransactions } from "@/pages/admin/AdminTransactions";
+import { AdminSettings } from "@/pages/admin/AdminSettings";
+
+// Shared Pages
+import { Checkout } from "@/pages/checkout/Checkout";
+import { PaymentSuccess } from "@/pages/checkout/PaymentSuccess";
+import { Classroom } from "@/pages/classroom/Classroom";
+
+const queryClient = new QueryClient();
+
+// Protected Route Component
+function ProtectedRoute({ component: Component, allowedRoles }: { component: any, allowedRoles?: string[] }) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
+  
+  if (!user) {
+    return <Redirect to="/login" />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Redirect to={`/${user.role}/dashboard`} />;
+  }
+
+  return <Component />;
+}
+
+function Router() {
+  return (
+    <Switch>
+      <Route path="/" component={Landing} />
+      <Route path="/select-role" component={SelectRole} /> 
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} /> 
+
+      {/* Student Routes */}
+      <Route path="/student/dashboard">
+        {() => <ProtectedRoute component={StudentDashboard} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/student/browse">
+        {() => <ProtectedRoute component={BrowseClasses} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/student/classes">
+        {() => <ProtectedRoute component={StudentClasses} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/student/classes/:id">
+        {() => <ProtectedRoute component={StudentClassDetail} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/student/calendar">
+        {() => <ProtectedRoute component={StudentCalendar} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/student/grades">
+        {() => <ProtectedRoute component={StudentGrades} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/student/payments">
+        {() => <ProtectedRoute component={StudentPayments} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/student/notifications">
+        {() => <ProtectedRoute component={StudentNotifications} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/student/settings">
+        {() => <ProtectedRoute component={StudentSettings} allowedRoles={["student"]} />}
+      </Route>
+
+      {/* Shared/Special Routes */}
+      <Route path="/checkout/:id">
+        {() => <ProtectedRoute component={Checkout} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/payment-success">
+        {() => <ProtectedRoute component={PaymentSuccess} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/classroom/:id">
+        {() => <ProtectedRoute component={Classroom} />}
+      </Route>
+
+      {/* Professor Routes */}
+      <Route path="/professor/dashboard">
+        {() => <ProtectedRoute component={ProfessorDashboard} allowedRoles={["professor"]} />}
+      </Route>
+      <Route path="/professor/classes">
+        {() => <ProtectedRoute component={ProfessorClasses} allowedRoles={["professor"]} />}
+      </Route>
+      <Route path="/professor/classes/:id">
+        {() => <ProtectedRoute component={ProfessorClassManagement} allowedRoles={["professor"]} />}
+      </Route>
+      <Route path="/professor/create-class">
+        {() => <ProtectedRoute component={CreateClass} allowedRoles={["professor"]} />}
+      </Route>
+      <Route path="/professor/calendar">
+        {() => <ProtectedRoute component={ProfessorCalendar} allowedRoles={["professor"]} />}
+      </Route>
+      <Route path="/professor/earnings">
+        {() => <ProtectedRoute component={ProfessorEarnings} allowedRoles={["professor"]} />}
+      </Route>
+      <Route path="/professor/students">
+        {() => <ProtectedRoute component={ProfessorStudents} allowedRoles={["professor"]} />}
+      </Route>
+      <Route path="/professor/settings">
+        {() => <ProtectedRoute component={ProfessorSettings} allowedRoles={["professor"]} />}
+      </Route>
+      
+      {/* Admin Routes */}
+      <Route path="/admin/dashboard">
+        {() => <ProtectedRoute component={AdminDashboard} allowedRoles={["admin"]} />}
+      </Route>
+      <Route path="/admin/users">
+        {() => <ProtectedRoute component={AdminUsers} allowedRoles={["admin"]} />}
+      </Route>
+      <Route path="/admin/professors">
+        {() => <ProtectedRoute component={AdminProfessors} allowedRoles={["admin"]} />}
+      </Route>
+      <Route path="/admin/classes">
+        {() => <ProtectedRoute component={AdminClasses} allowedRoles={["admin"]} />}
+      </Route>
+      <Route path="/admin/transactions">
+        {() => <ProtectedRoute component={AdminTransactions} allowedRoles={["admin"]} />}
+      </Route>
+      <Route path="/admin/settings">
+        {() => <ProtectedRoute component={AdminSettings} allowedRoles={["admin"]} />}
+      </Route>
+
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          <Router />
+        </WouterRouter>
+        <Toaster />
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}
+
+export default App;
