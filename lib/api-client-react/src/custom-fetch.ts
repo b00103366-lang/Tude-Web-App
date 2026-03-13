@@ -271,6 +271,20 @@ async function parseSuccessBody(
   }
 }
 
+export const TOKEN_KEY = "etude_auth_token";
+
+export function saveToken(token: string) {
+  try { localStorage.setItem(TOKEN_KEY, token); } catch {}
+}
+
+export function clearToken() {
+  try { localStorage.removeItem(TOKEN_KEY); } catch {}
+}
+
+export function getToken(): string | null {
+  try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+}
+
 export async function customFetch<T = unknown>(
   input: RequestInfo | URL,
   options: CustomFetchOptions = {},
@@ -284,6 +298,12 @@ export async function customFetch<T = unknown>(
   }
 
   const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
+
+  // Attach stored auth token to every request
+  const token = getToken();
+  if (token && !headers.has("authorization")) {
+    headers.set("authorization", `Bearer ${token}`);
+  }
 
   if (
     typeof init.body === "string" &&
