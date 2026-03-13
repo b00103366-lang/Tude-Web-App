@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, getDashboardPath } from "@/hooks/use-auth";
 import { Button, Card, Input, Label, FadeIn } from "@/components/ui/Premium";
 import { ArrowLeft, Loader2, CheckCircle2, ExternalLink, ShieldCheck, ArrowRight, Clock, Home } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -124,14 +124,12 @@ export function Register() {
     data.role = role;
 
     try {
+      const registeredUser = await registerFn(data);
       if (role === "professor") {
-        // Register the account first, then redirect to KBlox for KYC
-        await registerFn(data);
         setRegisteredData(data);
         setKycStep("kblox-redirect");
       } else {
-        await registerFn(data);
-        setLocation("/student/dashboard");
+        setLocation(getDashboardPath(registeredUser.role));
       }
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message || "Erreur lors de l'inscription", variant: "destructive" });
