@@ -1,207 +1,150 @@
-import { useState } from "react";
-import { Link, useLocation } from "wouter";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { PageHeader, Card, FadeIn, Button, Badge } from "@/components/ui/Premium";
+import { PageHeader, Card, FadeIn, Button } from "@/components/ui/Premium";
 import { useAuth } from "@/hooks/use-auth";
-import { ShieldCheck, CheckCircle2, Clock, AlertCircle, ArrowRight, RefreshCw } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { ShieldCheck, CheckCircle2, Clock, AlertCircle, ArrowRight, Mail } from "lucide-react";
+import { Link } from "wouter";
 
 export function ProfessorKYC() {
-  const { user, refreshUser } = useAuth() as any;
-  const [, setLocation] = useLocation();
-  const { toast } = useToast();
-  const [submitting, setSubmitting] = useState(false);
-  const [showIframe, setShowIframe] = useState(false);
-
+  const { user } = useAuth();
   const profStatus = (user as any)?.professorProfile?.status ?? "pending";
+  const userEmail = user?.email ?? "";
 
-  const handleMarkSubmitted = async () => {
-    setSubmitting(true);
-    try {
-      const token = localStorage.getItem("etude_auth_token");
-      const profId = (user as any)?.professorProfile?.id;
-      if (!profId) throw new Error("Profil professeur introuvable");
-
-      const res = await fetch(`/api/professors/${profId}/kyc-submit`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-
-      if (!res.ok) throw new Error("Erreur lors de la soumission");
-
-      toast({ title: "KYC soumis", description: "Votre vérification a été soumise. L'équipe validera votre dossier sous 24–48h." });
-      if (refreshUser) await refreshUser();
-    } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const statusConfig = {
+  const configs = {
     pending: {
-      badge: <Badge variant="secondary">En attente de vérification</Badge>,
-      icon: <Clock className="w-12 h-12 text-amber-500" />,
-      title: "Vérification requise",
-      desc: "Vous devez compléter la vérification KBlox pour activer votre compte professeur et accéder à toutes les fonctionnalités.",
-      showKYC: true,
+      icon: <Clock className="w-14 h-14 text-amber-500" />,
+      iconBg: "bg-amber-100",
+      title: "Dossier en cours d'examen",
+      subtitle: "Votre candidature a bien été reçue",
+      desc: "L'équipe de conformité d'Étude+ examine votre dossier. Vous recevrez une notification par email dès que votre compte sera approuvé.",
+      delay: "Délai habituel : 24 à 48 heures ouvrées.",
+      borderColor: "border-amber-200",
+      bgColor: "bg-amber-50",
     },
     kyc_submitted: {
-      badge: <Badge variant="secondary">KYC soumis — en cours d'examen</Badge>,
-      icon: <Clock className="w-12 h-12 text-blue-500" />,
-      title: "Vérification en cours",
-      desc: "Votre dossier de vérification KBlox a été soumis et est en cours d'examen par notre équipe. Cela prend généralement 24–48h.",
-      showKYC: false,
+      icon: <ShieldCheck className="w-14 h-14 text-blue-500" />,
+      iconBg: "bg-blue-100",
+      title: "Vérification soumise",
+      subtitle: "Votre dossier est complet",
+      desc: "Votre vérification a été transmise à l'équipe de conformité. L'examen de votre profil est en cours.",
+      delay: "Délai habituel : 24 à 48 heures ouvrées.",
+      borderColor: "border-blue-200",
+      bgColor: "bg-blue-50",
     },
     approved: {
-      badge: <Badge variant="success">Compte vérifié</Badge>,
-      icon: <CheckCircle2 className="w-12 h-12 text-green-500" />,
-      title: "Compte approuvé",
-      desc: "Votre compte a été vérifié et approuvé. Vous avez accès à toutes les fonctionnalités de la plateforme.",
-      showKYC: false,
+      icon: <CheckCircle2 className="w-14 h-14 text-green-500" />,
+      iconBg: "bg-green-100",
+      title: "Compte approuvé !",
+      subtitle: "Vous êtes maintenant professeur vérifié",
+      desc: "Félicitations ! Votre compte a été vérifié et approuvé. Vous avez accès à toutes les fonctionnalités de la plateforme.",
+      delay: "",
+      borderColor: "border-green-200",
+      bgColor: "bg-green-50",
     },
     rejected: {
-      badge: <Badge variant="destructive">Vérification refusée</Badge>,
-      icon: <AlertCircle className="w-12 h-12 text-red-500" />,
-      title: "Vérification refusée",
-      desc: "Votre vérification a été refusée. Veuillez contacter notre équipe de support pour plus d'informations.",
-      showKYC: true,
+      icon: <AlertCircle className="w-14 h-14 text-red-500" />,
+      iconBg: "bg-red-100",
+      title: "Candidature non retenue",
+      subtitle: "Votre dossier n'a pas pu être validé",
+      desc: "Votre vérification d'identité n'a pas abouti. Veuillez contacter notre équipe de support pour plus d'informations sur les raisons et les démarches à suivre.",
+      delay: "",
+      borderColor: "border-red-200",
+      bgColor: "bg-red-50",
     },
   };
 
-  const config = statusConfig[profStatus as keyof typeof statusConfig] ?? statusConfig.pending;
+  const cfg = configs[profStatus as keyof typeof configs] ?? configs.pending;
 
   return (
     <DashboardLayout>
       <FadeIn>
         <PageHeader
-          title="Vérification d'identité KBlox"
-          description="Complétez votre vérification pour activer votre compte professeur."
+          title="Statut de vérification"
+          description="Suivez l'avancement de votre candidature."
         />
 
-        <div className="max-w-4xl">
-          {/* Status Card */}
-          <Card className="p-6 mb-6 flex items-center gap-4">
-            {config.icon}
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-1 flex-wrap">
-                <h2 className="font-bold text-lg">{config.title}</h2>
-                {config.badge}
-              </div>
-              <p className="text-muted-foreground text-sm">{config.desc}</p>
+        <div className="max-w-2xl">
+          {/* Main status card */}
+          <Card className={`p-8 text-center border-2 ${cfg.borderColor} ${cfg.bgColor} mb-6`}>
+            <div className={`w-24 h-24 rounded-2xl ${cfg.iconBg} flex items-center justify-center mx-auto mb-6`}>
+              {cfg.icon}
             </div>
+            <h2 className="text-2xl font-bold mb-1">{cfg.title}</h2>
+            <p className="text-sm font-medium text-muted-foreground mb-4">{cfg.subtitle}</p>
+            <p className="text-muted-foreground leading-relaxed mb-3">{cfg.desc}</p>
+            {cfg.delay && <p className="text-xs text-muted-foreground font-medium">{cfg.delay}</p>}
+
             {profStatus === "approved" && (
-              <Button onClick={() => setLocation("/professor/dashboard")} className="gap-2">
-                Aller au tableau de bord <ArrowRight className="w-4 h-4" />
-              </Button>
+              <Link href="/professor/dashboard" className="mt-6 inline-block">
+                <Button size="lg" className="gap-2">
+                  Accéder au tableau de bord <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            )}
+
+            {profStatus === "rejected" && (
+              <a href={`mailto:support@etude.tn?subject=Vérification refusée - ${userEmail}`} className="mt-6 inline-flex items-center gap-2 text-sm text-primary hover:underline font-medium">
+                <Mail className="w-4 h-4" /> Contacter le support
+              </a>
             )}
           </Card>
 
-          {/* Steps */}
-          <Card className="p-6 mb-6">
-            <h3 className="font-bold mb-4">Étapes de vérification</h3>
-            <div className="space-y-3">
+          {/* Timeline */}
+          <Card className="p-6">
+            <h3 className="font-bold mb-5">Processus de vérification</h3>
+            <div className="space-y-5">
               {[
-                { done: true, label: "Compte Étude+ créé", desc: "Votre compte professeur a été créé avec succès." },
                 {
-                  done: profStatus === "kyc_submitted" || profStatus === "approved",
-                  active: profStatus === "pending" || profStatus === "rejected",
-                  label: "Vérification KBlox",
-                  desc: "Complétez le formulaire KYC ci-dessous pour soumettre vos documents d'identité.",
+                  label: "Inscription complétée",
+                  desc: "Votre compte professeur a été créé sur Étude+.",
+                  done: true,
                 },
                 {
+                  label: "Examen par l'équipe de conformité",
+                  desc: "Notre équipe vérifie votre profil, vos qualifications et vos documents.",
                   done: profStatus === "approved",
-                  label: "Validation par l'équipe Étude+",
-                  desc: "Notre équipe examine votre dossier et active votre compte sous 24–48h.",
+                  active: profStatus === "pending" || profStatus === "kyc_submitted",
                 },
                 {
+                  label: "Approbation et activation",
+                  desc: "Votre compte est activé et vous pouvez créer des cours.",
                   done: profStatus === "approved",
-                  label: "Accès complet à la plateforme",
-                  desc: "Créez vos cours, gérez vos élèves et commencez à enseigner.",
+                  active: false,
                 },
               ].map((step, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${step.done ? "bg-green-500" : "step" in step && step.active ? "bg-amber-400" : "bg-muted border-2 border-border"}`}>
-                    {step.done ? <CheckCircle2 className="w-4 h-4 text-white" /> : <span className="text-xs font-bold text-muted-foreground">{i + 1}</span>}
+                <div key={i} className="flex items-start gap-4">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold ${
+                    step.done
+                      ? "bg-green-500 text-white"
+                      : step.active
+                      ? "bg-amber-400 text-white animate-pulse"
+                      : "bg-muted border-2 border-border text-muted-foreground"
+                  }`}>
+                    {step.done ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
                   </div>
                   <div>
-                    <p className={`font-semibold text-sm ${step.done ? "text-green-700" : "text-foreground"}`}>{step.label}</p>
-                    <p className="text-xs text-muted-foreground">{step.desc}</p>
+                    <p className={`font-semibold text-sm ${step.done ? "text-green-700" : step.active ? "text-foreground" : "text-muted-foreground"}`}>
+                      {step.label}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{step.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
           </Card>
 
-          {/* KBlox iframe */}
-          {config.showKYC && (
-            <Card className="overflow-hidden">
-              <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <ShieldCheck className="w-5 h-5 text-white" />
-                  <div>
-                    <h3 className="text-base font-bold text-white">Vérification KBlox</h3>
-                    <p className="text-slate-400 text-xs">Restez sur cette page — la vérification s'effectue ici</p>
-                  </div>
-                </div>
-                <span className="text-xs text-slate-400 bg-white/10 px-3 py-1 rounded-full">Powered by KBlox</span>
+          {/* Contact info */}
+          {(profStatus === "pending" || profStatus === "kyc_submitted") && (
+            <div className="mt-4 p-4 rounded-xl bg-muted flex items-start gap-3">
+              <Mail className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium">Vous avez des questions ?</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Contactez-nous à{" "}
+                  <a href="mailto:support@etude.tn" className="text-primary hover:underline">support@etude.tn</a>
+                  {" "}en mentionnant votre email d'inscription : <strong>{userEmail}</strong>
+                </p>
               </div>
-
-              {showIframe ? (
-                <iframe
-                  src="https://03200982-fabf-4e40-aa49-9588883ea3b7-00-111qxxwza91vm.kirk.replit.dev/embed/etude?embed=true"
-                  style={{ width: "100%", height: "700px", border: "none" }}
-                  allow="clipboard-write; camera; microphone"
-                  title="Vérification KBlox"
-                />
-              ) : (
-                <div className="p-12 text-center">
-                  <ShieldCheck className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold mb-2">Lancez votre vérification</h3>
-                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                    Cliquez ci-dessous pour ouvrir le formulaire de vérification d'identité KBlox. Vous resterez sur cette page.
-                  </p>
-                  <Button size="lg" onClick={() => setShowIframe(true)} className="gap-2">
-                    <ShieldCheck className="w-5 h-5" />
-                    Commencer la vérification
-                  </Button>
-                </div>
-              )}
-
-              {showIframe && (
-                <div className="p-4 bg-muted border-t border-border flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    Une fois le formulaire soumis, cliquez sur le bouton ci-dessous.
-                  </p>
-                  <Button
-                    onClick={handleMarkSubmitted}
-                    disabled={submitting}
-                    className="gap-2"
-                  >
-                    {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                    J'ai soumis ma vérification
-                  </Button>
-                </div>
-              )}
-            </Card>
-          )}
-
-          {(profStatus === "kyc_submitted") && (
-            <Card className="p-6 mt-6 bg-blue-50 border-blue-200">
-              <div className="flex gap-3">
-                <Clock className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-blue-800">En attente de validation</p>
-                  <p className="text-blue-600 text-sm mt-1">
-                    Notre équipe examine votre dossier. Vous recevrez une notification par email dès que votre compte sera validé.
-                  </p>
-                  <p className="text-blue-500 text-xs mt-2">Délai moyen : 24 à 48 heures</p>
-                </div>
-              </div>
-            </Card>
+            </div>
           )}
         </div>
       </FadeIn>

@@ -2,15 +2,15 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth, getDashboardPath } from "@/hooks/use-auth";
 import { Button, Card, Input, Label, FadeIn } from "@/components/ui/Premium";
-import { ArrowLeft, Loader2, CheckCircle2, ExternalLink, ShieldCheck, ArrowRight, Clock, Home } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle2, Clock, Home, ShieldCheck } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 
 const TUNISIA_CITIES = [
-  "Tunis", "Sfax", "Sousse", "Kairouan", "Bizerte", "Gabès", 
-  "Ariana", "Gafsa", "Monastir", "Ben Arous", "Kasserine", 
+  "Tunis", "Sfax", "Sousse", "Kairouan", "Bizerte", "Gabès",
+  "Ariana", "Gafsa", "Monastir", "Ben Arous", "Kasserine",
   "Médenine", "Nabeul", "Tataouine", "Béja"
 ];
 
@@ -37,69 +37,32 @@ const studentSchema = baseSchema.extend({
 });
 
 const professorSchema = baseSchema.extend({
+  phone: z.string().optional(),
   bio: z.string().min(10, "Une courte bio est requise"),
   yearsExperience: z.coerce.number().min(0).max(50),
+  qualifications: z.string().optional(),
 });
-
-type KycStep = "form" | "kblox-redirect" | "kblox-waiting" | "success";
-
-const KYC_STEPS = [
-  { id: "form", label: "Inscription" },
-  { id: "kblox-redirect", label: "Vérification KBlox" },
-  { id: "kblox-waiting", label: "En attente" },
-] as const;
-
-function StepProgress({ current, onStepClick }: { current: KycStep; onStepClick: (step: KycStep) => void }) {
-  const currentIdx = KYC_STEPS.findIndex(s => s.id === current);
-  return (
-    <div className="w-full max-w-lg mb-6 flex items-center justify-between">
-      {KYC_STEPS.map((step, idx) => {
-        const done = idx < currentIdx;
-        const active = idx === currentIdx;
-        const clickable = idx < currentIdx;
-        return (
-          <div key={step.id} className="flex items-center flex-1 last:flex-none">
-            <button
-              type="button"
-              disabled={!clickable}
-              onClick={() => clickable && onStepClick(step.id as KycStep)}
-              className={`flex items-center gap-2 group ${clickable ? "cursor-pointer" : "cursor-default"}`}
-            >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${active ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" : done ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"} ${clickable ? "group-hover:scale-110" : ""}`}>
-                {done ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
-              </div>
-              <span className={`text-xs font-medium hidden sm:block ${active ? "text-foreground" : done ? "text-green-600" : "text-muted-foreground"}`}>{step.label}</span>
-            </button>
-            {idx < KYC_STEPS.length - 1 && (
-              <div className={`flex-1 h-0.5 mx-2 rounded-full transition-colors ${idx < currentIdx ? "bg-green-400" : "bg-border"}`} />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 export function Register() {
   const { registerFn } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  
+
   const searchParams = new URLSearchParams(window.location.search);
   const initialRole = searchParams.get("role") === "professor" ? "professor" : "student";
-  
+
   const [role, setRole] = useState<"student" | "professor">(initialRole as any);
   const [isLoading, setIsLoading] = useState(false);
-  const [kycStep, setKycStep] = useState<KycStep>("form");
-  const [registeredData, setRegisteredData] = useState<any>(null);
-  
+  const [registered, setRegistered] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
+
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedGrades, setSelectedGrades] = useState<string[]>([]);
 
   const schema = role === "student" ? studentSchema : professorSchema;
   type FormValues = z.infer<typeof schema>;
-  
-  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
+
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       city: "Tunis",
@@ -109,11 +72,11 @@ export function Register() {
 
   const onSubmit = async (data: any) => {
     setIsLoading(true);
-    
+
     if (role === "professor") {
       data.subjects = selectedSubjects;
       data.gradeLevels = selectedGrades;
-      
+
       if (selectedSubjects.length === 0 || selectedGrades.length === 0) {
         toast({ title: "Erreur", description: "Veuillez sélectionner au moins une matière et un niveau.", variant: "destructive" });
         setIsLoading(false);
@@ -126,8 +89,8 @@ export function Register() {
     try {
       const registeredUser = await registerFn(data);
       if (role === "professor") {
-        setRegisteredData(data);
-        setKycStep("kblox-redirect");
+        setRegisteredEmail(data.email);
+        setRegistered(true);
       } else {
         setLocation(getDashboardPath(registeredUser.role));
       }
@@ -141,143 +104,70 @@ export function Register() {
   const toggleSubject = (sub: string) => {
     setSelectedSubjects(prev => prev.includes(sub) ? prev.filter(s => s !== sub) : [...prev, sub]);
   };
-  
+
   const toggleGrade = (grade: string) => {
     setSelectedGrades(prev => prev.includes(grade) ? prev.filter(g => g !== grade) : [...prev, grade]);
   };
 
-  // KBlox embedded step — iframe stays inside Étude+
-  if (kycStep === "kblox-redirect") {
-    return (
-      <div className="min-h-screen bg-secondary/30 flex flex-col items-center py-6 px-4">
-        <div className="w-full max-w-4xl">
-          {/* Top nav bar */}
-          <div className="flex items-center justify-between mb-4">
-            <button
-              type="button"
-              onClick={() => setKycStep("form")}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" /> Étape précédente
-            </button>
-            <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-              <Home className="w-4 h-4" /> Accueil
-            </Link>
-          </div>
-
-          <div className="flex justify-center mb-4">
-            <StepProgress current="kblox-redirect" onStepClick={setKycStep} />
-          </div>
-
-          <Card className="shadow-xl overflow-hidden">
-            <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="w-5 h-5 text-white" />
-                <div>
-                  <h2 className="text-base font-bold text-white">Vérification d'identité KBlox</h2>
-                  <p className="text-slate-400 text-xs">Complétez la vérification pour activer votre compte professeur</p>
-                </div>
-              </div>
-              {registeredData?.email && (
-                <div className="hidden sm:block bg-amber-400/20 border border-amber-400/30 rounded-lg px-3 py-1.5">
-                  <p className="text-amber-300 text-xs font-medium">{registeredData.email}</p>
-                </div>
-              )}
-            </div>
-            <iframe
-              src="https://03200982-fabf-4e40-aa49-9588883ea3b7-00-111qxxwza91vm.kirk.replit.dev/embed/etude?embed=true"
-              style={{ width: "100%", height: "700px", border: "none" }}
-              allow="clipboard-write; camera; microphone"
-              title="Vérification KBlox"
-            />
-          </Card>
-
-          <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-xs text-muted-foreground">
-              Une fois la vérification complétée dans la fenêtre ci-dessus, cliquez sur continuer.
-            </p>
-            <Button onClick={() => setKycStep("kblox-waiting")} className="gap-2">
-              J'ai complété la vérification <ArrowRight className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // KBlox waiting step — user has opened KBlox and is completing verification
-  if (kycStep === "kblox-waiting") {
+  // ── Professor registered → "En attente" confirmation ──
+  if (registered && role === "professor") {
     return (
       <div className="min-h-screen bg-secondary/30 flex flex-col items-center justify-center p-4">
-        <FadeIn className="w-full max-w-md">
-          {/* Top nav bar */}
-          <div className="flex items-center justify-between mb-4 w-full">
-            <button
-              type="button"
-              onClick={() => setKycStep("kblox-redirect")}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" /> Étape précédente
-            </button>
+        <FadeIn className="w-full max-w-lg">
+          <div className="flex items-center justify-between mb-6 w-full">
             <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
               <Home className="w-4 h-4" /> Accueil
             </Link>
           </div>
 
-          <StepProgress current="kblox-waiting" onStepClick={setKycStep} />
-
-          <Card className="shadow-xl p-8 text-center">
-            <div className="mb-6">
-              <div className="w-20 h-20 mx-auto bg-gradient-to-br from-slate-800 to-slate-700 rounded-2xl flex items-center justify-center mb-4">
-                <Clock className="w-10 h-10 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold">En attente de vérification</h2>
-              <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-                Votre compte a été créé. Votre vérification KBlox est en cours de traitement par notre équipe de conformité.
-              </p>
+          <Card className="shadow-xl p-10 text-center">
+            <div className="w-20 h-20 mx-auto bg-green-100 rounded-2xl flex items-center justify-center mb-6">
+              <CheckCircle2 className="w-10 h-10 text-green-600" />
             </div>
 
-            <div className="bg-muted rounded-xl p-4 mb-6 text-left space-y-2">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                <span className="text-sm">Compte Étude+ créé</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full border-2 border-amber-400 flex-shrink-0 flex items-center justify-center">
-                  <Loader2 className="w-2.5 h-2.5 text-amber-500 animate-spin" />
+            <h2 className="text-2xl font-bold mb-3">Inscription réussie !</h2>
+            <p className="text-muted-foreground mb-6 leading-relaxed">
+              Votre dossier a bien été reçu. L'équipe de conformité d'Étude+ va examiner votre candidature et vous contactera à <strong>{registeredEmail}</strong>.
+            </p>
+
+            {/* Steps */}
+            <div className="bg-muted rounded-2xl p-6 mb-8 text-left space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle2 className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-sm text-muted-foreground">Vérification KBlox en cours...</span>
+                <div>
+                  <p className="font-semibold text-sm">Inscription complétée</p>
+                  <p className="text-xs text-muted-foreground">Votre compte professeur a été créé avec succès.</p>
+                </div>
               </div>
-              <div className="flex items-center gap-2 opacity-40">
-                <div className="w-4 h-4 rounded-full border-2 border-border flex-shrink-0" />
-                <span className="text-sm text-muted-foreground">Accès au tableau de bord professeur</span>
+
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-amber-400 flex items-center justify-center flex-shrink-0 animate-pulse">
+                  <Clock className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">Vérification en cours</p>
+                  <p className="text-xs text-muted-foreground">L'équipe de conformité examine votre dossier (24–48h).</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 opacity-40">
+                <div className="w-8 h-8 rounded-full border-2 border-border flex items-center justify-center flex-shrink-0">
+                  <ShieldCheck className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm text-muted-foreground">Accès au tableau de bord</p>
+                  <p className="text-xs text-muted-foreground">Vous serez notifié par email dès approbation.</p>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <a
-                href="https://kblox.replit.app/login"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 border-border hover:border-primary/30 text-sm font-medium transition-colors"
-              >
-                <ShieldCheck className="w-4 h-4" />
-                Ouvrir KBlox
-                <ExternalLink className="w-3 h-3" />
-              </a>
-              
-              <Button
-                onClick={() => setLocation("/professor/dashboard")}
-                className="w-full gap-2"
-                size="lg"
-              >
-                Accéder au tableau de bord
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </div>
-
+            <Button onClick={() => setLocation("/professor/dashboard")} size="lg" className="w-full">
+              Accéder à mon espace
+            </Button>
             <p className="text-xs text-muted-foreground mt-4">
-              Votre compte est en attente d'approbation. Certaines fonctionnalités seront disponibles après validation.
+              Délai de vérification habituel : 24 à 48 heures ouvrées.
             </p>
           </Card>
         </FadeIn>
@@ -285,11 +175,11 @@ export function Register() {
     );
   }
 
+  // ── Main registration form ──
   return (
     <div className="min-h-screen bg-secondary/30 flex items-center justify-center py-12 px-4 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-96 bg-primary/5 -skew-y-6 transform origin-top-left -z-10" />
-      <div className="absolute inset-0 bg-math-pattern opacity-[0.03] pointer-events-none" />
-      
+
       <FadeIn className="w-full max-w-xl">
         <div className="flex items-center justify-between mb-6">
           <Link href="/select-role" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
@@ -299,158 +189,166 @@ export function Register() {
             <Home className="w-4 h-4" /> Accueil
           </Link>
         </div>
-        
+
         <Card className="shadow-xl overflow-hidden">
           <div className="bg-muted p-2 flex border-b border-border">
-            <button 
+            <button
               className={`flex-1 py-3 text-sm font-bold rounded-lg transition-colors ${role === 'student' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-              onClick={() => setRole("student")}
+              onClick={() => { setRole("student"); reset(); }}
               type="button"
             >
               Je suis un Élève
             </button>
-            <button 
+            <button
               className={`flex-1 py-3 text-sm font-bold rounded-lg transition-colors ${role === 'professor' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-              onClick={() => setRole("professor")}
+              onClick={() => { setRole("professor"); reset(); }}
               type="button"
             >
               Je suis un Professeur
             </button>
           </div>
 
-          <div className="p-8">
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-serif font-bold">Créer votre compte</h1>
-              <p className="text-muted-foreground mt-1">
-                {role === "student" ? "Rejoignez la plateforme et commencez à apprendre" : "Rejoignez notre réseau de professeurs d'excellence"}
-              </p>
+          <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-5">
+            <div className="text-center mb-6">
+              <h1 className="text-2xl font-bold">
+                {role === "student" ? "Créer mon compte élève" : "Devenir professeur sur Étude+"}
+              </h1>
               {role === "professor" && (
-                <div className="mt-3 inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 text-xs font-medium px-3 py-1.5 rounded-full">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  Vérification KBlox requise pour les professeurs
-                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Votre candidature sera examinée par notre équipe sous 24–48h.
+                </p>
               )}
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <Label>Nom complet</Label>
-                  <Input {...register("fullName")} placeholder="Ali Ben Salah" />
-                  {errors.fullName && <p className="text-destructive text-xs mt-1">{errors.fullName.message as string}</p>}
-                </div>
-                <div>
-                  <Label>Email</Label>
-                  <Input type="email" {...register("email")} placeholder="ali@exemple.com" />
-                  {errors.email && <p className="text-destructive text-xs mt-1">{errors.email.message as string}</p>}
-                </div>
+            {/* Common fields */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label>Nom complet</Label>
+                <Input {...register("fullName")} placeholder="Dr. Mohamed Ben Ahmed" className="mt-1.5" />
+                {errors.fullName && <p className="text-xs text-destructive mt-1">{errors.fullName.message}</p>}
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <Label>Mot de passe</Label>
-                  <Input type="password" {...register("password")} placeholder="••••••••" />
-                  {errors.password && <p className="text-destructive text-xs mt-1">{errors.password.message as string}</p>}
-                </div>
-                <div>
-                  <Label>Ville</Label>
-                  <select 
-                    {...register("city")} 
-                    className="flex h-12 w-full rounded-xl border-2 border-border bg-background px-4 py-2 text-sm focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all"
-                  >
-                    {TUNISIA_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                  {errors.city && <p className="text-destructive text-xs mt-1">{errors.city.message as string}</p>}
-                </div>
+              <div className="col-span-2 sm:col-span-1">
+                <Label>Adresse email</Label>
+                <Input {...register("email")} type="email" placeholder="vous@exemple.com" className="mt-1.5" />
+                {errors.email && <p className="text-xs text-destructive mt-1">{errors.email.message}</p>}
               </div>
+              <div className="col-span-2 sm:col-span-1">
+                <Label>Mot de passe</Label>
+                <Input {...register("password")} type="password" placeholder="••••••••" className="mt-1.5" />
+                {errors.password && <p className="text-xs text-destructive mt-1">{errors.password.message}</p>}
+              </div>
+            </div>
 
-              {role === "student" && (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 border-t border-border pt-5">
-                    <div>
-                      <Label>Niveau scolaire</Label>
-                      <select 
-                        {...register("gradeLevel")} 
-                        className="flex h-12 w-full rounded-xl border-2 border-border bg-background px-4 py-2 text-sm focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all"
+            <div>
+              <Label>Ville</Label>
+              <select
+                {...register("city")}
+                className="mt-1.5 flex h-12 w-full rounded-xl border-2 border-border bg-background px-4 py-2 text-sm focus-visible:outline-none focus-visible:border-primary"
+              >
+                {TUNISIA_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+
+            {/* Student-specific */}
+            {role === "student" && (
+              <div>
+                <Label>Niveau scolaire</Label>
+                <select
+                  {...register("gradeLevel")}
+                  className="mt-1.5 flex h-12 w-full rounded-xl border-2 border-border bg-background px-4 py-2 text-sm focus-visible:outline-none focus-visible:border-primary"
+                >
+                  {GRADE_LEVELS.map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+                {(errors as any).gradeLevel && <p className="text-xs text-destructive mt-1">{(errors as any).gradeLevel.message}</p>}
+              </div>
+            )}
+
+            {/* Professor-specific */}
+            {role === "professor" && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Téléphone</Label>
+                    <Input {...register("phone" as any)} placeholder="+216 XX XXX XXX" className="mt-1.5" />
+                  </div>
+                  <div>
+                    <Label>Années d'expérience</Label>
+                    <Input {...register("yearsExperience")} type="number" min={0} max={50} placeholder="5" className="mt-1.5" />
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Matières enseignées</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {SUBJECTS.map(sub => (
+                      <button
+                        key={sub}
+                        type="button"
+                        onClick={() => toggleSubject(sub)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium border-2 transition-all ${selectedSubjects.includes(sub) ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
                       >
-                        {GRADE_LEVELS.map(g => <option key={g} value={g}>{g}</option>)}
-                      </select>
-                      {errors.gradeLevel && <p className="text-destructive text-xs mt-1">{errors.gradeLevel.message as string}</p>}
-                    </div>
-                    <div>
-                      <Label>Lycée / Collège (Optionnel)</Label>
-                      <Input {...register("schoolName")} placeholder="Lycée Pilote..." />
-                    </div>
+                        {sub}
+                      </button>
+                    ))}
                   </div>
-                </>
-              )}
-
-              {role === "professor" && (
-                <div className="space-y-5 border-t border-border pt-5">
-                  <div>
-                    <Label>Biographie & Parcours</Label>
-                    <textarea 
-                      {...register("bio")}
-                      className="flex min-h-[80px] w-full rounded-xl border-2 border-border bg-background px-4 py-2 text-sm focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all resize-none"
-                      placeholder="Décrivez votre parcours, vos diplômes et votre approche pédagogique..."
-                    />
-                    {errors.bio && <p className="text-destructive text-xs mt-1">{errors.bio.message as string}</p>}
-                  </div>
-                  
-                  <div>
-                    <Label>Années d'expérience d'enseignement</Label>
-                    <Input type="number" min="0" {...register("yearsExperience")} />
-                  </div>
-
-                  <div>
-                    <Label className="mb-3">Matières enseignées</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {SUBJECTS.map(sub => (
-                        <button
-                          key={sub}
-                          type="button"
-                          onClick={() => toggleSubject(sub)}
-                          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${selectedSubjects.includes(sub) ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground border-border hover:border-primary/50'}`}
-                        >
-                          {sub}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="mb-3">Niveaux enseignés</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {GRADE_LEVELS.map(grade => (
-                        <button
-                          key={grade}
-                          type="button"
-                          onClick={() => toggleGrade(grade)}
-                          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${selectedGrades.includes(grade) ? 'bg-accent text-accent-foreground border-accent' : 'bg-background text-muted-foreground border-border hover:border-accent/50'}`}
-                        >
-                          {grade}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  {selectedSubjects.length === 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">Sélectionnez au moins une matière</p>
+                  )}
                 </div>
-              )}
-              
-              <Button type="submit" className="w-full mt-6" size="lg" isLoading={isLoading}>
-                {role === "student" ? "Créer mon compte" : "Continuer vers la vérification KBlox"}
-                {role === "professor" && !isLoading && <ShieldCheck className="w-4 h-4 ml-2" />}
-              </Button>
-            </form>
 
-            <div className="mt-8 pt-6 border-t border-border text-center">
-              <p className="text-muted-foreground text-sm">
-                Vous avez déjà un compte ?{' '}
-                <Link href="/login" className="text-primary font-semibold hover:underline">
-                  Se connecter
-                </Link>
-              </p>
-            </div>
-          </div>
+                <div>
+                  <Label>Niveaux enseignés</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {GRADE_LEVELS.map(grade => (
+                      <button
+                        key={grade}
+                        type="button"
+                        onClick={() => toggleGrade(grade)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium border-2 transition-all ${selectedGrades.includes(grade) ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
+                      >
+                        {grade}
+                      </button>
+                    ))}
+                  </div>
+                  {selectedGrades.length === 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">Sélectionnez au moins un niveau</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label>Biographie professionnelle</Label>
+                  <textarea
+                    {...register("bio")}
+                    placeholder="Décrivez votre parcours, vos méthodes pédagogiques et vos spécialités..."
+                    className="mt-1.5 flex min-h-[100px] w-full rounded-xl border-2 border-border bg-background px-4 py-3 text-sm focus-visible:outline-none focus-visible:border-primary resize-none"
+                  />
+                  {(errors as any).bio && <p className="text-xs text-destructive mt-1">{(errors as any).bio.message}</p>}
+                </div>
+
+                <div>
+                  <Label>Diplômes et qualifications</Label>
+                  <Input {...register("qualifications" as any)} placeholder="ex: Licence en Mathématiques, CAPES..." className="mt-1.5" />
+                </div>
+              </>
+            )}
+
+            <Button type="submit" className="w-full mt-2" size="lg" disabled={isLoading}>
+              {isLoading ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Création du compte...</>
+              ) : role === "professor" ? (
+                "Soumettre ma candidature"
+              ) : (
+                "Créer mon compte élève"
+              )}
+            </Button>
+
+            <p className="text-center text-sm text-muted-foreground">
+              Déjà inscrit ?{" "}
+              <Link href="/login" className="text-primary font-medium hover:underline">
+                Se connecter
+              </Link>
+            </p>
+          </form>
         </Card>
       </FadeIn>
     </div>
