@@ -1,9 +1,28 @@
 import { Router } from "express";
-import { db, transactionsTable, classesTable, usersTable } from "@workspace/db";
+import { db, transactionsTable, classesTable, usersTable, professorsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 
 const router = Router();
+
+router.get("/my-earnings", requireAuth, async (req, res) => {
+  const user = (req as any).user;
+  const [prof] = await db.select().from(professorsTable).where(eq(professorsTable.userId, user.id));
+  if (!prof) { res.status(403).json({ error: "Not a professor" }); return; }
+
+  const classes = await db.select().from(classesTable).where(eq(classesTable.professorId, prof.id));
+  const classIds = classes.map(c => c.id);
+  const all = await db.select().from(transactionsTable);
+  const profTxns = all.filter(t => classIds.includes(t.classId));
+
+  const enriched = await Promise.all(profTxns.map(async (t) => {
+    const [cls] = await db.select().from(classesTable).where(eq(classesTable.id, t.classId));
+    const [student] = await db.select().from(usersTable).where(eq(usersTable.id, t.studentId));
+    return { ...t, class: cls || null, student: student ? { id: student.id, fullName: student.fullName } : null };
+  }));
+
+  res.json(enriched);
+});
 
 router.get("/my", requireAuth, async (req, res) => {
   const user = (req as any).user;

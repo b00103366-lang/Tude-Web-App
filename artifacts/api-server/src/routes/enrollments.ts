@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, enrollmentsTable, classesTable, transactionsTable } from "@workspace/db";
+import { db, enrollmentsTable, classesTable, transactionsTable, liveSessionsTable, professorsTable, usersTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 
@@ -11,7 +11,25 @@ router.get("/my", requireAuth, async (req, res) => {
 
   const enriched = await Promise.all(enrollments.map(async (e) => {
     const [cls] = await db.select().from(classesTable).where(eq(classesTable.id, e.classId));
-    return { ...e, class: cls || null };
+    if (!cls) return { ...e, class: null };
+
+    const profRows = await db.select({ prof: professorsTable, user: usersTable })
+      .from(professorsTable).innerJoin(usersTable, eq(professorsTable.userId, usersTable.id))
+      .where(eq(professorsTable.id, cls.professorId));
+    const prof = profRows[0];
+
+    const sessions = await db.select().from(liveSessionsTable).where(eq(liveSessionsTable.classId, cls.id));
+    const nextSession = sessions.filter(s => s.status === "scheduled" || s.status === "live")
+      .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())[0] || null;
+
+    return {
+      ...e,
+      class: {
+        ...cls,
+        professor: prof ? { id: prof.prof.id, fullName: prof.user.fullName, city: prof.user.city } : null,
+        nextSession,
+      },
+    };
   }));
 
   res.json(enriched);

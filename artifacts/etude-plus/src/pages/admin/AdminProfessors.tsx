@@ -32,7 +32,8 @@ export function AdminProfessors() {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [selectedProf, setSelectedProf] = useState<any>(null);
 
-  const { data: professors = [], isLoading } = useListProfessors() as any;
+  const { data: professorsData, isLoading } = useListProfessors() as any;
+  const professors: any[] = professorsData?.professors ?? [];
   const approveMutation = useApproveProfessor();
   const rejectMutation = useRejectProfessor();
 

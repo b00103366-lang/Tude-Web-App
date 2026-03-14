@@ -53,9 +53,7 @@ export function Classroom() {
 
   useEffect(() => {
     if (!sessionId) { setError("Session invalide."); setLoading(false); return; }
-    const token = (() => {
-      try { return JSON.parse(localStorage.getItem("etude_demo_user") || "{}").token; } catch { return null; }
-    })();
+    const token = localStorage.getItem("etude_auth_token");
     fetch(`/api/classes/sessions/${sessionId}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })

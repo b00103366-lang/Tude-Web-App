@@ -2,18 +2,24 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Button, Badge } from "@/components/ui/Premium";
 import { Plus, Users, Settings, BookOpen } from "lucide-react";
 import { Link } from "wouter";
-import { useAuth } from "@/hooks/use-auth";
-import { useListClasses } from "@workspace/api-client-react";
+import { useEffect, useState } from "react";
+
+function useMyClasses() {
+  const [classes, setClasses] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+    const token = localStorage.getItem("etude_auth_token");
+    if (!token) { setIsLoading(false); return; }
+    fetch("/api/classes/my-classes", { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => { setClasses(d.classes ?? []); setIsLoading(false); })
+      .catch(() => setIsLoading(false));
+  }, []);
+  return { classes, isLoading };
+}
 
 export function ProfessorClasses() {
-  const { user } = useAuth();
-  const professorId = user?.professorProfile?.id;
-  const { data, isLoading } = useListClasses(
-    { professorId: professorId ? String(professorId) : undefined },
-    { query: { enabled: !!professorId } }
-  );
-
-  const classes = data?.classes ?? [];
+  const { classes, isLoading } = useMyClasses();
 
   return (
     <DashboardLayout>

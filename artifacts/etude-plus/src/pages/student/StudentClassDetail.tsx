@@ -2,24 +2,36 @@ import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Button, Badge } from "@/components/ui/Premium";
-import { PlayCircle, FileText, FileQuestion, Calendar, Download, Clock, Video, CheckCircle2, BookOpen, Upload, AlertCircle } from "lucide-react";
+import { PlayCircle, FileText, FileQuestion, Calendar, Download, Clock, Video, CheckCircle2, BookOpen, Upload, AlertCircle, ChevronLeft, ClipboardList } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { useGetClass } from "@workspace/api-client-react";
+import {
+  useGetClass, useListClassMaterials, useListClassQuizzes,
+  useListClassTests, useListClassAssignments,
+} from "@workspace/api-client-react";
 
 export function StudentClassDetail() {
   const [, params] = useRoute("/student/classes/:id");
-  const [activeTab, setActiveTab] = useState("live");
+  const [activeTab, setActiveTab] = useState("overview");
   const classId = params?.id ? parseInt(params.id) : 0;
 
   const { data: cls, isLoading } = useGetClass(classId, { query: { enabled: !!classId } });
+  const { data: materials = [] } = useListClassMaterials(classId, { query: { enabled: !!classId } }) as any;
+  const { data: quizzes = [] } = useListClassQuizzes(classId, { query: { enabled: !!classId } }) as any;
+  const { data: tests = [] } = useListClassTests(classId, { query: { enabled: !!classId } }) as any;
+  const { data: assignments = [] } = useListClassAssignments(classId, { query: { enabled: !!classId } }) as any;
+
+  const publishedQuizzes = quizzes.filter((q: any) => q.isPublished);
+  const publishedTests = tests.filter((t: any) => t.isPublished);
+  const publishedAssignments = assignments.filter((a: any) => a.isPublished);
 
   const tabs = [
-    { id: "live", label: "Session Live" },
     { id: "overview", label: "Aperçu" },
-    { id: "materials", label: "Supports" },
-    { id: "quizzes", label: "Quiz & Tests" },
-    { id: "assignments", label: "Devoirs" },
+    { id: "live", label: "Session Live" },
+    { id: "materials", label: `Supports${materials.length > 0 ? ` (${materials.length})` : ""}` },
+    { id: "quizzes", label: `Quiz${publishedQuizzes.length > 0 ? ` (${publishedQuizzes.length})` : ""}` },
+    { id: "tests", label: `Contrôles${publishedTests.length > 0 ? ` (${publishedTests.length})` : ""}` },
+    { id: "assignments", label: `Devoirs${publishedAssignments.length > 0 ? ` (${publishedAssignments.length})` : ""}` },
   ];
 
   if (isLoading) {
@@ -41,9 +53,7 @@ export function StudentClassDetail() {
           <AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Cours introuvable</h2>
           <p className="text-muted-foreground mb-6">Ce cours n'existe pas ou vous n'y avez pas accès.</p>
-          <Link href="/student/classes">
-            <Button>Retour à mes cours</Button>
-          </Link>
+          <Link href="/student/classes"><Button>← Retour à mes cours</Button></Link>
         </div>
       </DashboardLayout>
     );
@@ -52,8 +62,8 @@ export function StudentClassDetail() {
   return (
     <DashboardLayout>
       <FadeIn>
-        <Link href="/student/classes" className="text-sm font-medium text-muted-foreground hover:text-primary mb-6 inline-block transition-colors">
-          ← Retour à mes cours
+        <Link href="/student/classes" className="text-sm font-medium text-muted-foreground hover:text-primary mb-6 inline-flex items-center gap-1 transition-colors">
+          <ChevronLeft className="w-4 h-4" /> Retour à mes cours
         </Link>
 
         <PageHeader
@@ -66,7 +76,7 @@ export function StudentClassDetail() {
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
-              className={`px-6 py-3 font-semibold text-sm border-b-2 whitespace-nowrap transition-colors ${activeTab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"}`}
+              className={`px-5 py-3 font-semibold text-sm border-b-2 whitespace-nowrap transition-colors ${activeTab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"}`}
             >
               {t.label}
             </button>
@@ -74,70 +84,12 @@ export function StudentClassDetail() {
         </div>
 
         <div className="min-h-[400px]">
-          {/* LIVE SESSION TAB */}
-          {activeTab === "live" && (
-            <FadeIn>
-              {cls.nextSession ? (
-                <div className="grid lg:grid-cols-3 gap-8">
-                  <div className="lg:col-span-2">
-                    <Card className="p-8 border-primary/30 shadow-xl shadow-primary/5 relative overflow-hidden bg-gradient-to-br from-card to-secondary/50">
-                      <Badge className="bg-red-500/10 text-red-600 border-red-200 mb-6">
-                        <Video className="w-3 h-3 mr-1 inline" /> EN DIRECT BIENTÔT
-                      </Badge>
-                      <h2 className="text-3xl font-serif font-bold mb-4">{cls.nextSession.title}</h2>
-                      {cls.nextSession.description && (
-                        <p className="text-lg text-muted-foreground mb-8 max-w-2xl">{cls.nextSession.description}</p>
-                      )}
-                      <div className="flex flex-wrap gap-6 mb-8 text-sm font-medium">
-                        <div className="flex items-center gap-2 bg-background py-2 px-4 rounded-xl border border-border">
-                          <Calendar className="w-5 h-5 text-primary" />
-                          {format(new Date(cls.nextSession.scheduledAt), "EEEE d MMMM", { locale: fr })}
-                        </div>
-                        <div className="flex items-center gap-2 bg-background py-2 px-4 rounded-xl border border-border">
-                          <Clock className="w-5 h-5 text-primary" />
-                          {format(new Date(cls.nextSession.scheduledAt), "HH:mm")} ({cls.nextSession.durationHours}h)
-                        </div>
-                      </div>
-                      <Link href={`/classroom/${cls.nextSession.id}`}>
-                        <Button size="lg" className="w-full sm:w-auto text-lg px-12 shadow-lg shadow-primary/20">
-                          Rejoindre la salle virtuelle
-                        </Button>
-                      </Link>
-                    </Card>
-                  </div>
-                  <div>
-                    <Card className="p-6 h-full">
-                      <h3 className="font-bold text-lg mb-4">Informations</h3>
-                      <ul className="space-y-3 text-sm text-muted-foreground">
-                        <li className="flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-green-500" />
-                          Prix: {cls.nextSession.price} TND
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-green-500" />
-                          Durée: {cls.nextSession.durationHours}h
-                        </li>
-                      </ul>
-                    </Card>
-                  </div>
-                </div>
-              ) : (
-                <Card className="p-12 text-center">
-                  <div className="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Calendar className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-2xl font-bold mb-2">Aucune session prévue</h3>
-                  <p className="text-muted-foreground">Le professeur n'a pas encore programmé la prochaine session live.</p>
-                </Card>
-              )}
-            </FadeIn>
-          )}
 
           {/* OVERVIEW TAB */}
           {activeTab === "overview" && (
             <FadeIn>
               <div className="grid md:grid-cols-3 gap-8">
-                <div className="md:col-span-2">
+                <div className="md:col-span-2 space-y-6">
                   <Card className="p-6">
                     <h3 className="font-bold text-lg mb-4">À propos de ce cours</h3>
                     <p className="text-muted-foreground leading-relaxed">{cls.description}</p>
@@ -149,13 +101,27 @@ export function StudentClassDetail() {
                         ["Durée", `${cls.durationHours}h par session`],
                         ["Prix", `${cls.price} TND`],
                       ].map(([k, v]) => (
-                        <div key={k} className="flex justify-between">
+                        <div key={k} className="flex justify-between py-1.5 border-b border-border/40 last:border-0">
                           <dt className="text-muted-foreground">{k}</dt>
                           <dd className="font-semibold">{v}</dd>
                         </div>
                       ))}
                     </dl>
                   </Card>
+                  <div className="grid sm:grid-cols-3 gap-4">
+                    {[
+                      { label: "Supports", count: materials.length, icon: FileText, tab: "materials" },
+                      { label: "Quiz", count: publishedQuizzes.length, icon: FileQuestion, tab: "quizzes" },
+                      { label: "Contrôles", count: publishedTests.length, icon: ClipboardList, tab: "tests" },
+                    ].map(item => (
+                      <button key={item.tab} onClick={() => setActiveTab(item.tab)}
+                        className="p-5 border-2 border-border rounded-2xl hover:border-primary/50 text-left transition-colors">
+                        <item.icon className="w-6 h-6 text-primary mb-2" />
+                        <p className="text-2xl font-bold">{item.count}</p>
+                        <p className="text-sm text-muted-foreground">{item.label}</p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <Card className="p-6">
@@ -166,25 +132,85 @@ export function StudentClassDetail() {
                       </div>
                       <div>
                         <p className="font-bold">{cls.professor?.fullName}</p>
-                        {cls.professor?.rating && (
-                          <p className="text-sm text-muted-foreground">{cls.professor.rating}/5</p>
-                        )}
+                        <p className="text-sm text-muted-foreground">{cls.professor?.city}</p>
                       </div>
                     </div>
-                    <Button variant="outline" className="w-full">Envoyer un message</Button>
+                    {cls.nextSession && (
+                      <div className="bg-primary/5 rounded-xl p-4 mt-4">
+                        <p className="text-xs font-bold uppercase text-muted-foreground mb-1">Prochaine session</p>
+                        <p className="font-semibold text-sm">{cls.nextSession.title}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {format(new Date(cls.nextSession.scheduledAt), "EEEE d MMMM à HH:mm", { locale: fr })}
+                        </p>
+                        <button onClick={() => setActiveTab("live")} className="mt-3 text-xs text-primary font-semibold hover:underline">
+                          Voir la session →
+                        </button>
+                      </div>
+                    )}
                   </Card>
                 </div>
               </div>
             </FadeIn>
           )}
 
+          {/* LIVE SESSION TAB */}
+          {activeTab === "live" && (
+            <FadeIn>
+              {cls.nextSession ? (
+                <div className="grid lg:grid-cols-3 gap-8">
+                  <div className="lg:col-span-2">
+                    <Card className="p-8 border-primary/30 shadow-xl shadow-primary/5">
+                      <Badge className="bg-red-500/10 text-red-600 border-red-200 mb-6">
+                        <Video className="w-3 h-3 mr-1 inline" /> EN DIRECT BIENTÔT
+                      </Badge>
+                      <h2 className="text-3xl font-bold mb-4">{cls.nextSession.title}</h2>
+                      {cls.nextSession.description && (
+                        <p className="text-lg text-muted-foreground mb-8">{cls.nextSession.description}</p>
+                      )}
+                      <div className="flex flex-wrap gap-4 mb-8 text-sm font-medium">
+                        <div className="flex items-center gap-2 bg-muted py-2 px-4 rounded-xl">
+                          <Calendar className="w-5 h-5 text-primary" />
+                          {format(new Date(cls.nextSession.scheduledAt), "EEEE d MMMM", { locale: fr })}
+                        </div>
+                        <div className="flex items-center gap-2 bg-muted py-2 px-4 rounded-xl">
+                          <Clock className="w-5 h-5 text-primary" />
+                          {format(new Date(cls.nextSession.scheduledAt), "HH:mm")} ({cls.nextSession.durationHours}h)
+                        </div>
+                      </div>
+                      <Link href={`/classroom/${cls.nextSession.id}`}>
+                        <Button size="lg" className="w-full sm:w-auto text-lg px-12">
+                          <PlayCircle className="w-5 h-5 mr-2" /> Rejoindre la salle virtuelle
+                        </Button>
+                      </Link>
+                    </Card>
+                  </div>
+                  <div>
+                    <Card className="p-6">
+                      <h3 className="font-bold text-lg mb-4">Détails</h3>
+                      <ul className="space-y-3 text-sm text-muted-foreground">
+                        <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" />Prix: {cls.nextSession.price} TND</li>
+                        <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" />Durée: {cls.nextSession.durationHours}h</li>
+                      </ul>
+                    </Card>
+                  </div>
+                </div>
+              ) : (
+                <Card className="p-12 text-center">
+                  <Calendar className="w-16 h-16 text-muted-foreground opacity-30 mx-auto mb-4" />
+                  <h3 className="text-2xl font-bold mb-2">Aucune session prévue</h3>
+                  <p className="text-muted-foreground">Le professeur n'a pas encore programmé la prochaine session live.</p>
+                </Card>
+              )}
+            </FadeIn>
+          )}
+
           {/* MATERIALS TAB */}
           {activeTab === "materials" && (
             <FadeIn>
-              {(cls as any).materials?.length > 0 ? (
+              {materials.length > 0 ? (
                 <Card className="overflow-hidden">
                   <div className="divide-y divide-border">
-                    {(cls as any).materials.map((m: any) => (
+                    {materials.map((m: any) => (
                       <div key={m.id} className="p-4 sm:p-6 flex items-center justify-between hover:bg-muted/50 transition-colors">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -192,16 +218,13 @@ export function StudentClassDetail() {
                           </div>
                           <div>
                             <h4 className="font-bold">{m.title}</h4>
+                            {m.description && <p className="text-sm text-muted-foreground">{m.description}</p>}
                             {m.createdAt && (
-                              <p className="text-sm text-muted-foreground">
-                                Ajouté le {format(new Date(m.createdAt), "dd/MM/yyyy")}
-                              </p>
+                              <p className="text-xs text-muted-foreground">Ajouté le {format(new Date(m.createdAt), "dd/MM/yyyy")}</p>
                             )}
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm">
-                          <Download className="w-5 h-5 text-primary" />
-                        </Button>
+                        <Button variant="ghost" size="sm"><Download className="w-5 h-5 text-primary" /></Button>
                       </div>
                     ))}
                   </div>
@@ -219,22 +242,21 @@ export function StudentClassDetail() {
           {/* QUIZZES TAB */}
           {activeTab === "quizzes" && (
             <FadeIn>
-              {(cls as any).quizzes?.length > 0 ? (
+              {publishedQuizzes.length > 0 ? (
                 <div className="grid sm:grid-cols-2 gap-6">
-                  {(cls as any).quizzes.map((q: any) => (
-                    <Card key={q.id} className="p-6 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-2 h-full bg-primary" />
+                  {publishedQuizzes.map((q: any) => (
+                    <Card key={q.id} className="p-6">
                       <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
                         <FileQuestion className="w-6 h-6 text-primary" />
                       </div>
                       <h4 className="font-bold text-lg mb-2">{q.title}</h4>
+                      <p className="text-sm text-muted-foreground mb-1">{q.questions?.length ?? 0} questions</p>
                       {q.dueDate && (
                         <p className="text-sm text-muted-foreground mb-4 flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          Avant le {format(new Date(q.dueDate), "dd/MM")}
+                          <Calendar className="w-4 h-4" /> Avant le {format(new Date(q.dueDate), "dd/MM/yyyy")}
                         </p>
                       )}
-                      <Button className="w-full">Commencer</Button>
+                      <Button className="w-full">Commencer le quiz</Button>
                     </Card>
                   ))}
                 </div>
@@ -248,12 +270,49 @@ export function StudentClassDetail() {
             </FadeIn>
           )}
 
+          {/* TESTS TAB */}
+          {activeTab === "tests" && (
+            <FadeIn>
+              {publishedTests.length > 0 ? (
+                <div className="space-y-4">
+                  {publishedTests.map((t: any) => (
+                    <Card key={t.id} className="p-6">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                            <ClipboardList className="w-6 h-6 text-orange-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-lg">{t.title}</h4>
+                            <p className="text-sm text-muted-foreground">{t.questions?.length ?? 0} questions</p>
+                            {t.dueDate && (
+                              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                                <Calendar className="w-4 h-4" /> Avant le {format(new Date(t.dueDate), "dd MMMM yyyy", { locale: fr })}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <Button>Commencer</Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card className="p-12 text-center">
+                  <ClipboardList className="w-12 h-12 text-muted-foreground opacity-40 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold mb-2">Aucun contrôle disponible</h3>
+                  <p className="text-muted-foreground">Le professeur n'a pas encore publié de contrôles.</p>
+                </Card>
+              )}
+            </FadeIn>
+          )}
+
           {/* ASSIGNMENTS TAB */}
           {activeTab === "assignments" && (
             <FadeIn>
-              {(cls as any).assignments?.length > 0 ? (
+              {publishedAssignments.length > 0 ? (
                 <div className="space-y-4">
-                  {(cls as any).assignments.map((a: any) => (
+                  {publishedAssignments.map((a: any) => (
                     <Card key={a.id} className="p-6">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-start gap-4">
@@ -262,8 +321,8 @@ export function StudentClassDetail() {
                           </div>
                           <div>
                             <h4 className="font-bold text-lg mb-1">{a.title}</h4>
-                            {a.description && (
-                              <p className="text-sm text-muted-foreground mb-2">{a.description}</p>
+                            {a.instructions && (
+                              <p className="text-sm text-muted-foreground mb-2">{a.instructions}</p>
                             )}
                             {a.dueDate && (
                               <p className="text-sm text-muted-foreground flex items-center gap-1">

@@ -27,8 +27,18 @@ router.get("/", async (req, res) => {
     professors: paginated.map(p => ({
       ...p.prof,
       fullName: p.user.fullName,
+      email: p.user.email,
+      phone: p.user.phone,
       profilePhoto: p.user.profilePhoto,
       city: p.user.city,
+      user: {
+        id: p.user.id,
+        fullName: p.user.fullName,
+        email: p.user.email,
+        phone: p.user.phone,
+        city: p.user.city,
+        profilePhoto: p.user.profilePhoto,
+      },
     })),
     total: filtered.length,
     page: pageNum,

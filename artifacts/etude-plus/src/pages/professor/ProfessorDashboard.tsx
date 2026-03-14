@@ -9,8 +9,9 @@ import { Link } from "wouter";
 
 export function ProfessorDashboard() {
   const { user } = useAuth();
-  const { data: stats, isLoading } = useGetProfessorStats(user?.id || 0, {
-    query: { enabled: !!user?.id }
+  const profId = (user as any)?.professorProfile?.id;
+  const { data: stats, isLoading } = useGetProfessorStats(profId || 0, {
+    query: { enabled: !!profId }
   });
 
   const totalEarnings = stats?.totalEarnings ?? 0;

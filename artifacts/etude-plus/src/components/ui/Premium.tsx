@@ -57,15 +57,16 @@ export const Label = ({ className, children, ...props }: React.LabelHTMLAttribut
   </label>
 );
 
-export const Badge = ({ className, variant = 'default', children }: { className?: string, variant?: 'default' | 'secondary' | 'success' | 'outline', children: React.ReactNode }) => {
+export const Badge = ({ className, variant = 'default', children }: { className?: string, variant?: 'default' | 'secondary' | 'success' | 'outline' | 'destructive', children: React.ReactNode }) => {
   const variants = {
     default: "bg-primary/10 text-primary border-primary/20",
     secondary: "bg-secondary text-secondary-foreground border-border",
     success: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400",
-    outline: "border-border text-foreground"
+    outline: "border-border text-foreground",
+    destructive: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400"
   };
   return (
-    <span className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors", variants[variant], className)}>
+    <span className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors", variants[variant as keyof typeof variants] ?? variants.default, className)}>
       {children}
     </span>
   );

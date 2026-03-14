@@ -59,6 +59,163 @@ function EmptyState({ icon: Icon, title, description, action }: { icon: any; tit
   );
 }
 
+const Q_TYPES = [
+  { value: "multiple_choice", label: "QCM", desc: "Choix multiple" },
+  { value: "true_false", label: "Vrai/Faux", desc: "2 options" },
+  { value: "short_answer", label: "Courte", desc: "Réponse courte" },
+  { value: "long_answer", label: "Longue", desc: "Réponse développée" },
+  { value: "numeric", label: "Numérique", desc: "Valeur numérique" },
+] as const;
+
+function QuizTestBuilder({ mode, form, setForm, blankQ, isPending, onCancel, onSubmit }: {
+  mode: "quiz" | "test";
+  form: any; setForm: any; blankQ: () => any;
+  isPending: boolean; onCancel: () => void; onSubmit: (publish: boolean) => void;
+}) {
+  const totalPoints = form.questions.reduce((sum: number, q: any) => sum + (Number(q.points) || 0), 0);
+
+  function setQ(idx: number, patch: any) {
+    setForm((f: any) => ({
+      ...f,
+      questions: f.questions.map((q: any, i: number) => i === idx ? { ...q, ...patch } : q),
+    }));
+  }
+  function addQ() {
+    setForm((f: any) => ({ ...f, questions: [...f.questions, blankQ()] }));
+  }
+  function removeQ(idx: number) {
+    setForm((f: any) => ({ ...f, questions: f.questions.filter((_: any, i: number) => i !== idx) }));
+  }
+  function setOption(qi: number, oi: number, val: string) {
+    setForm((f: any) => ({
+      ...f,
+      questions: f.questions.map((q: any, i: number) =>
+        i === qi ? { ...q, options: q.options.map((o: string, j: number) => j === oi ? val : o) } : q
+      ),
+    }));
+  }
+  function addOption(qi: number) {
+    setForm((f: any) => ({
+      ...f,
+      questions: f.questions.map((q: any, i: number) =>
+        i === qi ? { ...q, options: [...q.options, ""] } : q
+      ),
+    }));
+  }
+  function removeOption(qi: number, oi: number) {
+    setForm((f: any) => ({
+      ...f,
+      questions: f.questions.map((q: any, i: number) =>
+        i === qi ? { ...q, options: q.options.filter((_: any, j: number) => j !== oi), correct: Math.max(0, q.correct - (oi < q.correct ? 1 : 0)) } : q
+      ),
+    }));
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div className="sm:col-span-2">
+          <Label>Titre {mode === "quiz" ? "du quiz" : "du contrôle"}</Label>
+          <Input placeholder={mode === "quiz" ? "ex: Quiz – Dérivées" : "ex: Contrôle – Algèbre"} value={form.title} onChange={(e: any) => setForm((f: any) => ({ ...f, title: e.target.value }))} />
+        </div>
+        <div>
+          <Label>Date limite (optionnel)</Label>
+          <Input type="date" value={form.dueDate} onChange={(e: any) => setForm((f: any) => ({ ...f, dueDate: e.target.value }))} />
+        </div>
+        <div className="flex items-end">
+          <div className="bg-muted rounded-xl px-4 py-2 text-sm font-semibold w-full text-center">
+            {form.questions.length} question{form.questions.length !== 1 ? "s" : ""} • {totalPoints} pts
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-border pt-5">
+        <h4 className="font-bold mb-4 text-sm uppercase tracking-wider text-muted-foreground">Questions</h4>
+        <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-1">
+          {form.questions.map((q: any, qi: number) => (
+            <div key={qi} className="border-2 border-border rounded-xl p-4 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <span className="w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">{qi + 1}</span>
+                <Input className="flex-1" placeholder="Énoncé de la question..." value={q.text} onChange={(e: any) => setQ(qi, { text: e.target.value })} />
+                {form.questions.length > 1 && (
+                  <button onClick={() => removeQ(qi)} className="w-7 h-7 rounded-lg hover:bg-destructive/10 flex items-center justify-center shrink-0 text-muted-foreground hover:text-destructive transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-2 pl-10">
+                {Q_TYPES.map(t => (
+                  <button key={t.value} onClick={() => setQ(qi, { type: t.value, options: t.value === "true_false" ? ["Vrai", "Faux"] : t.value === "multiple_choice" ? q.options : [], correct: 0 })}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-colors ${q.type === t.value ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-primary/50"}`}>
+                    {t.label}
+                  </button>
+                ))}
+                <div className="ml-auto flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Points:</span>
+                  <Input type="number" min="1" className="w-16 text-center text-sm h-8" value={q.points} onChange={(e: any) => setQ(qi, { points: parseInt(e.target.value) || 1 })} />
+                </div>
+              </div>
+
+              {(q.type === "multiple_choice") && (
+                <div className="pl-10 space-y-2">
+                  {q.options.map((opt: string, oi: number) => (
+                    <div key={oi} className="flex items-center gap-2">
+                      <button onClick={() => setQ(qi, { correct: oi })}
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${q.correct === oi ? "border-green-500 bg-green-500" : "border-border hover:border-green-400"}`}>
+                        {q.correct === oi && <Check className="w-3 h-3 text-white" />}
+                      </button>
+                      <Input placeholder={`Option ${oi + 1}${q.correct === oi ? " (correcte)" : ""}`} value={opt} onChange={(e: any) => setOption(qi, oi, e.target.value)} className="flex-1 text-sm" />
+                      {q.options.length > 2 && (
+                        <button onClick={() => removeOption(qi, oi)} className="text-muted-foreground hover:text-destructive"><X className="w-4 h-4" /></button>
+                      )}
+                    </div>
+                  ))}
+                  {q.options.length < 6 && (
+                    <button onClick={() => addOption(qi)} className="text-xs text-primary hover:underline flex items-center gap-1">
+                      <Plus className="w-3 h-3" /> Ajouter une option
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {q.type === "true_false" && (
+                <div className="pl-10 flex gap-3">
+                  {["Vrai", "Faux"].map((opt, oi) => (
+                    <button key={oi} onClick={() => setQ(qi, { correct: oi })}
+                      className={`flex-1 py-2 rounded-xl border-2 text-sm font-semibold transition-colors ${q.correct === oi ? (oi === 0 ? "border-green-500 bg-green-50 text-green-700" : "border-red-400 bg-red-50 text-red-700") : "border-border hover:border-primary/50"}`}>
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {(q.type === "short_answer" || q.type === "long_answer" || q.type === "numeric") && (
+                <div className="pl-10">
+                  <Input placeholder={q.type === "numeric" ? "Réponse numérique attendue (optionnel)" : "Corrigé / réponse modèle (optionnel)"} value={q.modelAnswer} onChange={(e: any) => setQ(qi, { modelAnswer: e.target.value })} className="text-sm" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <button onClick={addQ} className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">
+          <Plus className="w-4 h-4" /> Ajouter une question
+        </button>
+      </div>
+
+      <div className="flex gap-3 pt-2 border-t border-border">
+        <Button variant="outline" className="flex-1" onClick={onCancel}>Annuler</Button>
+        <Button variant="outline" className="flex-1" disabled={isPending} onClick={() => onSubmit(false)}>
+          <Save className="w-4 h-4 mr-2" /> Brouillon
+        </Button>
+        <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white" disabled={isPending} onClick={() => onSubmit(true)}>
+          {isPending ? "..." : <><Check className="w-4 h-4 mr-2" />Publier</>}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function ProfessorClassManagement() {
   const [, params] = useRoute("/professor/classes/:id");
   const classId = params?.id ? parseInt(params.id) : 0;
@@ -87,9 +244,13 @@ export function ProfessorClassManagement() {
 
   const [sessionForm, setSessionForm] = useState({ title: "", description: "", price: "", durationHours: "2", scheduledAt: "" });
   const [matForm, setMatForm] = useState({ title: "", description: "", type: "pdf" });
-  const [quizForm, setQuizForm] = useState({ title: "", dueDate: "" });
-  const [testForm, setTestForm] = useState({ title: "", dueDate: "" });
   const [assignForm, setAssignForm] = useState({ title: "", instructions: "", dueDate: "" });
+
+  type QType = "multiple_choice" | "short_answer" | "long_answer" | "numeric" | "true_false";
+  type Question = { type: QType; text: string; points: number; options: string[]; correct: number; modelAnswer: string };
+  const blankQ = (): Question => ({ type: "multiple_choice", text: "", points: 2, options: ["", "", "", ""], correct: 0, modelAnswer: "" });
+  const [quizForm, setQuizForm] = useState({ title: "", dueDate: "", questions: [blankQ()] as Question[] });
+  const [testForm, setTestForm] = useState({ title: "", dueDate: "", questions: [blankQ()] as Question[] });
 
   const invalidate = (key: string) => qc.invalidateQueries({ queryKey: [key] });
 
@@ -545,57 +706,52 @@ export function ProfessorClassManagement() {
           </div>
         </Modal>
 
+        {/* ─── QUIZ BUILDER MODAL ─── */}
         <Modal open={showCreateQuiz} onClose={() => setShowCreateQuiz(false)} title="Créer un quiz">
-          <div className="space-y-4">
-            <div><Label>Titre du quiz</Label><Input placeholder="ex: Quiz – Dérivées" value={quizForm.title} onChange={e => setQuizForm(f => ({ ...f, title: e.target.value }))} /></div>
-            <div><Label>Date limite (optionnel)</Label><Input type="date" value={quizForm.dueDate} onChange={e => setQuizForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
-            <div className="bg-muted rounded-xl p-4 text-sm text-muted-foreground">Les questions peuvent être ajoutées après la création.</div>
-            <div className="flex gap-3 pt-2">
-              <Button variant="outline" className="flex-1" onClick={() => setShowCreateQuiz(false)}>Annuler</Button>
-              <Button className="flex-1" disabled={createQuiz.isPending}
-                onClick={() => {
-                  if (!quizForm.title) return;
-                  createQuiz.mutate({
-                    id: classId,
-                    data: { title: quizForm.title, dueDate: quizForm.dueDate || null, questions: [] }
-                  }, {
-                    onSuccess: () => {
-                      invalidate(`/api/classes/${classId}/quizzes`);
-                      setShowCreateQuiz(false);
-                      setQuizForm({ title: "", dueDate: "" });
-                    }
-                  });
-                }}>
-                {createQuiz.isPending ? "..." : "Créer"}
-              </Button>
-            </div>
-          </div>
+          <QuizTestBuilder
+            mode="quiz"
+            form={quizForm}
+            setForm={setQuizForm as any}
+            blankQ={blankQ}
+            isPending={createQuiz.isPending}
+            onCancel={() => setShowCreateQuiz(false)}
+            onSubmit={(publish) => {
+              if (!quizForm.title) return;
+              const questions = quizForm.questions.filter(q => q.text.trim()).map(q =>
+                q.type === "true_false"
+                  ? { type: "multiple_choice" as const, text: q.text, options: ["Vrai", "Faux"], correctAnswer: String(q.correct), points: q.points }
+                  : { type: q.type as any, text: q.text, options: q.options.filter(Boolean), correctAnswer: q.type === "multiple_choice" ? String(q.correct) : (q.modelAnswer || null), points: q.points }
+              );
+              createQuiz.mutate(
+                { id: classId, data: { title: quizForm.title, dueDate: quizForm.dueDate || null, questions, isPublished: publish } as any },
+                { onSuccess: () => { invalidate(`/api/classes/${classId}/quizzes`); setShowCreateQuiz(false); setQuizForm({ title: "", dueDate: "", questions: [blankQ()] }); } }
+              );
+            }}
+          />
         </Modal>
 
+        {/* ─── TEST BUILDER MODAL ─── */}
         <Modal open={showCreateTest} onClose={() => setShowCreateTest(false)} title="Créer un contrôle">
-          <div className="space-y-4">
-            <div><Label>Titre du contrôle</Label><Input placeholder="ex: Contrôle – Algèbre" value={testForm.title} onChange={e => setTestForm(f => ({ ...f, title: e.target.value }))} /></div>
-            <div><Label>Date limite (optionnel)</Label><Input type="date" value={testForm.dueDate} onChange={e => setTestForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
-            <div className="flex gap-3 pt-2">
-              <Button variant="outline" className="flex-1" onClick={() => setShowCreateTest(false)}>Annuler</Button>
-              <Button className="flex-1" disabled={createTest.isPending}
-                onClick={() => {
-                  if (!testForm.title) return;
-                  createTest.mutate({
-                    id: classId,
-                    data: { title: testForm.title, dueDate: testForm.dueDate || null, questions: [] }
-                  }, {
-                    onSuccess: () => {
-                      invalidate(`/api/classes/${classId}/tests`);
-                      setShowCreateTest(false);
-                      setTestForm({ title: "", dueDate: "" });
-                    }
-                  });
-                }}>
-                {createTest.isPending ? "..." : "Créer"}
-              </Button>
-            </div>
-          </div>
+          <QuizTestBuilder
+            mode="test"
+            form={testForm}
+            setForm={setTestForm as any}
+            blankQ={blankQ}
+            isPending={createTest.isPending}
+            onCancel={() => setShowCreateTest(false)}
+            onSubmit={(publish) => {
+              if (!testForm.title) return;
+              const questions = testForm.questions.filter(q => q.text.trim()).map(q =>
+                q.type === "true_false"
+                  ? { type: "multiple_choice" as const, text: q.text, options: ["Vrai", "Faux"], correctAnswer: String(q.correct), points: q.points }
+                  : { type: q.type as any, text: q.text, options: q.options.filter(Boolean), correctAnswer: q.type === "multiple_choice" ? String(q.correct) : (q.modelAnswer || null), points: q.points }
+              );
+              createTest.mutate(
+                { id: classId, data: { title: testForm.title, dueDate: testForm.dueDate || null, questions, isPublished: publish } as any },
+                { onSuccess: () => { invalidate(`/api/classes/${classId}/tests`); setShowCreateTest(false); setTestForm({ title: "", dueDate: "", questions: [blankQ()] }); } }
+              );
+            }}
+          />
         </Modal>
 
         <Modal open={showCreateAssignment} onClose={() => setShowCreateAssignment(false)} title="Créer un devoir">

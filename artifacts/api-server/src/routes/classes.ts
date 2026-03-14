@@ -84,6 +84,16 @@ router.post("/", requireAuth, async (req, res) => {
   res.json(enriched);
 });
 
+router.get("/my-classes", requireAuth, async (req, res) => {
+  const user = (req as any).user;
+  const [prof] = await db.select().from(professorsTable).where(eq(professorsTable.userId, user.id));
+  if (!prof) { res.status(403).json({ error: "Not a professor" }); return; }
+
+  const classes = await db.select().from(classesTable).where(eq(classesTable.professorId, prof.id));
+  const enriched = await Promise.all(classes.map(enrichClass));
+  res.json({ classes: enriched, total: enriched.length });
+});
+
 router.get("/:id", async (req, res) => {
   const id = parseInt(req.params.id);
   const [cls] = await db.select().from(classesTable).where(eq(classesTable.id, id));
@@ -249,10 +259,32 @@ router.post("/:id/quizzes", requireAuth, async (req, res) => {
     classId,
     title: req.body.title,
     dueDate: req.body.dueDate ? new Date(req.body.dueDate) : null,
-    isPublished: false,
+    isPublished: req.body.isPublished ?? false,
     questions,
   }).returning();
   res.json(quiz);
+});
+
+router.put("/:classId/quizzes/:quizId", requireAuth, async (req, res) => {
+  const quizId = parseInt(req.params.quizId);
+  const [existing] = await db.select().from(quizzesTable).where(eq(quizzesTable.id, quizId));
+  if (!existing) { res.status(404).json({ error: "Quiz not found" }); return; }
+  const questions = req.body.questions !== undefined
+    ? (req.body.questions || []).map((q: any, i: number) => ({ ...q, id: i + 1 }))
+    : existing.questions;
+  const [updated] = await db.update(quizzesTable).set({
+    title: req.body.title ?? existing.title,
+    dueDate: req.body.dueDate !== undefined ? (req.body.dueDate ? new Date(req.body.dueDate) : null) : existing.dueDate,
+    isPublished: req.body.isPublished ?? existing.isPublished,
+    questions,
+  }).where(eq(quizzesTable.id, quizId)).returning();
+  res.json(updated);
+});
+
+router.delete("/:classId/quizzes/:quizId", requireAuth, async (req, res) => {
+  const quizId = parseInt(req.params.quizId);
+  await db.delete(quizzesTable).where(eq(quizzesTable.id, quizId));
+  res.json({ success: true });
 });
 
 // Tests
@@ -269,10 +301,32 @@ router.post("/:id/tests", requireAuth, async (req, res) => {
     classId,
     title: req.body.title,
     dueDate: req.body.dueDate ? new Date(req.body.dueDate) : null,
-    isPublished: false,
+    isPublished: req.body.isPublished ?? false,
     questions,
   }).returning();
   res.json(test);
+});
+
+router.put("/:classId/tests/:testId", requireAuth, async (req, res) => {
+  const testId = parseInt(req.params.testId);
+  const [existing] = await db.select().from(testsTable).where(eq(testsTable.id, testId));
+  if (!existing) { res.status(404).json({ error: "Test not found" }); return; }
+  const questions = req.body.questions !== undefined
+    ? (req.body.questions || []).map((q: any, i: number) => ({ ...q, id: i + 1 }))
+    : existing.questions;
+  const [updated] = await db.update(testsTable).set({
+    title: req.body.title ?? existing.title,
+    dueDate: req.body.dueDate !== undefined ? (req.body.dueDate ? new Date(req.body.dueDate) : null) : existing.dueDate,
+    isPublished: req.body.isPublished ?? existing.isPublished,
+    questions,
+  }).where(eq(testsTable.id, testId)).returning();
+  res.json(updated);
+});
+
+router.delete("/:classId/tests/:testId", requireAuth, async (req, res) => {
+  const testId = parseInt(req.params.testId);
+  await db.delete(testsTable).where(eq(testsTable.id, testId));
+  res.json({ success: true });
 });
 
 // Assignments
