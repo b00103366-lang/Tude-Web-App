@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { 
   BookOpen, LayoutDashboard, Calendar, GraduationCap, 
   CreditCard, Bell, Settings, LogOut, Users, CheckSquare,
-  Video, DollarSign
+  Video, DollarSign, ShieldCheck, AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +16,8 @@ const NAV_ITEMS = {
     { icon: Calendar, label: "Calendrier", href: "/student/calendar" },
     { icon: CheckSquare, label: "Notes", href: "/student/grades" },
     { icon: CreditCard, label: "Paiements", href: "/student/payments" },
+    { icon: Bell, label: "Notifications", href: "/student/notifications" },
+    { icon: Settings, label: "Paramètres", href: "/student/settings" },
   ],
   professor: [
     { icon: LayoutDashboard, label: "Tableau de Bord", href: "/professor/dashboard" },
@@ -28,9 +30,10 @@ const NAV_ITEMS = {
   admin: [
     { icon: LayoutDashboard, label: "Vue d'ensemble", href: "/admin/dashboard" },
     { icon: Users, label: "Utilisateurs", href: "/admin/users" },
-    { icon: CheckSquare, label: "Professeurs", href: "/admin/professors" },
+    { icon: CheckSquare, label: "Professeurs & KYC", href: "/admin/professors" },
     { icon: BookOpen, label: "Cours", href: "/admin/classes" },
     { icon: CreditCard, label: "Transactions", href: "/admin/transactions" },
+    { icon: Settings, label: "Paramètres", href: "/admin/settings" },
   ]
 };
 
@@ -40,7 +43,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   if (!user) return null;
 
-  const items = NAV_ITEMS[user.role] || [];
+  const items = NAV_ITEMS[user.role as keyof typeof NAV_ITEMS] || [];
+  const profStatus = (user as any)?.professorProfile?.status;
+  const isProfessor = user.role === "professor";
+  const isApproved = profStatus === "approved";
+  const needsKYC = isProfessor && profStatus && profStatus !== "approved";
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -56,7 +63,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="px-6 py-4 flex items-center gap-3 border-y border-sidebar-border/50 bg-sidebar-accent/30">
-          <div className="w-10 h-10 rounded-full bg-sidebar-primary/20 flex items-center justify-center border border-sidebar-primary/30">
+          <div className="w-10 h-10 rounded-full bg-sidebar-primary/20 flex items-center justify-center border border-sidebar-primary/30 flex-shrink-0">
             <span className="font-bold text-sidebar-primary">{user.fullName.charAt(0)}</span>
           </div>
           <div className="overflow-hidden">
@@ -65,7 +72,34 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+        {/* KYC Alert Banner */}
+        {needsKYC && (
+          <Link href="/professor/kyc" className="mx-4 mt-4 block">
+            <div className={cn(
+              "rounded-xl p-3 border flex items-start gap-2 text-xs font-medium transition-colors",
+              profStatus === "kyc_submitted"
+                ? "bg-blue-500/10 border-blue-500/30 text-blue-300 hover:bg-blue-500/20"
+                : profStatus === "rejected"
+                ? "bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20"
+                : "bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20"
+            )}>
+              {profStatus === "kyc_submitted" ? (
+                <CheckSquare className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              ) : (
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              )}
+              <span>
+                {profStatus === "kyc_submitted"
+                  ? "KYC soumis — en attente de validation"
+                  : profStatus === "rejected"
+                  ? "KYC refusé — cliquez pour recommencer"
+                  : "Vérification KYC requise"}
+              </span>
+            </div>
+          </Link>
+        )}
+
+        <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
           {items.map((item) => {
             const active = location.startsWith(item.href);
             return (
@@ -84,6 +118,22 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+
+          {/* KYC link always at bottom of professor nav */}
+          {isProfessor && (
+            <Link
+              href="/professor/kyc"
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
+                location.startsWith("/professor/kyc")
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/20"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              )}
+            >
+              <ShieldCheck className="w-5 h-5" />
+              Vérification KYC
+            </Link>
+          )}
         </nav>
 
         <div className="p-4 border-t border-sidebar-border mt-auto">
@@ -101,7 +151,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 lg:pl-72 flex flex-col min-h-screen">
         <header className="h-16 border-b border-border bg-card/50 backdrop-blur sticky top-0 z-30 flex items-center justify-between px-6 lg:hidden">
           <span className="text-xl font-serif font-bold">Étude+</span>
-          {/* Mobile menu button would go here */}
+          {needsKYC && (
+            <Link href="/professor/kyc" className="text-xs bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full font-medium border border-amber-200">
+              KYC requis
+            </Link>
+          )}
         </header>
         <div className="flex-1 p-6 sm:p-8 lg:p-10 max-w-7xl mx-auto w-full">
           {children}

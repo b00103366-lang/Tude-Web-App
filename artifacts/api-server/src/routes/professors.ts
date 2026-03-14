@@ -82,6 +82,22 @@ router.post("/:id/approve", requireAuth, async (req, res) => {
   res.json({ ...prof, fullName: user?.fullName, profilePhoto: user?.profilePhoto, city: user?.city });
 });
 
+router.post("/:id/kyc-submit", requireAuth, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const [prof] = await db.update(professorsTable)
+    .set({ status: "kyc_submitted" })
+    .where(eq(professorsTable.id, id))
+    .returning();
+
+  if (!prof) {
+    res.status(404).json({ error: "Professor not found" });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, prof.userId));
+  res.json({ ...prof, fullName: user?.fullName, profilePhoto: user?.profilePhoto, city: user?.city });
+});
+
 router.post("/:id/reject", requireAuth, async (req, res) => {
   const id = parseInt(req.params.id);
   const [prof] = await db.update(professorsTable)

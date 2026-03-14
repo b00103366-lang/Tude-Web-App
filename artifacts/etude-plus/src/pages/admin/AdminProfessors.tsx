@@ -22,10 +22,11 @@ function Modal({ open, onClose, children }: { open: boolean; onClose: () => void
 const statusConfig = {
   approved: { label: "Approuvé", icon: ShieldCheck, badge: "success" as const, color: "text-green-600 bg-green-100" },
   pending: { label: "En attente", icon: Clock, badge: "secondary" as const, color: "text-orange-600 bg-orange-100" },
+  kyc_submitted: { label: "KYC soumis", icon: FileText, badge: "secondary" as const, color: "text-blue-600 bg-blue-100" },
   rejected: { label: "Refusé", icon: XCircle, badge: "destructive" as const, color: "text-red-600 bg-red-100" },
 };
 
-type FilterKey = "all" | "pending" | "approved" | "rejected";
+type FilterKey = "all" | "pending" | "kyc_submitted" | "approved" | "rejected";
 
 export function AdminProfessors() {
   const qc = useQueryClient();
@@ -42,6 +43,7 @@ export function AdminProfessors() {
   const counts = {
     all: professors.length,
     pending: professors.filter((p: any) => p.status === "pending").length,
+    kyc_submitted: professors.filter((p: any) => p.status === "kyc_submitted").length,
     approved: professors.filter((p: any) => p.status === "approved").length,
     rejected: professors.filter((p: any) => p.status === "rejected").length,
   };
@@ -73,10 +75,11 @@ export function AdminProfessors() {
         />
 
         {/* Filter stat cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">
           {([
             { key: "all", label: "Total", color: "bg-slate-100 text-slate-700" },
             { key: "pending", label: "En attente", color: "bg-orange-100 text-orange-700" },
+            { key: "kyc_submitted", label: "KYC soumis", color: "bg-blue-100 text-blue-700" },
             { key: "approved", label: "Approuvés", color: "bg-green-100 text-green-700" },
             { key: "rejected", label: "Refusés", color: "bg-red-100 text-red-700" },
           ] as { key: FilterKey; label: string; color: string }[]).map(s => (
@@ -129,7 +132,7 @@ export function AdminProfessors() {
                       <Button variant="outline" size="sm" onClick={() => setSelectedProf(prof)}>
                         <Eye className="w-4 h-4 mr-1.5" /> Dossier
                       </Button>
-                      {status === "pending" && (
+                      {(status === "pending" || status === "kyc_submitted") && (
                         <>
                           <Button size="sm" variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10"
                             disabled={rejectMutation.isPending} onClick={() => handleReject(prof.id)}>
@@ -210,7 +213,7 @@ export function AdminProfessors() {
                     </a>
                   </div>
 
-                  {status === "pending" && (
+                  {(status === "pending" || status === "kyc_submitted") && (
                     <div className="flex gap-3 pt-2 border-t border-border">
                       <Button variant="outline" className="flex-1 text-destructive border-destructive/30 hover:bg-destructive/10"
                         disabled={rejectMutation.isPending} onClick={() => handleReject(selectedProf.id)}>

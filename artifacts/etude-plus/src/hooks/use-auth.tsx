@@ -8,6 +8,7 @@ interface AuthContextType {
   loginFn: (data: LoginRequest) => Promise<User>;
   registerFn: (data: RegisterRequest) => Promise<User>;
   logoutFn: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -70,8 +71,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.location.href = "/";
   };
 
+  const refreshUser = async () => {
+    await queryClient.invalidateQueries({ queryKey: [`/api/auth/me`] });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, loginFn, registerFn, logoutFn }}>
+    <AuthContext.Provider value={{ user, isLoading, loginFn, registerFn, logoutFn, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -2,17 +2,97 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Button } from "@/components/ui/Premium";
 import { useAuth } from "@/hooks/use-auth";
 import { useGetProfessorStats } from "@workspace/api-client-react";
-import { Users, BookOpen, DollarSign, Star, ArrowUpRight, Video } from "lucide-react";
+import { Users, BookOpen, DollarSign, Star, ArrowUpRight, Video, ShieldCheck, Clock, AlertCircle, ArrowRight } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn, formatTND } from "@/lib/utils";
 import { Link } from "wouter";
 
+function KYCStateBanner({ status }: { status: string }) {
+  if (status === "approved") return null;
+
+  const config = {
+    pending: {
+      icon: <ShieldCheck className="w-12 h-12 text-amber-500 mx-auto mb-4" />,
+      title: "Vérification d'identité requise",
+      desc: "Vous devez compléter la vérification KBlox pour pouvoir créer des cours et accéder à toutes les fonctionnalités.",
+      badge: "bg-amber-50 border-amber-200 text-amber-900",
+      cta: "Compléter la vérification KYC",
+      ctaVariant: "default" as const,
+    },
+    kyc_submitted: {
+      icon: <Clock className="w-12 h-12 text-blue-500 mx-auto mb-4" />,
+      title: "Vérification en cours d'examen",
+      desc: "Votre dossier KBlox a été soumis et est en cours d'examen par notre équipe. Délai : 24–48h.",
+      badge: "bg-blue-50 border-blue-200 text-blue-900",
+      cta: "Voir le statut de vérification",
+      ctaVariant: "outline" as const,
+    },
+    rejected: {
+      icon: <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />,
+      title: "Vérification refusée",
+      desc: "Votre vérification d'identité a été refusée. Veuillez recommencer le processus ou contacter notre équipe de support.",
+      badge: "bg-red-50 border-red-200 text-red-900",
+      cta: "Recommencer la vérification",
+      ctaVariant: "default" as const,
+    },
+  };
+
+  const cfg = config[status as keyof typeof config] ?? config.pending;
+
+  return (
+    <DashboardLayout>
+      <FadeIn>
+        <PageHeader title="Tableau de Bord Professeur" description="Bienvenue sur Étude+" />
+        <div className="max-w-2xl mx-auto">
+          <Card className={cn("p-10 text-center border-2", cfg.badge)}>
+            {cfg.icon}
+            <h2 className="text-2xl font-bold mb-3">{cfg.title}</h2>
+            <p className="text-muted-foreground mb-8 leading-relaxed">{cfg.desc}</p>
+            <Link href="/professor/kyc">
+              <Button size="lg" variant={cfg.ctaVariant} className="gap-2">
+                {cfg.cta} <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          </Card>
+
+          <Card className="p-6 mt-6">
+            <h3 className="font-bold mb-4">Étapes pour commencer à enseigner</h3>
+            <div className="space-y-3">
+              {[
+                { done: true, label: "Créer un compte professeur" },
+                { done: status === "kyc_submitted" || status === "approved", active: status === "pending" || status === "rejected", label: "Compléter la vérification KBlox" },
+                { done: status === "approved", label: "Approbation par l'équipe Étude+ (24–48h)" },
+                { done: false, label: "Créer votre premier cours" },
+              ].map((step, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className={cn("w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold",
+                    step.done ? "bg-green-500 text-white" : "bg-muted text-muted-foreground border-2 border-border"
+                  )}>
+                    {step.done ? "✓" : i + 1}
+                  </div>
+                  <p className={cn("text-sm", step.done ? "text-green-700 font-medium" : "text-muted-foreground")}>{step.label}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      </FadeIn>
+    </DashboardLayout>
+  );
+}
+
 export function ProfessorDashboard() {
   const { user } = useAuth();
   const profId = (user as any)?.professorProfile?.id;
+  const profStatus = (user as any)?.professorProfile?.status ?? "pending";
+
   const { data: stats, isLoading } = useGetProfessorStats(profId || 0, {
-    query: { enabled: !!profId }
+    query: { enabled: !!profId && profStatus === "approved" }
   });
+
+  if (profStatus !== "approved") {
+    return <KYCStateBanner status={profStatus} />;
+  }
 
   const totalEarnings = stats?.totalEarnings ?? 0;
   const totalStudents = stats?.totalStudents ?? 0;
@@ -120,8 +200,8 @@ export function ProfessorDashboard() {
             <div className="mt-8 pt-6 border-t border-border">
               <h4 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider">Statut du compte</h4>
               <div className="flex items-center gap-3 bg-green-50 text-green-700 p-3 rounded-xl border border-green-100">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="font-medium text-sm">Professeur Vérifié</span>
+                <ShieldCheck className="w-4 h-4 text-green-600" />
+                <span className="font-medium text-sm">Professeur Vérifié ✓</span>
               </div>
             </div>
           </Card>

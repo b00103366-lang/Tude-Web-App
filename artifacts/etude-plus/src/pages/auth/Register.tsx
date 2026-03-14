@@ -146,18 +146,13 @@ export function Register() {
     setSelectedGrades(prev => prev.includes(grade) ? prev.filter(g => g !== grade) : [...prev, grade]);
   };
 
-  const handleOpenKblox = () => {
-    window.open("https://kblox.replit.app/login", "_blank", "noopener,noreferrer");
-    setKycStep("kblox-waiting");
-  };
-
-  // KBlox redirect step — explain and open KBlox
+  // KBlox embedded step — iframe stays inside Étude+
   if (kycStep === "kblox-redirect") {
     return (
-      <div className="min-h-screen bg-secondary/30 flex flex-col items-center justify-center p-4">
-        <FadeIn className="w-full max-w-lg">
+      <div className="min-h-screen bg-secondary/30 flex flex-col items-center py-6 px-4">
+        <div className="w-full max-w-4xl">
           {/* Top nav bar */}
-          <div className="flex items-center justify-between mb-4 w-full">
+          <div className="flex items-center justify-between mb-4">
             <button
               type="button"
               onClick={() => setKycStep("form")}
@@ -170,63 +165,42 @@ export function Register() {
             </Link>
           </div>
 
-          <StepProgress current="kblox-redirect" onStepClick={setKycStep} />
+          <div className="flex justify-center mb-4">
+            <StepProgress current="kblox-redirect" onStepClick={setKycStep} />
+          </div>
 
           <Card className="shadow-xl overflow-hidden">
-            {/* KBlox branded header */}
-            <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-8 pt-8 pb-6 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-2xl mb-4">
-                <ShieldCheck className="w-8 h-8 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold text-white">Vérification d'identité requise</h2>
-              <p className="text-slate-300 mt-1 text-sm">Powered by <span className="text-white font-semibold">KBlox</span></p>
-            </div>
-
-            <div className="p-8">
-              <div className="mb-6">
-                <p className="text-muted-foreground text-sm leading-relaxed mb-6">
-                  Pour garantir la qualité et la sécurité de notre plateforme, tous les professeurs doivent compléter une vérification d'identité via <strong>KBlox</strong>, notre partenaire KYC de confiance.
-                </p>
-
-                <div className="space-y-3 mb-6">
-                  {[
-                    { step: "01", text: "Cliquez sur le bouton ci-dessous pour ouvrir KBlox" },
-                    { step: "02", text: "Créez un compte avec la même adresse email que celle utilisée ici" },
-                    { step: "03", text: "Soumettez votre pièce d'identité et les documents requis" },
-                    { step: "04", text: "Notre équipe validera votre profil sous 24–48h" },
-                  ].map(({ step, text }) => (
-                    <div key={step} className="flex items-start gap-3">
-                      <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">{step}</span>
-                      <p className="text-sm text-foreground pt-0.5">{text}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-                  <p className="text-amber-800 text-xs font-medium">
-                    ⚠️ Utilisez la même adresse email : <strong>{registeredData?.email}</strong>
-                  </p>
+            <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="w-5 h-5 text-white" />
+                <div>
+                  <h2 className="text-base font-bold text-white">Vérification d'identité KBlox</h2>
+                  <p className="text-slate-400 text-xs">Complétez la vérification pour activer votre compte professeur</p>
                 </div>
               </div>
-
-              <Button
-                onClick={handleOpenKblox}
-                className="w-full gap-2"
-                size="lg"
-              >
-                Continuer vers KBlox
-                <ExternalLink className="w-4 h-4" />
-              </Button>
-
-              <button
-                onClick={() => setKycStep("kblox-waiting")}
-                className="w-full mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
-              >
-                J'ai déjà complété la vérification →
-              </button>
+              {registeredData?.email && (
+                <div className="hidden sm:block bg-amber-400/20 border border-amber-400/30 rounded-lg px-3 py-1.5">
+                  <p className="text-amber-300 text-xs font-medium">{registeredData.email}</p>
+                </div>
+              )}
             </div>
+            <iframe
+              src="https://03200982-fabf-4e40-aa49-9588883ea3b7-00-111qxxwza91vm.kirk.replit.dev/embed/etude?embed=true"
+              style={{ width: "100%", height: "700px", border: "none" }}
+              allow="clipboard-write; camera; microphone"
+              title="Vérification KBlox"
+            />
           </Card>
-        </FadeIn>
+
+          <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              Une fois la vérification complétée dans la fenêtre ci-dessus, cliquez sur continuer.
+            </p>
+            <Button onClick={() => setKycStep("kblox-waiting")} className="gap-2">
+              J'ai complété la vérification <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }

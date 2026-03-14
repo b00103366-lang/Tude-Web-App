@@ -7,7 +7,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   useGetClass, useListClassMaterials, useListClassQuizzes,
-  useListClassTests, useListClassAssignments,
+  useListClassTests, useListClassAssignments, useListClassSessions,
 } from "@workspace/api-client-react";
 
 export function StudentClassDetail() {
@@ -20,6 +20,12 @@ export function StudentClassDetail() {
   const { data: quizzes = [] } = useListClassQuizzes(classId, { query: { enabled: !!classId } }) as any;
   const { data: tests = [] } = useListClassTests(classId, { query: { enabled: !!classId } }) as any;
   const { data: assignments = [] } = useListClassAssignments(classId, { query: { enabled: !!classId } }) as any;
+  const { data: allSessions = [] } = useListClassSessions(classId, { query: { enabled: !!classId } }) as any;
+
+  const upcomingSessions = allSessions.filter((s: any) => s.status === "scheduled" || s.status === "live")
+    .sort((a: any, b: any) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+  const pastSessions = allSessions.filter((s: any) => s.status === "ended")
+    .sort((a: any, b: any) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime());
 
   const publishedQuizzes = quizzes.filter((q: any) => q.isPublished);
   const publishedTests = tests.filter((t: any) => t.isPublished);
@@ -156,50 +162,81 @@ export function StudentClassDetail() {
           {/* LIVE SESSION TAB */}
           {activeTab === "live" && (
             <FadeIn>
-              {cls.nextSession ? (
-                <div className="grid lg:grid-cols-3 gap-8">
-                  <div className="lg:col-span-2">
-                    <Card className="p-8 border-primary/30 shadow-xl shadow-primary/5">
-                      <Badge className="bg-red-500/10 text-red-600 border-red-200 mb-6">
-                        <Video className="w-3 h-3 mr-1 inline" /> EN DIRECT BIENTÔT
-                      </Badge>
-                      <h2 className="text-3xl font-bold mb-4">{cls.nextSession.title}</h2>
-                      {cls.nextSession.description && (
-                        <p className="text-lg text-muted-foreground mb-8">{cls.nextSession.description}</p>
-                      )}
-                      <div className="flex flex-wrap gap-4 mb-8 text-sm font-medium">
-                        <div className="flex items-center gap-2 bg-muted py-2 px-4 rounded-xl">
-                          <Calendar className="w-5 h-5 text-primary" />
-                          {format(new Date(cls.nextSession.scheduledAt), "EEEE d MMMM", { locale: fr })}
-                        </div>
-                        <div className="flex items-center gap-2 bg-muted py-2 px-4 rounded-xl">
-                          <Clock className="w-5 h-5 text-primary" />
-                          {format(new Date(cls.nextSession.scheduledAt), "HH:mm")} ({cls.nextSession.durationHours}h)
-                        </div>
-                      </div>
-                      <Link href={`/classroom/${cls.nextSession.id}`}>
-                        <Button size="lg" className="w-full sm:w-auto text-lg px-12">
-                          <PlayCircle className="w-5 h-5 mr-2" /> Rejoindre la salle virtuelle
-                        </Button>
-                      </Link>
-                    </Card>
-                  </div>
-                  <div>
-                    <Card className="p-6">
-                      <h3 className="font-bold text-lg mb-4">Détails</h3>
-                      <ul className="space-y-3 text-sm text-muted-foreground">
-                        <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" />Prix: {cls.nextSession.price} TND</li>
-                        <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" />Durée: {cls.nextSession.durationHours}h</li>
-                      </ul>
-                    </Card>
-                  </div>
-                </div>
-              ) : (
+              {allSessions.length === 0 ? (
                 <Card className="p-12 text-center">
                   <Calendar className="w-16 h-16 text-muted-foreground opacity-30 mx-auto mb-4" />
                   <h3 className="text-2xl font-bold mb-2">Aucune session prévue</h3>
-                  <p className="text-muted-foreground">Le professeur n'a pas encore programmé la prochaine session live.</p>
+                  <p className="text-muted-foreground">Le professeur n'a pas encore programmé de session live.</p>
                 </Card>
+              ) : (
+                <div className="space-y-6">
+                  {upcomingSessions.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-bold mb-4">Sessions à venir</h3>
+                      <div className="space-y-4">
+                        {upcomingSessions.map((s: any) => (
+                          <Card key={s.id} className={`p-6 ${s.status === "live" ? "border-red-300 shadow-lg shadow-red-100" : "border-primary/20"}`}>
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  {s.status === "live" ? (
+                                    <Badge className="bg-red-500/10 text-red-600 border-red-200">
+                                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse inline-block mr-1" /> EN DIRECT
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="secondary">Programmée</Badge>
+                                  )}
+                                  <span className="text-sm text-muted-foreground">{s.price} TND</span>
+                                </div>
+                                <h4 className="text-xl font-bold mb-1">{s.title}</h4>
+                                {s.description && <p className="text-muted-foreground text-sm mb-3">{s.description}</p>}
+                                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1.5">
+                                    <Calendar className="w-4 h-4 text-primary" />
+                                    {format(new Date(s.scheduledAt), "EEEE d MMMM", { locale: fr })}
+                                  </span>
+                                  <span className="flex items-center gap-1.5">
+                                    <Clock className="w-4 h-4 text-primary" />
+                                    {format(new Date(s.scheduledAt), "HH:mm")}
+                                  </span>
+                                  <span className="flex items-center gap-1.5">
+                                    <Video className="w-4 h-4 text-primary" />
+                                    {s.durationHours}h
+                                  </span>
+                                </div>
+                              </div>
+                              <Link href={`/classroom/${s.id}`}>
+                                <Button className={s.status === "live" ? "bg-red-600 hover:bg-red-700 text-white" : ""}>
+                                  <PlayCircle className="w-4 h-4 mr-2" />
+                                  {s.status === "live" ? "Rejoindre" : "Accéder"}
+                                </Button>
+                              </Link>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {pastSessions.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-bold mb-4 text-muted-foreground">Sessions passées</h3>
+                      <div className="space-y-3">
+                        {pastSessions.map((s: any) => (
+                          <Card key={s.id} className="p-4 flex items-center justify-between opacity-60">
+                            <div>
+                              <p className="font-semibold">{s.title}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {format(new Date(s.scheduledAt), "d MMMM yyyy", { locale: fr })} • {s.durationHours}h
+                              </p>
+                            </div>
+                            <Badge variant="secondary">Terminée</Badge>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </FadeIn>
           )}

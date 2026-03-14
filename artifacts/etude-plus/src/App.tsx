@@ -30,6 +30,7 @@ import { ProfessorCalendar } from "@/pages/professor/ProfessorCalendar";
 import { ProfessorEarnings } from "@/pages/professor/ProfessorEarnings";
 import { ProfessorStudents } from "@/pages/professor/ProfessorStudents";
 import { ProfessorSettings } from "@/pages/professor/ProfessorSettings";
+import { ProfessorKYC } from "@/pages/professor/ProfessorKYC";
 
 // Admin Pages
 import { AdminDashboard } from "@/pages/admin/AdminDashboard";
@@ -135,6 +136,9 @@ function Router() {
       </Route>
       <Route path="/professor/settings">
         {() => <ProtectedRoute component={ProfessorSettings} allowedRoles={["professor"]} />}
+      </Route>
+      <Route path="/professor/kyc">
+        {() => <ProtectedRoute component={ProfessorKYC} allowedRoles={["professor"]} />}
       </Route>
       
       {/* Admin Routes */}
