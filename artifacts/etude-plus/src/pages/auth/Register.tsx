@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth, getDashboardPath } from "@/hooks/use-auth";
 import { Button, Card, Input, Label, FadeIn } from "@/components/ui/Premium";
-import { ArrowLeft, Loader2, CheckCircle2, Clock, Home, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle2, Clock, Home, ShieldCheck, Mail } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -43,6 +43,45 @@ const professorSchema = baseSchema.extend({
   qualifications: z.string().optional(),
 });
 
+type ProfStep = "form" | "kyc" | "pending";
+
+const STEPS: { id: ProfStep; label: string }[] = [
+  { id: "form",    label: "Inscription"  },
+  { id: "kyc",     label: "Vérification" },
+  { id: "pending", label: "En attente"   },
+];
+
+function StepBar({ current }: { current: ProfStep }) {
+  const idx = STEPS.findIndex(s => s.id === current);
+  return (
+    <div className="flex items-center justify-center gap-0 mb-8">
+      {STEPS.map((step, i) => {
+        const done    = i < idx;
+        const active  = i === idx;
+        return (
+          <div key={step.id} className="flex items-center">
+            <div className="flex flex-col items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                done   ? "bg-green-500 text-white" :
+                active ? "bg-primary text-primary-foreground ring-4 ring-primary/20" :
+                         "bg-muted text-muted-foreground border-2 border-border"
+              }`}>
+                {done ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
+              </div>
+              <span className={`text-xs mt-1 font-medium ${active ? "text-primary" : done ? "text-green-600" : "text-muted-foreground"}`}>
+                {step.label}
+              </span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div className={`w-16 h-0.5 mx-1 mb-4 ${i < idx ? "bg-green-400" : "bg-border"}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function Register() {
   const { registerFn } = useAuth();
   const [, setLocation] = useLocation();
@@ -53,7 +92,7 @@ export function Register() {
 
   const [role, setRole] = useState<"student" | "professor">(initialRole as any);
   const [isLoading, setIsLoading] = useState(false);
-  const [registered, setRegistered] = useState(false);
+  const [profStep, setProfStep] = useState<ProfStep>("form");
   const [registeredEmail, setRegisteredEmail] = useState("");
 
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
@@ -90,7 +129,7 @@ export function Register() {
       const registeredUser = await registerFn(data);
       if (role === "professor") {
         setRegisteredEmail(data.email);
-        setRegistered(true);
+        setProfStep("kyc");
       } else {
         setLocation(getDashboardPath(registeredUser.role));
       }
@@ -109,8 +148,52 @@ export function Register() {
     setSelectedGrades(prev => prev.includes(grade) ? prev.filter(g => g !== grade) : [...prev, grade]);
   };
 
-  // ── Professor registered → "En attente" confirmation ──
-  if (registered && role === "professor") {
+  // ── Step 2: KBlox KYC iframe ──
+  if (profStep === "kyc") {
+    return (
+      <div className="min-h-screen bg-secondary/30 py-10 px-4">
+        <FadeIn className="w-full max-w-3xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+              <Home className="w-4 h-4" /> Accueil
+            </Link>
+          </div>
+
+          <StepBar current="kyc" />
+
+          <Card className="shadow-xl overflow-hidden">
+            <div className="p-6 border-b border-border">
+              <h2 className="text-xl font-bold">Vérification d'identité</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Complétez votre vérification KYC sécurisée pour finaliser votre inscription sur Étude+.
+              </p>
+            </div>
+
+            <div className="p-0">
+              <iframe
+                src="https://kblox.replit.app/embed/etude123?embed=true"
+                style={{ width: "100%", height: "700px", border: "none", display: "block" }}
+                allow="clipboard-write"
+                title="Vérification KYC — Étude+"
+              />
+            </div>
+
+            <div className="p-6 border-t border-border bg-muted/40 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-xs text-muted-foreground">
+                Une fois votre vérification soumise dans le formulaire ci-dessus, cliquez sur "Continuer".
+              </p>
+              <Button onClick={() => setProfStep("pending")} size="lg" className="shrink-0">
+                J'ai complété ma vérification <CheckCircle2 className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </Card>
+        </FadeIn>
+      </div>
+    );
+  }
+
+  // ── Step 3: "En attente" confirmation ──
+  if (profStep === "pending") {
     return (
       <div className="min-h-screen bg-secondary/30 flex flex-col items-center justify-center p-4">
         <FadeIn className="w-full max-w-lg">
@@ -120,17 +203,18 @@ export function Register() {
             </Link>
           </div>
 
+          <StepBar current="pending" />
+
           <Card className="shadow-xl p-10 text-center">
-            <div className="w-20 h-20 mx-auto bg-green-100 rounded-2xl flex items-center justify-center mb-6">
-              <CheckCircle2 className="w-10 h-10 text-green-600" />
+            <div className="w-20 h-20 mx-auto bg-amber-100 rounded-2xl flex items-center justify-center mb-6">
+              <Clock className="w-10 h-10 text-amber-500" />
             </div>
 
-            <h2 className="text-2xl font-bold mb-3">Inscription réussie !</h2>
+            <h2 className="text-2xl font-bold mb-3">Dossier soumis avec succès !</h2>
             <p className="text-muted-foreground mb-6 leading-relaxed">
-              Votre dossier a bien été reçu. L'équipe de conformité d'Étude+ va examiner votre candidature et vous contactera à <strong>{registeredEmail}</strong>.
+              Votre inscription et votre vérification KYC ont bien été reçues. L'équipe de conformité d'Étude+ va examiner votre candidature et vous contactera à <strong>{registeredEmail}</strong>.
             </p>
 
-            {/* Steps */}
             <div className="bg-muted rounded-2xl p-6 mb-8 text-left space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
@@ -138,7 +222,17 @@ export function Register() {
                 </div>
                 <div>
                   <p className="font-semibold text-sm">Inscription complétée</p>
-                  <p className="text-xs text-muted-foreground">Votre compte professeur a été créé avec succès.</p>
+                  <p className="text-xs text-muted-foreground">Votre compte professeur a été créé.</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle2 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">Vérification KYC soumise</p>
+                  <p className="text-xs text-muted-foreground">Vos documents ont été envoyés à l'équipe de conformité.</p>
                 </div>
               </div>
 
@@ -147,8 +241,8 @@ export function Register() {
                   <Clock className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <p className="font-semibold text-sm">Vérification en cours</p>
-                  <p className="text-xs text-muted-foreground">L'équipe de conformité examine votre dossier (24–48h).</p>
+                  <p className="font-semibold text-sm">Examen en cours</p>
+                  <p className="text-xs text-muted-foreground">Délai habituel : 24 à 48 heures ouvrées.</p>
                 </div>
               </div>
 
@@ -157,7 +251,7 @@ export function Register() {
                   <ShieldCheck className="w-4 h-4 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="font-semibold text-sm text-muted-foreground">Accès au tableau de bord</p>
+                  <p className="font-semibold text-sm text-muted-foreground">Accès activé</p>
                   <p className="text-xs text-muted-foreground">Vous serez notifié par email dès approbation.</p>
                 </div>
               </div>
@@ -166,22 +260,25 @@ export function Register() {
             <Button onClick={() => setLocation("/professor/dashboard")} size="lg" className="w-full">
               Accéder à mon espace
             </Button>
-            <p className="text-xs text-muted-foreground mt-4">
-              Délai de vérification habituel : 24 à 48 heures ouvrées.
-            </p>
+
+            <div className="mt-5 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <Mail className="w-3.5 h-3.5" />
+              Questions ? Contactez{" "}
+              <a href="mailto:support@etude.tn" className="text-primary hover:underline">support@etude.tn</a>
+            </div>
           </Card>
         </FadeIn>
       </div>
     );
   }
 
-  // ── Main registration form ──
+  // ── Step 1: Registration form ──
   return (
     <div className="min-h-screen bg-secondary/30 flex items-center justify-center py-12 px-4 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-96 bg-primary/5 -skew-y-6 transform origin-top-left -z-10" />
 
       <FadeIn className="w-full max-w-xl">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <Link href="/select-role" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" /> Retour
           </Link>
@@ -189,6 +286,8 @@ export function Register() {
             <Home className="w-4 h-4" /> Accueil
           </Link>
         </div>
+
+        {role === "professor" && <StepBar current="form" />}
 
         <Card className="shadow-xl overflow-hidden">
           <div className="bg-muted p-2 flex border-b border-border">
@@ -215,12 +314,11 @@ export function Register() {
               </h1>
               {role === "professor" && (
                 <p className="text-sm text-muted-foreground mt-2">
-                  Votre candidature sera examinée par notre équipe sous 24–48h.
+                  Étape 1 sur 2 — Renseignez votre profil, puis complétez la vérification KYC.
                 </p>
               )}
             </div>
 
-            {/* Common fields */}
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <Label>Nom complet</Label>
@@ -249,7 +347,6 @@ export function Register() {
               </select>
             </div>
 
-            {/* Student-specific */}
             {role === "student" && (
               <div>
                 <Label>Niveau scolaire</Label>
@@ -263,7 +360,6 @@ export function Register() {
               </div>
             )}
 
-            {/* Professor-specific */}
             {role === "professor" && (
               <>
                 <div className="grid grid-cols-2 gap-4">
@@ -336,7 +432,7 @@ export function Register() {
               {isLoading ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Création du compte...</>
               ) : role === "professor" ? (
-                "Soumettre ma candidature"
+                <>Suivant — Vérification KYC <ArrowLeft className="w-4 h-4 ml-2 rotate-180" /></>
               ) : (
                 "Créer mon compte élève"
               )}
