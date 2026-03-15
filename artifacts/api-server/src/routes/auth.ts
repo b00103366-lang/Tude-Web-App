@@ -70,7 +70,8 @@ router.post("/login", async (req, res) => {
 });
 
 router.post("/register", async (req, res) => {
-  const { email, password, role, fullName, city } = req.body;
+  const { email, password, role, fullName, city, phone, subjects, gradeLevels, bio, qualifications, yearsExperience, gradeLevel, schoolName } = req.body;
+
   if (!email || !password || !role || !fullName) {
     res.status(400).json({ error: "Missing required fields" });
     return;
@@ -88,25 +89,39 @@ router.post("/register", async (req, res) => {
     role,
     fullName,
     city: city || null,
+    phone: phone || null,
   }).returning();
 
+  let professorProfile = null;
+  let studentProfile = null;
+
   if (role === "student") {
-    await db.insert(studentProfilesTable).values({ userId: newUser.id, preferredSubjects: [] });
-  } else if (role === "professor") {
-    await db.insert(professorsTable).values({
+    const [sp] = await db.insert(studentProfilesTable).values({
       userId: newUser.id,
-      subjects: [],
-      gradeLevels: [],
+      preferredSubjects: [],
+      gradeLevel: gradeLevel || null,
+      schoolName: schoolName || null,
+    }).returning();
+    studentProfile = sp;
+  } else if (role === "professor") {
+    const [pp] = await db.insert(professorsTable).values({
+      userId: newUser.id,
+      subjects: subjects || [],
+      gradeLevels: gradeLevels || [],
+      bio: bio || null,
+      qualifications: qualifications || null,
+      yearsOfExperience: yearsExperience ? parseInt(yearsExperience) : null,
       status: "pending",
       isVerified: false,
       totalReviews: 0,
       totalStudents: 0,
-    });
+    }).returning();
+    professorProfile = pp ? { ...pp, fullName: newUser.fullName, city: newUser.city } : null;
   }
 
   const token = generateToken(newUser.id);
   res.json({
-    user: { ...newUser, passwordHash: undefined },
+    user: { ...newUser, passwordHash: undefined, studentProfile, professorProfile },
     token,
   });
 });

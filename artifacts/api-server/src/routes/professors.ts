@@ -61,15 +61,31 @@ router.get("/:id", async (req, res) => {
   res.json({
     ...result.prof,
     fullName: result.user.fullName,
+    email: result.user.email,
+    phone: result.user.phone,
     profilePhoto: result.user.profilePhoto,
     city: result.user.city,
   });
 });
 
-router.post("/:id/approve", requireAuth, async (req, res) => {
+// Professor submits their KYC documents (objectPaths from storage)
+router.post("/:id/submit-documents", requireAuth, async (req, res) => {
   const id = parseInt(req.params.id);
+  const { idDocumentUrl, teachingCertUrl, additionalDocUrl } = req.body;
+
+  if (!idDocumentUrl || !teachingCertUrl) {
+    res.status(400).json({ error: "ID document and teaching certificate are required." });
+    return;
+  }
+
   const [prof] = await db.update(professorsTable)
-    .set({ status: "approved", isVerified: true })
+    .set({
+      idDocumentUrl,
+      teachingCertUrl,
+      additionalDocUrl: additionalDocUrl || null,
+      status: "kyc_submitted",
+      documentNotes: null,
+    })
     .where(eq(professorsTable.id, id))
     .returning();
 
@@ -82,10 +98,10 @@ router.post("/:id/approve", requireAuth, async (req, res) => {
   res.json({ ...prof, fullName: user?.fullName, profilePhoto: user?.profilePhoto, city: user?.city });
 });
 
-router.post("/:id/kyc-submit", requireAuth, async (req, res) => {
+router.post("/:id/approve", requireAuth, async (req, res) => {
   const id = parseInt(req.params.id);
   const [prof] = await db.update(professorsTable)
-    .set({ status: "kyc_submitted" })
+    .set({ status: "approved", isVerified: true, documentNotes: null })
     .where(eq(professorsTable.id, id))
     .returning();
 
@@ -100,8 +116,10 @@ router.post("/:id/kyc-submit", requireAuth, async (req, res) => {
 
 router.post("/:id/reject", requireAuth, async (req, res) => {
   const id = parseInt(req.params.id);
+  const { notes } = req.body;
+
   const [prof] = await db.update(professorsTable)
-    .set({ status: "rejected" })
+    .set({ status: "rejected", isVerified: false, documentNotes: notes || null })
     .where(eq(professorsTable.id, id))
     .returning();
 

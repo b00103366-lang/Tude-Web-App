@@ -3,7 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
 
-export const professorStatusEnum = pgEnum("professor_status", ["pending", "approved", "rejected"]);
+export const professorStatusEnum = pgEnum("professor_status", ["pending", "kyc_submitted", "approved", "rejected"]);
 
 export const professorsTable = pgTable("professors", {
   id: serial("id").primaryKey(),
@@ -18,6 +18,11 @@ export const professorsTable = pgTable("professors", {
   rating: real("rating"),
   totalReviews: integer("total_reviews").notNull().default(0),
   totalStudents: integer("total_students").notNull().default(0),
+  // KYC documents
+  idDocumentUrl: text("id_document_url"),
+  teachingCertUrl: text("teaching_cert_url"),
+  additionalDocUrl: text("additional_doc_url"),
+  documentNotes: text("document_notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

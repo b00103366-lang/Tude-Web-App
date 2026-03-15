@@ -13,26 +13,26 @@ function KYCStateBanner({ status }: { status: string }) {
   const config = {
     pending: {
       icon: <ShieldCheck className="w-12 h-12 text-amber-500 mx-auto mb-4" />,
-      title: "Vérification d'identité requise",
-      desc: "Vous devez compléter la vérification KBlox pour pouvoir créer des cours et accéder à toutes les fonctionnalités.",
+      title: "Soumettez vos documents de vérification",
+      desc: "Pour accéder à toutes les fonctionnalités et commencer à enseigner, vous devez soumettre vos documents justificatifs (pièce d'identité, certificat d'enseignement).",
       badge: "bg-amber-50 border-amber-200 text-amber-900",
-      cta: "Compléter la vérification KYC",
+      cta: "Soumettre mes documents",
       ctaVariant: "default" as const,
     },
     kyc_submitted: {
       icon: <Clock className="w-12 h-12 text-blue-500 mx-auto mb-4" />,
-      title: "Vérification en cours d'examen",
-      desc: "Votre dossier KBlox a été soumis et est en cours d'examen par notre équipe. Délai : 24–48h.",
+      title: "Dossier en cours d'examen",
+      desc: "Vos documents ont été soumis et sont en cours d'examen par notre équipe de conformité. Délai habituel : 24 à 48 heures ouvrées.",
       badge: "bg-blue-50 border-blue-200 text-blue-900",
-      cta: "Voir le statut de vérification",
+      cta: "Voir le statut de mon dossier",
       ctaVariant: "outline" as const,
     },
     rejected: {
       icon: <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />,
-      title: "Vérification refusée",
-      desc: "Votre vérification d'identité a été refusée. Veuillez recommencer le processus ou contacter notre équipe de support.",
+      title: "Dossier non retenu",
+      desc: "Votre dossier de vérification n'a pas été validé. Consultez les détails et soumettez de nouveau vos documents ou contactez notre équipe de support.",
       badge: "bg-red-50 border-red-200 text-red-900",
-      cta: "Recommencer la vérification",
+      cta: "Voir les détails et re-soumettre",
       ctaVariant: "default" as const,
     },
   };
@@ -60,7 +60,7 @@ function KYCStateBanner({ status }: { status: string }) {
             <div className="space-y-3">
               {[
                 { done: true, label: "Créer un compte professeur" },
-                { done: status === "kyc_submitted" || status === "approved", active: status === "pending" || status === "rejected", label: "Compléter la vérification KBlox" },
+                { done: status === "kyc_submitted" || status === "approved", active: status === "pending" || status === "rejected", label: "Soumettre vos documents (pièce d'identité, certificat)" },
                 { done: status === "approved", label: "Approbation par l'équipe Étude+ (24–48h)" },
                 { done: false, label: "Créer votre premier cours" },
               ].map((step, i) => (
