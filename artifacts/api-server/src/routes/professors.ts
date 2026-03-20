@@ -4,6 +4,7 @@ import type { ReviewFeedback } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, requireAdmin, optionalAuth } from "../lib/auth";
 import { logAdminAction } from "../lib/auditLog";
+import { sendKycSubmittedEmail, sendKycApprovedEmail } from "../services/emailService";
 
 const router = Router();
 
@@ -200,6 +201,15 @@ router.post("/:id/submit-kyc", requireAuth, async (req, res) => {
 
   await logAdminAction(req, "kyc_submitted", "professor", id, { legalName, dateOfBirth });
 
+  // Fire-and-forget: notify teacher their KYC was received
+  const [teacherUser] = await db.select().from(usersTable).where(eq(usersTable.id, requestingUser.id));
+  if (teacherUser) {
+    sendKycSubmittedEmail(
+      { email: teacherUser.email, fullName: teacherUser.fullName, merchantId: teacherUser.merchantId },
+      declaredSubjects
+    );
+  }
+
   res.json(updated);
 });
 
@@ -243,6 +253,16 @@ router.post("/:id/review-kyc", requireAuth, requireAdmin, async (req, res) => {
     }).where(eq(professorsTable.id, id)).returning();
 
     await logAdminAction(req, "kyc_approved", "professor", id, { approvedSubjects });
+
+    // Fire-and-forget: notify teacher their KYC was approved
+    const [approvedUser] = await db.select().from(usersTable).where(eq(usersTable.id, prof.userId));
+    if (approvedUser) {
+      sendKycApprovedEmail(
+        { email: approvedUser.email, fullName: approvedUser.fullName, merchantId: approvedUser.merchantId },
+        approvedSubjects ?? []
+      );
+    }
+
     res.json(updated);
   } else if (decision === "rejected") {
     const [updated] = await db.update(professorsTable).set({

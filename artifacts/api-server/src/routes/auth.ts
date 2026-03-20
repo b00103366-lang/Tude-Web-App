@@ -10,7 +10,9 @@ import {
 } from "../lib/auth";
 import { logEvent } from "../lib/auditLog";
 import { sendVerificationEmail, isSmtpConfigured } from "../lib/email";
+import { sendAccountVerificationEmail } from "../services/emailService";
 import { randomBytes } from "crypto";
+import { lt, isNull, or } from "drizzle-orm";
 
 function generateMerchantId(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -100,6 +102,16 @@ router.post("/login", async (req, res) => {
   if (user.isSuspended) {
     await logEvent(req, "login_blocked_suspended", "user", user.id, null, { email: normalizedEmail });
     res.status(403).json({ error: "Your account has been suspended. Please contact support." });
+    return;
+  }
+
+  // Block login if email not verified (except the admin account)
+  const BYPASS_EMAIL = "rayanbahloul2006@gmail.com";
+  if (!user.emailVerified && normalizedEmail !== BYPASS_EMAIL) {
+    res.status(403).json({
+      error: "email_not_verified",
+      message: "Veuillez confirmer votre email avant de vous connecter.",
+    });
     return;
   }
 
@@ -242,6 +254,8 @@ router.post("/register", async (req, res) => {
   }
 
   const merchantId = await getUniqueMerchantId();
+  const verificationToken = randomBytes(32).toString("hex");
+  const verificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
   const [newUser] = await db.insert(usersTable).values({
     email: normalizedEmail,
@@ -251,8 +265,16 @@ router.post("/register", async (req, res) => {
     city: city || null,
     phone: phone || null,
     merchantId,
-    emailVerified: true, // email was verified via OTP before calling register
+    emailVerified: false,
+    emailVerificationToken: verificationToken,
+    emailVerificationExpiresAt: verificationExpiresAt,
   }).returning();
+
+  // Fire-and-forget: send email confirmation link
+  sendAccountVerificationEmail(
+    { email: newUser.email, fullName: newUser.fullName, merchantId: newUser.merchantId },
+    verificationToken
+  );
 
   let professorProfile = null;
   let studentProfile = null;
@@ -341,6 +363,73 @@ router.post("/change-password", requireAuth, async (req, res) => {
 
 router.post("/logout", (_req, res) => {
   res.json({ success: true });
+});
+
+// GET /api/auth/verify-email?token=TOKEN — click-to-verify link
+router.get("/verify-email", async (req, res) => {
+  const { token } = req.query as { token?: string };
+  if (!token || typeof token !== "string") {
+    res.status(400).json({ error: "Token manquant" }); return;
+  }
+
+  const [user] = await db.select().from(usersTable)
+    .where(eq(usersTable.emailVerificationToken, token));
+
+  if (!user) {
+    res.status(400).json({ error: "Lien invalide" }); return;
+  }
+
+  if (user.emailVerified) {
+    res.json({ success: true, alreadyVerified: true, role: user.role }); return;
+  }
+
+  if (!user.emailVerificationExpiresAt || user.emailVerificationExpiresAt < new Date()) {
+    res.status(400).json({ error: "Lien expiré" }); return;
+  }
+
+  await db.update(usersTable).set({
+    emailVerified: true,
+    emailVerificationToken: null,
+    emailVerificationExpiresAt: null,
+  }).where(eq(usersTable.id, user.id));
+
+  res.json({ success: true, role: user.role });
+});
+
+// POST /api/auth/resend-verification — resend the confirmation email
+router.post("/resend-verification", async (req, res) => {
+  const { email } = req.body;
+  if (!email || !EMAIL_RE.test(String(email).toLowerCase().trim())) {
+    res.status(400).json({ error: "Email invalide" }); return;
+  }
+  const normalizedEmail = String(email).toLowerCase().trim();
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, normalizedEmail));
+  if (!user) { res.status(404).json({ error: "Compte introuvable" }); return; }
+  if (user.emailVerified) { res.status(400).json({ error: "Email déjà confirmé" }); return; }
+
+  // Rate limit: allow resend only if last token was issued > 5 minutes ago
+  if (user.emailVerificationExpiresAt) {
+    const issuedAt = user.emailVerificationExpiresAt.getTime() - 24 * 60 * 60 * 1000;
+    if (Date.now() - issuedAt < 5 * 60 * 1000) {
+      res.status(429).json({ error: "Veuillez attendre 5 minutes avant de renvoyer." }); return;
+    }
+  }
+
+  const newToken = randomBytes(32).toString("hex");
+  const newExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  await db.update(usersTable).set({
+    emailVerificationToken: newToken,
+    emailVerificationExpiresAt: newExpiry,
+  }).where(eq(usersTable.id, user.id));
+
+  sendAccountVerificationEmail(
+    { email: user.email, fullName: user.fullName, merchantId: user.merchantId },
+    newToken
+  );
+
+  res.json({ success: true, message: "Email de confirmation renvoyé." });
 });
 
 // Backfill merchant IDs for existing users (one-time admin endpoint)

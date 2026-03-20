@@ -18,7 +18,8 @@
     "cors": "^2",
     "drizzle-orm": "catalog:",
     "express": "^5",
-    "google-auth-library": "^10.6.1"
+    "google-auth-library": "^10.6.1",
+    "resend": "^6.9.4"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
