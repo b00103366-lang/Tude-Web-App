@@ -4,31 +4,35 @@ import { Calendar as CalendarIcon, Clock, Video, ChevronLeft, ChevronRight } fro
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, isSameMonth } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useState } from "react";
-import { useGetMyEnrollments } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
+import { getToken } from "@workspace/api-client-react";
 import { Link } from "wouter";
 
 export function StudentCalendar() {
   const today = new Date();
   const [viewDate, setViewDate] = useState(today);
-  const { data: enrollments = [] } = useGetMyEnrollments() as any;
 
-  const activeClasses = (enrollments as any[])
-    .filter(e => e.status === "active" || e.status === "paid")
-    .map(e => e.class).filter(Boolean);
+  const { data: sessions = [] } = useQuery<any[]>({
+    queryKey: ["student-enrolled-sessions"],
+    queryFn: async () => {
+      const token = getToken();
+      const res = await fetch("/api/classes/enrolled-sessions", {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
 
-  const sessions = activeClasses
-    .flatMap((cls: any) => cls.nextSession ? [{ ...cls.nextSession, className: cls.title, classId: cls.id }] : [])
-    .filter((s: any) => s.status === "scheduled" || s.status === "live");
+  const upcomingSessions = sessions
+    .filter((s: any) => new Date(s.scheduledAt) >= today && (s.status === "scheduled" || s.status === "live"))
+    .sort((a: any, b: any) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
+    .slice(0, 5);
 
   const calDays = eachDayOfInterval({ start: startOfMonth(viewDate), end: endOfMonth(viewDate) });
   const firstDayOffset = (getDay(calDays[0]) + 6) % 7; // Mon=0
   const prevMonth = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
   const nextMonth = () => setViewDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
-
-  const upcomingSessions = sessions
-    .filter((s: any) => new Date(s.scheduledAt) >= today)
-    .sort((a: any, b: any) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
-    .slice(0, 5);
 
   return (
     <DashboardLayout>
@@ -70,7 +74,11 @@ export function StudentCalendar() {
                     <div className="space-y-1">
                       {daySessions.map((s: any) => (
                         <Link key={s.id} href={`/classroom/${s.id}`}>
-                          <div className="text-[10px] p-1 rounded bg-primary/20 text-primary border border-primary/30 truncate font-medium cursor-pointer hover:bg-primary/30 transition-colors">
+                          <div className={`text-[10px] p-1 rounded truncate font-medium cursor-pointer transition-colors ${
+                            s.status === "live"
+                              ? "bg-green-500/20 text-green-700 border border-green-500/30 hover:bg-green-500/30"
+                              : "bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30"
+                          }`}>
                             {format(new Date(s.scheduledAt), "HH:mm")} {s.className}
                           </div>
                         </Link>
@@ -112,6 +120,7 @@ export function StudentCalendar() {
                           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                             <Video className="w-3 h-3" />
                             {format(new Date(s.scheduledAt), "HH:mm")}
+                            {s.status === "live" && <span className="ml-1 text-green-600 font-bold">• En direct</span>}
                           </p>
                         </div>
                       </div>

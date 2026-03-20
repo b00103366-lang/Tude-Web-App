@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from "react";
-import { User, useGetMe, login, register, LoginRequest, RegisterRequest, saveToken, clearToken } from "@workspace/api-client-react";
+import { User, useGetMe, getGetMeQueryKey, login, register, LoginRequest, RegisterRequest, saveToken, clearToken, getToken } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface AuthContextType {
@@ -9,6 +9,24 @@ interface AuthContextType {
   registerFn: (data: RegisterRequest) => Promise<User>;
   logoutFn: () => void;
   refreshUser: () => Promise<void>;
+  startImpersonation: (token: string, targetUser: any) => void;
+  exitImpersonation: () => void;
+  impersonating: ImpersonationState | null;
+}
+
+export interface ImpersonationState {
+  adminToken: string;
+  adminUser: { fullName: string; email: string; id: number };
+  targetUser: { fullName: string; email: string; role: string; id: number };
+}
+
+const IMPERSONATION_KEY = "etude_impersonation";
+
+export function getImpersonationState(): ImpersonationState | null {
+  try {
+    const raw = localStorage.getItem(IMPERSONATION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -37,7 +55,7 @@ function saveAccount(user: User) {
 
 export function getDashboardPath(role: string) {
   if (role === "professor") return "/professor/dashboard";
-  if (role === "admin") return "/admin/dashboard";
+  if (role === "admin" || role === "super_admin") return "/admin/dashboard";
   return "/student/dashboard";
 }
 
@@ -45,8 +63,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
 
   const { data: user = null, isLoading } = useGetMe({
-    query: { retry: false, staleTime: 5 * 60 * 1000 }
+    query: { queryKey: getGetMeQueryKey(), retry: false, staleTime: 5 * 60 * 1000 }
   });
+
+  const impersonating = getImpersonationState();
 
   const loginFn = async (data: LoginRequest): Promise<User> => {
     const res = await login(data);
@@ -65,6 +85,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logoutFn = () => {
+    // If impersonating, exit that first
+    const imp = getImpersonationState();
+    if (imp) {
+      localStorage.removeItem(IMPERSONATION_KEY);
+      saveToken(imp.adminToken);
+    }
     clearToken();
     queryClient.setQueryData([`/api/auth/me`], null);
     queryClient.clear();
@@ -75,8 +101,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await queryClient.invalidateQueries({ queryKey: [`/api/auth/me`] });
   };
 
+  const startImpersonation = (token: string, targetUser: any) => {
+    const adminToken = getToken();
+    if (!adminToken || !user) return;
+
+    const state: ImpersonationState = {
+      adminToken,
+      adminUser: { fullName: user.fullName, email: user.email, id: (user as any).id },
+      targetUser: { fullName: targetUser.fullName, email: targetUser.email, role: targetUser.role, id: targetUser.id },
+    };
+    localStorage.setItem(IMPERSONATION_KEY, JSON.stringify(state));
+    saveToken(token);
+    queryClient.setQueryData([`/api/auth/me`], { ...targetUser, passwordHash: undefined });
+    queryClient.invalidateQueries();
+    window.location.href = getDashboardPath(targetUser.role);
+  };
+
+  const exitImpersonation = () => {
+    const imp = getImpersonationState();
+    if (!imp) return;
+    localStorage.removeItem(IMPERSONATION_KEY);
+    saveToken(imp.adminToken);
+    queryClient.setQueryData([`/api/auth/me`], null);
+    queryClient.clear();
+    window.location.href = "/admin/users";
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, loginFn, registerFn, logoutFn, refreshUser }}>
+    <AuthContext.Provider value={{ user, isLoading, loginFn, registerFn, logoutFn, refreshUser, startImpersonation, exitImpersonation, impersonating }}>
       {children}
     </AuthContext.Provider>
   );

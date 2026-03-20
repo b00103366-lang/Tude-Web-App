@@ -36,28 +36,32 @@ export function Navbar() {
           </span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-8 font-medium text-sm">
-          <Link href="/browse" className="text-foreground/80 hover:text-primary transition-colors">Explorer les Cours</Link>
-          <Link href="/professors" className="text-foreground/80 hover:text-primary transition-colors">Nos Professeurs</Link>
-          <Link href="/about" className="text-foreground/80 hover:text-primary transition-colors">À Propos</Link>
-        </nav>
+        {!user && (
+          <nav className="hidden md:flex items-center gap-8 font-medium text-sm">
+            <Link href="/courses" className="text-foreground/80 hover:text-primary transition-colors">Explorer les Cours</Link>
+            <Link href="/pricing" className="text-foreground/80 hover:text-primary transition-colors">Tarifs</Link>
+            <Link href="/about" className="text-foreground/80 hover:text-primary transition-colors">À Propos</Link>
+          </nav>
+        )}
 
         <div className="flex items-center gap-3">
-          {user ? (
+          {user && location !== "/" ? (
             <>
               <Link href={getDashboardLink()} className="hidden sm:block">
                 <Button variant="ghost" className="font-semibold">Mon Espace</Button>
               </Link>
               <div className="flex items-center gap-2 pl-4 border-l border-border">
-                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center border-2 border-primary/20">
-                  <User className="w-5 h-5 text-foreground/70" />
-                </div>
+                <Link href="/account">
+                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center border-2 border-primary/20 hover:border-primary/50 transition-colors cursor-pointer">
+                    <User className="w-5 h-5 text-foreground/70" />
+                  </div>
+                </Link>
                 <Button variant="ghost" size="sm" onClick={logoutFn} className="px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
                   <LogOut className="w-4 h-4" />
                 </Button>
               </div>
             </>
-          ) : (
+          ) : !user ? (
             <>
               <Link href="/login" className="hidden sm:block">
                 <Button variant="ghost">Connexion</Button>
@@ -66,7 +70,7 @@ export function Navbar() {
                 <Button>S'inscrire</Button>
               </Link>
             </>
-          )}
+          ) : null}
         </div>
       </div>
     </header>

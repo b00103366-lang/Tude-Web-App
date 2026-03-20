@@ -2,10 +2,11 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Button } from "@/components/ui/Premium";
 import { useAuth } from "@/hooks/use-auth";
 import { useGetProfessorStats } from "@workspace/api-client-react";
-import { Users, BookOpen, DollarSign, Star, ArrowUpRight, Video, ShieldCheck, Clock, AlertCircle, ArrowRight } from "lucide-react";
+import { Users, BookOpen, DollarSign, Star, ArrowUpRight, Video, ShieldCheck, Clock, AlertCircle, ArrowRight, RefreshCw } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn, formatTND } from "@/lib/utils";
 import { Link } from "wouter";
+import { AnnouncementsWidget } from "@/components/shared/AnnouncementsWidget";
 
 function KYCStateBanner({ status }: { status: string }) {
   if (status === "approved") return null;
@@ -35,6 +36,14 @@ function KYCStateBanner({ status }: { status: string }) {
       cta: "Voir les détails et re-soumettre",
       ctaVariant: "default" as const,
     },
+    needs_revision: {
+      icon: <RefreshCw className="w-12 h-12 text-amber-500 mx-auto mb-4" />,
+      title: "Des corrections sont demandées",
+      desc: "L'équipe de vérification a identifié des points à corriger dans votre dossier. Consultez les détails, apportez les modifications nécessaires, puis re-soumettez.",
+      badge: "bg-amber-50 border-amber-200 text-amber-900",
+      cta: "Corriger et re-soumettre mon dossier",
+      ctaVariant: "default" as const,
+    },
   };
 
   const cfg = config[status as keyof typeof config] ?? config.pending;
@@ -60,7 +69,7 @@ function KYCStateBanner({ status }: { status: string }) {
             <div className="space-y-3">
               {[
                 { done: true, label: "Créer un compte professeur" },
-                { done: status === "kyc_submitted" || status === "approved", active: status === "pending" || status === "rejected", label: "Soumettre vos documents (pièce d'identité, certificat)" },
+                { done: status === "kyc_submitted" || status === "approved" || status === "needs_revision" || status === "rejected", active: status === "pending", label: "Soumettre vos documents (pièce d'identité, certificat)" },
                 { done: status === "approved", label: "Approbation par l'équipe Étude+ (24–48h)" },
                 { done: false, label: "Créer votre premier cours" },
               ].map((step, i) => (
@@ -87,7 +96,7 @@ export function ProfessorDashboard() {
   const profStatus = (user as any)?.professorProfile?.status ?? "pending";
 
   const { data: stats, isLoading } = useGetProfessorStats(profId || 0, {
-    query: { enabled: !!profId && profStatus === "approved" }
+    query: { enabled: !!profId && profStatus === "approved" } as any
   });
 
   if (profStatus !== "approved") {
@@ -112,6 +121,8 @@ export function ProfessorDashboard() {
             </Link>
           }
         />
+
+        <AnnouncementsWidget />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[

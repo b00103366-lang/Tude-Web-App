@@ -1,11 +1,15 @@
 import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import { AuthProvider, useAuth, getDashboardPath } from "@/hooks/use-auth";
 import NotFound from "@/pages/not-found";
 
 // Pages
 import { Landing } from "@/pages/Landing";
+import { About } from "@/pages/About";
+import { Pricing } from "@/pages/Pricing";
+import { PublicBrowse } from "@/pages/PublicBrowse";
+import { Account } from "@/pages/Account";
 import { SelectRole } from "@/pages/SelectRole";
 import { Login } from "@/pages/auth/Login";
 import { Register } from "@/pages/auth/Register";
@@ -20,6 +24,7 @@ import { StudentGrades } from "@/pages/student/StudentGrades";
 import { StudentPayments } from "@/pages/student/StudentPayments";
 import { StudentNotifications } from "@/pages/student/StudentNotifications";
 import { StudentSettings } from "@/pages/student/StudentSettings";
+import { CoursePreview } from "@/pages/student/CoursePreview";
 
 // Professor Pages
 import { ProfessorDashboard } from "@/pages/professor/ProfessorDashboard";
@@ -31,14 +36,14 @@ import { ProfessorEarnings } from "@/pages/professor/ProfessorEarnings";
 import { ProfessorStudents } from "@/pages/professor/ProfessorStudents";
 import { ProfessorSettings } from "@/pages/professor/ProfessorSettings";
 import { ProfessorKYC } from "@/pages/professor/ProfessorKYC";
+import { ProfessorQualifications } from "@/pages/professor/ProfessorQualifications";
 
 // Admin Pages
 import { AdminDashboard } from "@/pages/admin/AdminDashboard";
 import { AdminUsers } from "@/pages/admin/AdminUsers";
-import { AdminProfessors } from "@/pages/admin/AdminProfessors";
-import { AdminClasses } from "@/pages/admin/AdminClasses";
-import { AdminTransactions } from "@/pages/admin/AdminTransactions";
+import { AdminFinances } from "@/pages/admin/AdminFinances";
 import { AdminSettings } from "@/pages/admin/AdminSettings";
+import { AdminAuditLogs } from "@/pages/admin/AdminAuditLogs";
 
 // Shared Pages
 import { Checkout } from "@/pages/checkout/Checkout";
@@ -58,7 +63,7 @@ function ProtectedRoute({ component: Component, allowedRoles }: { component: any
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Redirect to={`/${user.role}/dashboard`} />;
+    return <Redirect to={getDashboardPath(user.role)} />;
   }
 
   return <Component />;
@@ -68,7 +73,13 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Landing} />
-      <Route path="/select-role" component={SelectRole} /> 
+      <Route path="/about" component={About} />
+      <Route path="/pricing" component={Pricing} />
+      <Route path="/courses" component={PublicBrowse} />
+      <Route path="/account">
+        {() => <ProtectedRoute component={Account} />}
+      </Route>
+      <Route path="/select-role" component={SelectRole} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} /> 
 
@@ -78,6 +89,9 @@ function Router() {
       </Route>
       <Route path="/student/browse">
         {() => <ProtectedRoute component={BrowseClasses} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/student/browse/:id">
+        {() => <ProtectedRoute component={CoursePreview} allowedRoles={["student"]} />}
       </Route>
       <Route path="/student/classes">
         {() => <ProtectedRoute component={StudentClasses} allowedRoles={["student"]} />}
@@ -140,25 +154,38 @@ function Router() {
       <Route path="/professor/kyc">
         {() => <ProtectedRoute component={ProfessorKYC} allowedRoles={["professor"]} />}
       </Route>
-      
+      <Route path="/professor/qualifications">
+        {() => <ProtectedRoute component={ProfessorQualifications} allowedRoles={["professor"]} />}
+      </Route>
+
       {/* Admin Routes */}
       <Route path="/admin/dashboard">
-        {() => <ProtectedRoute component={AdminDashboard} allowedRoles={["admin"]} />}
+        {() => <ProtectedRoute component={AdminDashboard} allowedRoles={["admin", "super_admin"]} />}
       </Route>
       <Route path="/admin/users">
-        {() => <ProtectedRoute component={AdminUsers} allowedRoles={["admin"]} />}
+        {() => <ProtectedRoute component={AdminUsers} allowedRoles={["admin", "super_admin"]} />}
       </Route>
-      <Route path="/admin/professors">
-        {() => <ProtectedRoute component={AdminProfessors} allowedRoles={["admin"]} />}
+
+      {/* Super Admin only routes */}
+      <Route path="/admin/finances">
+        {() => <ProtectedRoute component={AdminFinances} allowedRoles={["super_admin"]} />}
       </Route>
-      <Route path="/admin/classes">
-        {() => <ProtectedRoute component={AdminClasses} allowedRoles={["admin"]} />}
-      </Route>
-      <Route path="/admin/transactions">
-        {() => <ProtectedRoute component={AdminTransactions} allowedRoles={["admin"]} />}
+      <Route path="/admin/audit-logs">
+        {() => <ProtectedRoute component={AdminAuditLogs} allowedRoles={["super_admin"]} />}
       </Route>
       <Route path="/admin/settings">
-        {() => <ProtectedRoute component={AdminSettings} allowedRoles={["admin"]} />}
+        {() => <ProtectedRoute component={AdminSettings} allowedRoles={["super_admin"]} />}
+      </Route>
+
+      {/* Redirect deprecated routes */}
+      <Route path="/admin/professors">
+        {() => <Redirect to="/admin/users" />}
+      </Route>
+      <Route path="/admin/classes">
+        {() => <Redirect to="/admin/dashboard" />}
+      </Route>
+      <Route path="/admin/transactions">
+        {() => <Redirect to="/admin/finances" />}
       </Route>
 
       <Route component={NotFound} />

@@ -13,7 +13,7 @@ export function ProfessorEarnings() {
   const { user } = useAuth();
   const profId = (user as any)?.professorProfile?.id;
   const { data: stats, isLoading } = useGetProfessorStats(profId || 0, {
-    query: { enabled: !!profId },
+    query: { enabled: !!profId } as any,
   });
 
   const [transactions, setTransactions] = useState<any[]>([]);

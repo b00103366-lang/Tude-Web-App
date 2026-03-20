@@ -1,15 +1,30 @@
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Button, Badge } from "@/components/ui/Premium";
-import { useGetMyEnrollments } from "@workspace/api-client-react";
-import { BookOpen, Calendar, PlayCircle, Clock, GraduationCap } from "lucide-react";
+import { useGetMyEnrollments, getToken } from "@workspace/api-client-react";
+import { BookOpen, Calendar, PlayCircle, Clock, GraduationCap, Wallet } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Link } from "wouter";
+import { AnnouncementsWidget } from "@/components/shared/AnnouncementsWidget";
+import { useQuery } from "@tanstack/react-query";
+import { formatTND } from "@/lib/utils";
 
 export function StudentDashboard() {
   const { user } = useAuth();
   const { data: enrollments = [], isLoading } = useGetMyEnrollments() as any;
+
+  const { data: creditData } = useQuery<{ balance: number }>({
+    queryKey: ["credits-balance"],
+    queryFn: async () => {
+      const token = getToken();
+      const res = await fetch("/api/credits/balance", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      return res.ok ? res.json() : { balance: 0 };
+    },
+  });
+  const creditBalance = creditData?.balance ?? 0;
 
   const activeEnrollments = enrollments.filter((e: any) => e.status === "active");
   const activeClasses = activeEnrollments.map((e: any) => e.class).filter(Boolean);
@@ -32,8 +47,10 @@ export function StudentDashboard() {
           }
         />
 
+        <AnnouncementsWidget />
+
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           <Card className="p-6 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-none">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
@@ -64,6 +81,17 @@ export function StudentDashboard() {
               <div>
                 <p className="text-muted-foreground font-medium">Inscriptions</p>
                 <p className="text-3xl font-bold text-foreground">{enrollments.length}</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200/50">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-amber-500/10 rounded-xl flex items-center justify-center">
+                <Wallet className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-amber-700 font-medium text-sm">Crédit Étude+</p>
+                <p className="text-2xl font-bold text-amber-800">{formatTND(creditBalance)}</p>
               </div>
             </div>
           </Card>

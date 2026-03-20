@@ -1,17 +1,17 @@
 import { Router } from "express";
 import { db, usersTable, studentProfilesTable, professorsTable } from "@workspace/db";
-import { eq, ilike, or } from "drizzle-orm";
-import { requireAuth } from "../lib/auth";
+import { eq } from "drizzle-orm";
+import { requireAuth, requireAdmin } from "../lib/auth";
 
 const router = Router();
 
-router.get("/", requireAuth, async (req, res) => {
+// Admin-only: list all users
+router.get("/", requireAuth, requireAdmin, async (req, res) => {
   const { role, page = "1", limit = "20" } = req.query as any;
-  const pageNum = parseInt(page);
-  const limitNum = parseInt(limit);
+  const pageNum = Math.max(1, parseInt(page) || 1);
+  const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
   const offset = (pageNum - 1) * limitNum;
 
-  let query = db.select().from(usersTable);
   const users = await db.select().from(usersTable).offset(offset).limit(limitNum);
   const filtered = role ? users.filter(u => u.role === role) : users;
 
@@ -23,8 +23,17 @@ router.get("/", requireAuth, async (req, res) => {
   });
 });
 
+// Self or admin: get a user by ID
 router.get("/:id", requireAuth, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id), 10);
+  if (isNaN(id) || id <= 0) { res.status(400).json({ error: "Invalid user ID" }); return; }
+
+  const requestingUser = (req as any).user;
+  if (requestingUser.id !== id && requestingUser.role !== "admin" && requestingUser.role !== "super_admin") {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
+
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id));
   if (!user) {
     res.status(404).json({ error: "User not found" });
@@ -45,8 +54,17 @@ router.get("/:id", requireAuth, async (req, res) => {
   res.json({ ...user, passwordHash: undefined, studentProfile, professorProfile });
 });
 
+// Self only (or admin): update a user profile
 router.put("/:id", requireAuth, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id), 10);
+  if (isNaN(id) || id <= 0) { res.status(400).json({ error: "Invalid user ID" }); return; }
+
+  const requestingUser = (req as any).user;
+  if (requestingUser.id !== id && requestingUser.role !== "admin" && requestingUser.role !== "super_admin") {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
+
   const { fullName, city, profilePhoto, gradeLevel, schoolName, preferredSubjects, subjects, gradeLevels, yearsOfExperience, bio, qualifications } = req.body;
 
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id));
@@ -55,8 +73,13 @@ router.put("/:id", requireAuth, async (req, res) => {
     return;
   }
 
+  if (fullName !== undefined && (typeof fullName !== "string" || fullName.trim().length === 0 || fullName.length > 200)) {
+    res.status(400).json({ error: "Invalid full name" });
+    return;
+  }
+
   await db.update(usersTable).set({
-    fullName: fullName || user.fullName,
+    fullName: fullName ? fullName.trim() : user.fullName,
     city: city !== undefined ? city : user.city,
     profilePhoto: profilePhoto !== undefined ? profilePhoto : user.profilePhoto,
   }).where(eq(usersTable.id, id));

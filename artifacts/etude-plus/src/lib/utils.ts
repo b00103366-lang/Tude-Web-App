@@ -6,9 +6,5 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatTND(amount: number) {
-  return new Intl.NumberFormat('fr-TN', {
-    style: 'currency',
-    currency: 'TND',
-    minimumFractionDigits: 2,
-  }).format(amount);
+  return `${amount.toFixed(3)} TND`;
 }

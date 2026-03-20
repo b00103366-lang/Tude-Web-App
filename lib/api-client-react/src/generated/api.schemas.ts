@@ -15,6 +15,7 @@ export const UserRole = {
   student: "student",
   professor: "professor",
   admin: "admin",
+  super_admin: "super_admin",
 } as const;
 
 export interface StudentProfile {
@@ -94,6 +95,7 @@ export interface Class {
   title: string;
   subject: string;
   gradeLevel: string;
+  sectionKey?: string | null;
   city: string;
   description: string;
   coverImage?: string | null;
@@ -333,6 +335,7 @@ export interface CreateClassRequest {
   title: string;
   subject: string;
   gradeLevel: string;
+  sectionKey?: string;
   city: string;
   description: string;
   coverImage?: string | null;

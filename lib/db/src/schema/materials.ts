@@ -3,6 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { classesTable } from "./classes";
 
+// type: "document" | "recorded_lecture" | "recorded_question"
 export const materialsTable = pgTable("materials", {
   id: serial("id").primaryKey(),
   classId: integer("class_id").references(() => classesTable.id, { onDelete: "cascade" }).notNull(),
@@ -10,6 +11,7 @@ export const materialsTable = pgTable("materials", {
   description: text("description"),
   fileUrl: text("file_url"),
   fileType: text("file_type"),
+  type: text("type").notNull().default("document"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

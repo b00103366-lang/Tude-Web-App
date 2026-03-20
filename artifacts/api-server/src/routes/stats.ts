@@ -1,18 +1,19 @@
 import { Router } from "express";
-import { db, usersTable, professorsTable, classesTable, transactionsTable, enrollmentsTable, gradesTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
-import { requireAuth } from "../lib/auth";
+import { db, usersTable, professorsTable, classesTable, transactionsTable, enrollmentsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import { requireAuth, requireAdmin } from "../lib/auth";
 
 const router = Router();
 
-router.get("/overview", requireAuth, async (req, res) => {
+// Admin-only: platform-wide overview
+router.get("/overview", requireAuth, requireAdmin, async (req, res) => {
   const users = await db.select().from(usersTable);
   const professors = await db.select().from(professorsTable);
   const classes = await db.select().from(classesTable);
   const transactions = await db.select().from(transactionsTable);
 
   const totalRevenue = transactions.filter(t => t.status === "completed").reduce((sum, t) => sum + t.amount, 0);
-  const pendingProfessors = professors.filter(p => p.status === "pending").length;
+  const pendingProfessors = professors.filter(p => p.status === "pending" || p.status === "kyc_submitted").length;
   const students = users.filter(u => u.role === "student");
 
   res.json({
@@ -25,8 +26,22 @@ router.get("/overview", requireAuth, async (req, res) => {
   });
 });
 
+// Professor stats — accessible by the professor themselves or an admin
 router.get("/professor/:id", requireAuth, async (req, res) => {
-  const profId = parseInt(req.params.id);
+  const profId = parseInt(String(req.params.id), 10);
+  if (isNaN(profId) || profId <= 0) { res.status(400).json({ error: "Invalid professor ID" }); return; }
+
+  const requestingUser = (req as any).user;
+
+  // Verify access: must be the professor themselves or an admin
+  if (requestingUser.role !== "admin") {
+    const [ownProf] = await db.select().from(professorsTable).where(eq(professorsTable.userId, requestingUser.id));
+    if (!ownProf || ownProf.id !== profId) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
+  }
+
   const transactions = await db.select().from(transactionsTable);
   const profClasses = await db.select().from(classesTable).where(eq(classesTable.professorId, profId));
   const classIds = profClasses.map(c => c.id);
@@ -40,8 +55,7 @@ router.get("/professor/:id", requireAuth, async (req, res) => {
   const uniqueStudents = new Set(profEnrollments.map(e => e.studentId)).size;
 
   const [prof] = await db.select().from(professorsTable).where(eq(professorsTable.id, profId));
-  
-  // Monthly earnings (last 6 months)
+
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const now = new Date();
   const earningsByMonth = Array.from({ length: 6 }, (_, i) => {

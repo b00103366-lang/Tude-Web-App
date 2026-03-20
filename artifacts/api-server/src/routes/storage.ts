@@ -1,37 +1,169 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { Readable } from "stream";
+import { mkdir, writeFile, readFile, stat } from "fs/promises";
+import { existsSync } from "fs";
+import { join } from "path";
+import { randomUUID } from "crypto";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
+import { requireAuth } from "../lib/auth";
 
 const router: IRouter = Router();
-const objectStorageService = new ObjectStorageService();
+
+const ALLOWED_CONTENT_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "application/pdf",
+  "video/mp4",
+  "video/webm",
+  "audio/mpeg",
+  "audio/mp4",
+]);
+
+const MAX_UPLOAD_BYTES = 100 * 1024 * 1024; // 100 MB
+
+// Directory for local-mode uploads (used when Replit object storage is unavailable)
+const LOCAL_UPLOAD_DIR = join(process.cwd(), "local-uploads");
+
+async function ensureLocalUploadDir() {
+  if (!existsSync(LOCAL_UPLOAD_DIR)) {
+    await mkdir(LOCAL_UPLOAD_DIR, { recursive: true });
+  }
+}
+
+// Check whether the Replit object-storage sidecar is reachable
+async function isReplitStorageAvailable(): Promise<boolean> {
+  if (!process.env["PRIVATE_OBJECT_DIR"]) return false;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 500);
+    const res = await fetch("http://127.0.0.1:1106/health", { signal: controller.signal });
+    clearTimeout(timeout);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * POST /storage/uploads/request-url
- * Request a presigned URL for file upload.
+ * Returns a presigned GCS URL when on Replit, or a local-mode signal otherwise.
  */
-router.post("/storage/uploads/request-url", async (req: Request, res: Response) => {
+router.post("/storage/uploads/request-url", requireAuth, async (req: Request, res: Response) => {
   const { name, size, contentType } = req.body ?? {};
+
   if (!name || !contentType) {
     res.status(400).json({ error: "Missing required fields: name, contentType" });
     return;
   }
 
-  try {
-    const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-    const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+  if (typeof name !== "string" || name.length > 255) {
+    res.status(400).json({ error: "Invalid file name" });
+    return;
+  }
 
-    res.json({ uploadURL, objectPath, metadata: { name, size, contentType } });
+  if (!ALLOWED_CONTENT_TYPES.has(contentType)) {
+    res.status(400).json({ error: "Unsupported file type" });
+    return;
+  }
+
+  if (size !== undefined && (typeof size !== "number" || size > MAX_UPLOAD_BYTES || size < 0)) {
+    res.status(400).json({ error: `File size must not exceed ${MAX_UPLOAD_BYTES / 1024 / 1024}MB` });
+    return;
+  }
+
+  // Try GCS / Replit object storage first
+  const replitAvailable = await isReplitStorageAvailable();
+  if (replitAvailable) {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+      res.json({ uploadURL, objectPath, metadata: { name, size, contentType } });
+      return;
+    } catch (error) {
+      console.error("GCS upload URL generation failed, falling back to local storage:", error);
+    }
+  }
+
+  // Local fallback
+  const ext = name.split(".").pop() ?? "bin";
+  const id = randomUUID();
+  const objectPath = `/local/${id}.${ext}`;
+  res.json({ uploadURL: null, objectPath, local: true, metadata: { name, size, contentType } });
+});
+
+/**
+ * POST /storage/uploads/direct
+ * Local-mode upload: accepts base64-encoded file content and saves to disk.
+ */
+router.post("/storage/uploads/direct", requireAuth, async (req: Request, res: Response) => {
+  const { objectPath, content, contentType } = req.body ?? {};
+
+  if (!objectPath || !content || !contentType) {
+    res.status(400).json({ error: "Missing required fields: objectPath, content, contentType" });
+    return;
+  }
+
+  if (!objectPath.startsWith("/local/")) {
+    res.status(400).json({ error: "Invalid object path for local upload" });
+    return;
+  }
+
+  // content is a data URL: "data:<type>;base64,<data>" or raw base64
+  let base64Data = content as string;
+  if (base64Data.includes(",")) {
+    base64Data = base64Data.split(",")[1];
+  }
+
+  try {
+    const buffer = Buffer.from(base64Data, "base64");
+    await ensureLocalUploadDir();
+    const filename = objectPath.replace("/local/", "");
+    await writeFile(join(LOCAL_UPLOAD_DIR, filename), buffer);
+    res.json({ objectPath });
   } catch (error) {
-    console.error("Error generating upload URL:", error);
-    res.status(500).json({ error: "Failed to generate upload URL" });
+    console.error("Local upload failed:", error);
+    res.status(500).json({ error: "Failed to save file locally" });
+  }
+});
+
+/**
+ * GET /storage/local/:filename
+ * Serve locally stored files. No auth required — filenames are unguessable UUIDs.
+ */
+router.get("/storage/local/:filename", async (req: Request, res: Response) => {
+  const filename = req.params.filename;
+  if (!filename || filename.includes("..") || filename.includes("/")) {
+    res.status(400).json({ error: "Invalid filename" });
+    return;
+  }
+
+  const filePath = join(LOCAL_UPLOAD_DIR, filename);
+  try {
+    await stat(filePath); // throws if not found
+    const data = await readFile(filePath);
+    const ext = filename.split(".").pop()?.toLowerCase();
+    const mimeMap: Record<string, string> = {
+      pdf: "application/pdf",
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+    };
+    res.setHeader("Content-Type", mimeMap[ext ?? ""] ?? "application/octet-stream");
+    res.send(data);
+  } catch {
+    res.status(404).json({ error: "File not found" });
   }
 });
 
 /**
  * GET /storage/public-objects/*
- * Serve public assets unconditionally (no auth).
+ * Serve public assets unconditionally (no auth required).
  */
 router.get("/storage/public-objects/*splat", async (req: Request, res: Response) => {
+  const objectStorageService = new ObjectStorageService();
   const filePath = (req.params as any).splat as string;
   try {
     const file = await objectStorageService.searchPublicObject(filePath);
@@ -55,9 +187,10 @@ router.get("/storage/public-objects/*splat", async (req: Request, res: Response)
 
 /**
  * GET /storage/objects/*
- * Serve private uploaded objects.
+ * Serve private uploaded objects. Requires authentication.
  */
-router.get("/storage/objects/*splat", async (req: Request, res: Response) => {
+router.get("/storage/objects/*splat", requireAuth, async (req: Request, res: Response) => {
+  const objectStorageService = new ObjectStorageService();
   const objectPath = `/objects/${(req.params as any).splat}`;
   try {
     const file = await objectStorageService.getObjectEntityFile(objectPath);

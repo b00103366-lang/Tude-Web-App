@@ -9,7 +9,6 @@
 export * from "./assignment";
 export * from "./authResponse";
 export * from "./checkoutRequest";
-export * from "./checkoutResponse";
 export * from "./class";
 export * from "./classesListResponse";
 export * from "./confirmPaymentRequest";

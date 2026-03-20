@@ -11,6 +11,12 @@ import notificationsRouter from "./notifications";
 import transactionsRouter from "./transactions";
 import reviewsRouter from "./reviews";
 import statsRouter from "./stats";
+import adminRouter from "./admin";
+import aiRouter from "./ai";
+import announcementsRouter from "./announcements";
+import creditsRouter from "./credits";
+import discountCodesRouter from "./discountCodes";
+import qualificationsRouter from "./qualifications";
 
 const router: IRouter = Router();
 
@@ -27,5 +33,12 @@ router.use("/transactions", transactionsRouter);
 router.use("/payments", transactionsRouter);
 router.use("/reviews", reviewsRouter);
 router.use("/stats", statsRouter);
+router.use("/admin", adminRouter);
+router.use("/ai", aiRouter);
+router.use("/announcements", announcementsRouter);
+router.use("/credits", creditsRouter);
+router.use("/discount-codes", discountCodesRouter);
+router.use("/admin/discount-codes", discountCodesRouter);
+router.use("/qualifications", qualificationsRouter);
 
 export default router;

@@ -12,9 +12,9 @@ export function StudentClasses() {
   const { data: enrollments, isLoading } = useGetMyEnrollments();
 
   const activeClasses = (enrollments ?? [])
-    .filter(e => e.status === "active")
+    .filter(e => e.status === "active" || e.status === "paid")
     .map(e => e.class)
-    .filter(Boolean);
+    .filter((c): c is NonNullable<typeof c> => c != null);
 
   const filtered = activeClasses.filter(c =>
     c.title.toLowerCase().includes(search.toLowerCase()) ||

@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, real, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, real, text, timestamp, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
@@ -16,6 +16,8 @@ export const transactionsTable = pgTable("transactions", {
   platformFee: real("platform_fee").notNull(),
   professorAmount: real("professor_amount").notNull(),
   status: transactionStatusEnum("status").notNull().default("pending"),
+  discountCode: text("discount_code"),
+  discountAmount: real("discount_amount"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

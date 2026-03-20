@@ -273,6 +273,14 @@ async function parseSuccessBody(
 
 export const TOKEN_KEY = "etude_auth_token";
 
+// Base URL for all API requests.
+// In production set VITE_API_BASE_URL=https://your-api.up.railway.app
+// In development leave it unset — relative paths are proxied by Vite.
+const API_BASE =
+  (typeof import.meta !== "undefined" &&
+    (import.meta as any).env?.VITE_API_BASE_URL) ??
+  "";
+
 export function saveToken(token: string) {
   try { localStorage.setItem(TOKEN_KEY, token); } catch {}
 }
@@ -290,6 +298,11 @@ export async function customFetch<T = unknown>(
   options: CustomFetchOptions = {},
 ): Promise<T> {
   const { responseType = "auto", headers: headersInit, ...init } = options;
+
+  // Prepend the API base URL when a relative path is given and a base is configured.
+  if (API_BASE && typeof input === "string" && input.startsWith("/")) {
+    input = `${API_BASE}${input}`;
+  }
 
   const method = resolveMethod(input, init.method);
 

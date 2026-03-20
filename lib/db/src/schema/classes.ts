@@ -8,7 +8,8 @@ export const classesTable = pgTable("classes", {
   professorId: integer("professor_id").references(() => professorsTable.id, { onDelete: "cascade" }).notNull(),
   title: text("title").notNull(),
   subject: text("subject").notNull(),
-  gradeLevel: text("grade_level").notNull(),
+  gradeLevel: text("grade_level").notNull(), // niveau key: "7eme", "bac", "2eme", etc.
+  sectionKey: text("section_key"),           // null for simple levels, "sciences_maths" etc.
   city: text("city").notNull(),
   description: text("description").notNull(),
   coverImage: text("cover_image"),
@@ -16,6 +17,7 @@ export const classesTable = pgTable("classes", {
   durationHours: real("duration_hours").notNull(),
   isRecurring: boolean("is_recurring").notNull().default(false),
   isPublished: boolean("is_published").notNull().default(true),
+  isArchived: boolean("is_archived").notNull().default(false),
   enrolledCount: integer("enrolled_count").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

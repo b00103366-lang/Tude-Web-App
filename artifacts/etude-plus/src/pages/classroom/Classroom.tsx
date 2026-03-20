@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRoute, Link, useLocation } from "wouter";
-import { Mic, MicOff, Video, VideoOff, MonitorUp, PhoneOff, MessageSquare, Users, PenTool, AlertCircle, Loader2, Send } from "lucide-react";
+import { MessageSquare, Users, AlertCircle, Loader2, Send, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { VideoRoom } from "@/components/video/VideoRoom";
 
 type SessionData = {
   session: { id: number; classId: number; title: string; description?: string | null; status: string; scheduledAt: string; durationHours: number; price: number };
@@ -17,20 +18,24 @@ function initials(name: string) {
   return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
-function Badge({ children, className }: { children: React.ReactNode; className?: string }) {
+function BadgeEl({ children, className }: { children: React.ReactNode; className?: string }) {
   return <span className={cn("px-2 py-0.5 rounded text-xs font-bold", className)}>{children}</span>;
 }
 
-function Tooltip({ children, content }: { children: React.ReactNode; content: string }) {
-  return (
-    <div className="relative group flex flex-col items-center">
-      {children}
-      <div className="absolute bottom-full mb-2 px-2 py-1 bg-zinc-800 text-xs font-medium text-white rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-        {content}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-800" />
-      </div>
-    </div>
-  );
+function getToken() {
+  return localStorage.getItem("etude_auth_token");
+}
+
+async function apiFetch(url: string, opts: RequestInit = {}) {
+  const token = getToken();
+  return fetch(url, {
+    ...opts,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(opts.headers ?? {}),
+    },
+  });
 }
 
 export function Classroom() {
@@ -42,25 +47,80 @@ export function Classroom() {
   const [data, setData] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [sessionStatus, setSessionStatus] = useState<string>("");
+  const [starting, setStarting] = useState(false);
+  const [jitsiJwt, setJitsiJwt] = useState<string | undefined>(undefined);
+  const [jitsiDomain, setJitsiDomain] = useState<string>("8x8.vc");
+  const [roomName, setRoomName] = useState<string>("");
 
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const chatBottomRef = useRef<HTMLDivElement>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const isProfessor = user?.role === "professor";
+
+  const fetchSession = useCallback(async () => {
+    if (!sessionId) return;
+    const token = getToken();
+    const r = await fetch(`/api/classes/sessions/${sessionId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!r.ok) throw new Error("Session introuvable");
+    return r.json();
+  }, [sessionId]);
+
+  // Initial load
   useEffect(() => {
     if (!sessionId) { setError("Session invalide."); setLoading(false); return; }
-    const token = localStorage.getItem("etude_auth_token");
-    fetch(`/api/classes/sessions/${sessionId}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
-      .then(r => { if (!r.ok) throw new Error("Session introuvable"); return r.json(); })
-      .then(d => { setData(d); setLoading(false); })
+
+    fetchSession()
+      .then(async d => {
+        setData(d);
+        setSessionStatus(d.session.status);
+
+        // Fetch JaaS JWT token (works for both professor and student)
+        try {
+          const tokenRes = await apiFetch(`/api/classes/sessions/${sessionId}/jitsi-token`);
+          if (tokenRes.ok) {
+            const tokenData = await tokenRes.json();
+            setJitsiJwt(tokenData.token);
+            setJitsiDomain(tokenData.domain ?? "8x8.vc");
+          }
+          // If JaaS not configured (503), silently fall back to meet.jit.si without JWT
+        } catch { /* ignore — video still loads without JWT */ }
+
+        // Professor auto-starts the session
+        if (user?.role === "professor" && d.session.status !== "live") {
+          setStarting(true);
+          apiFetch(`/api/classes/sessions/${sessionId}/start`, { method: "POST" })
+            .then(r => r.json())
+            .then(updated => { setSessionStatus(updated.status ?? "live"); setStarting(false); })
+            .catch(() => { setSessionStatus("live"); setStarting(false); });
+        }
+
+        setLoading(false);
+      })
       .catch(e => { setError(e.message); setLoading(false); });
-  }, [sessionId]);
+  }, [sessionId, user?.role]);
+
+  // Students poll every 5s until session is live
+  useEffect(() => {
+    if (isProfessor || sessionStatus === "live" || sessionStatus === "ended" || sessionStatus === "cancelled") return;
+
+    pollRef.current = setInterval(async () => {
+      try {
+        const d = await fetchSession();
+        setSessionStatus(d.session.status);
+        if (d.session.status === "live") {
+          if (pollRef.current) clearInterval(pollRef.current);
+        }
+      } catch { /* ignore */ }
+    }, 5000);
+
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [isProfessor, sessionStatus, fetchSession]);
 
   useEffect(() => {
     const t = setInterval(() => setElapsed(s => s + 1), 1000);
@@ -74,10 +134,11 @@ export function Classroom() {
   const pad = (n: number) => String(n).padStart(2, "0");
   const timerStr = `${pad(Math.floor(elapsed / 3600))}:${pad(Math.floor((elapsed % 3600) / 60))}:${pad(elapsed % 60)}`;
 
-  const handleExit = () => {
+  const handleExit = useCallback(() => {
+    if (pollRef.current) clearInterval(pollRef.current);
     if (user?.role === "professor") setLocation("/professor/dashboard");
     else setLocation("/student/dashboard");
-  };
+  }, [user?.role, setLocation]);
 
   const sendMessage = () => {
     const text = chatInput.trim();
@@ -93,12 +154,14 @@ export function Classroom() {
     setChatInput("");
   };
 
-  if (loading) {
+  if (loading || starting) {
     return (
       <div className="h-screen bg-[#0A0A0A] flex items-center justify-center">
         <div className="text-center text-white">
           <Loader2 className="w-10 h-10 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-zinc-400">Connexion à la salle...</p>
+          <p className="text-zinc-400">
+            {starting ? "Démarrage de la session..." : "Connexion à la salle..."}
+          </p>
         </div>
       </div>
     );
@@ -119,12 +182,37 @@ export function Classroom() {
     );
   }
 
+  // Student waiting room — professor hasn't started yet
+  if (!isProfessor && sessionStatus !== "live") {
+    const { session, professor } = data;
+    const profName = professor?.fullName ?? "Professeur";
+    return (
+      <div className="h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="text-center text-white max-w-md px-6">
+          <div className="w-24 h-24 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center mx-auto mb-6">
+            <Clock className="w-10 h-10 text-primary animate-pulse" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">{session.title}</h2>
+          <p className="text-zinc-400 mb-1">avec <span className="text-white font-medium">{profName}</span></p>
+          <p className="text-zinc-500 text-sm mb-8">En attente que le professeur démarre la session...</p>
+          <div className="flex items-center justify-center gap-2 bg-zinc-900 border border-zinc-800 rounded-full px-5 py-2.5 text-sm text-zinc-400 mb-8">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            Vérification automatique toutes les 5 secondes
+          </div>
+          <button onClick={handleExit} className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">
+            ← Retourner au tableau de bord
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const { session, professor, students } = data;
   const profName = professor?.fullName ?? "Professeur";
   const profInitials = initials(profName);
   const myName = user?.fullName ?? "Vous";
-  const myInitials = initials(myName);
-  const isProfessor = user?.role === "professor";
+
+  const displayName = user?.fullName ?? "Participant";
 
   const participantsList = [
     { id: 0, name: `${profName} (Hôte)`, initials: profInitials, role: "host" as const },
@@ -134,9 +222,11 @@ export function Classroom() {
       initials: initials(s.fullName),
       role: (s.id === user?.id ? "you" : "student") as "you" | "student",
     })),
-    ...(isProfessor ? [] : user ? [{ id: -1, name: `${myName} (Vous)`, initials: myInitials, role: "you" as const }] : []),
+    ...(isProfessor ? [] : user ? [{ id: -1, name: `${myName} (Vous)`, initials: initials(myName), role: "you" as const }] : []),
   ];
-  const uniqueParticipants = Array.from(new Map(participantsList.map(p => [p.id === user?.id && p.role === "you" ? "me" : p.id, p])).values());
+  const uniqueParticipants = Array.from(
+    new Map(participantsList.map(p => [p.id === user?.id && p.role === "you" ? "me" : p.id, p])).values()
+  );
 
   return (
     <div className="h-screen bg-[#0A0A0A] text-white flex flex-col overflow-hidden font-sans">
@@ -148,18 +238,25 @@ export function Classroom() {
           </Link>
           <div>
             <div className="flex items-center gap-3">
-              <Badge className="bg-red-500/10 text-red-500 border border-red-500/20 px-2.5 py-0.5 animate-pulse flex items-center gap-1.5">
+              <BadgeEl className="bg-red-500/10 text-red-500 border border-red-500/20 px-2.5 py-0.5 animate-pulse flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
                 EN DIRECT
-              </Badge>
+              </BadgeEl>
               <h1 className="font-bold text-base tracking-tight">{session.title}</h1>
+              {isProfessor && (
+                <BadgeEl className="bg-primary/10 text-primary border border-primary/20">
+                  Modérateur
+                </BadgeEl>
+              )}
             </div>
             <p className="text-xs text-zinc-400 mt-0.5">{profName} • {timerStr}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 bg-zinc-900/80 px-4 py-2 rounded-full border border-zinc-800">
           <Users className="w-4 h-4 text-zinc-400" />
-          <span className="text-sm font-medium text-zinc-300">{uniqueParticipants.length} Participant{uniqueParticipants.length !== 1 ? "s" : ""}</span>
+          <span className="text-sm font-medium text-zinc-300">
+            {uniqueParticipants.length} Participant{uniqueParticipants.length !== 1 ? "s" : ""}
+          </span>
         </div>
       </header>
 
@@ -180,7 +277,7 @@ export function Classroom() {
                 </div>
                 <div>
                   <span className="text-sm font-medium text-zinc-200 block">{p.name}</span>
-                  {p.role === "host" && <span className="text-[10px] text-primary">Professeur</span>}
+                  {p.role === "host" && <span className="text-[10px] text-primary">Modérateur</span>}
                 </div>
               </div>
             ))}
@@ -190,66 +287,15 @@ export function Classroom() {
           </div>
         </aside>
 
-        {/* Video Area */}
-        <main className="flex-1 p-6 flex flex-col relative bg-black">
-          <div className="flex-1 bg-zinc-900/50 rounded-3xl border border-zinc-800/50 relative overflow-hidden flex items-center justify-center shadow-2xl backdrop-blur-sm">
-            {/* Host video */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <div className="w-40 h-40 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border-4 border-zinc-800 shadow-2xl mb-6">
-                <span className="text-5xl text-primary font-bold">{profInitials}</span>
-              </div>
-              <p className="text-xl font-medium text-zinc-300">{profName}</p>
-              <p className="text-sm text-zinc-500 mt-1">La caméra est désactivée</p>
-            </div>
-            <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg text-sm font-medium border border-white/10 flex items-center gap-2">
-              <Mic className="w-3.5 h-3.5 text-green-400" />
-              {profInitials}
-            </div>
-
-            {/* Self PiP */}
-            <div className="absolute bottom-6 right-6 w-48 aspect-video bg-zinc-800 rounded-xl border-2 border-zinc-700 shadow-xl overflow-hidden flex flex-col items-center justify-center">
-              <div className="absolute inset-0 bg-zinc-700 flex flex-col items-center justify-center gap-2">
-                <div className="w-12 h-12 rounded-full bg-zinc-600 flex items-center justify-center">
-                  <span className="text-lg font-bold text-zinc-300">{myInitials}</span>
-                </div>
-                {isVideoOff && <span className="text-xs text-zinc-500">Caméra désactivée</span>}
-              </div>
-              <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur px-2 py-1 rounded text-[10px] font-medium flex items-center gap-1">
-                Vous {isMuted && <MicOff className="w-3 h-3 text-red-400" />}
-              </div>
-            </div>
-          </div>
-
-          {/* Controls */}
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-zinc-900/90 backdrop-blur-xl border border-white/10 p-2.5 rounded-2xl shadow-2xl">
-            <Tooltip content={isMuted ? "Activer le micro" : "Désactiver le micro"}>
-              <button onClick={() => setIsMuted(m => !m)} className={cn("w-12 h-12 rounded-xl flex items-center justify-center transition-all", isMuted ? "bg-red-500/20 text-red-500 hover:bg-red-500/30" : "bg-zinc-800 hover:bg-zinc-700 text-white")}>
-                {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-              </button>
-            </Tooltip>
-            <Tooltip content={isVideoOff ? "Activer la caméra" : "Désactiver la caméra"}>
-              <button onClick={() => setIsVideoOff(v => !v)} className={cn("w-12 h-12 rounded-xl flex items-center justify-center transition-all", isVideoOff ? "bg-red-500/20 text-red-500 hover:bg-red-500/30" : "bg-zinc-800 hover:bg-zinc-700 text-white")}>
-                {isVideoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
-              </button>
-            </Tooltip>
-            <div className="w-px h-8 bg-zinc-700 mx-2" />
-            <Tooltip content="Partager l'écran">
-              <button className="w-12 h-12 rounded-xl bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors text-white">
-                <MonitorUp className="w-5 h-5" />
-              </button>
-            </Tooltip>
-            <Tooltip content="Tableau blanc">
-              <button className="w-12 h-12 rounded-xl bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors text-white">
-                <PenTool className="w-5 h-5" />
-              </button>
-            </Tooltip>
-            <div className="w-px h-8 bg-zinc-700 mx-2" />
-            <Tooltip content="Quitter la session">
-              <button onClick={handleExit} className="h-12 px-6 rounded-xl bg-red-600 hover:bg-red-500 flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-600/20 font-medium">
-                <PhoneOff className="w-5 h-5" /> Quitter
-              </button>
-            </Tooltip>
-          </div>
+        {/* Video Area — Jitsi embedded */}
+        <main className="flex-1 flex flex-col overflow-hidden bg-zinc-950">
+          <VideoRoom
+            roomName={jitsiJwt ? roomName : `etude-class-${session.classId}-session-${session.id}`}
+            displayName={displayName}
+            onLeave={handleExit}
+            jwt={jitsiJwt}
+            domain={jitsiJwt ? jitsiDomain : "meet.jit.si"}
+          />
         </main>
 
         {/* Right Sidebar – Chat */}

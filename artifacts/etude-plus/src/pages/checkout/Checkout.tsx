@@ -2,16 +2,16 @@ import { useState } from "react";
 import { useRoute, Link, useLocation } from "wouter";
 import { Navbar } from "@/components/layout/Navbar";
 import { Card, Button, Input, Label, FadeIn } from "@/components/ui/Premium";
-import { ShieldCheck, CreditCard, AlertCircle, Loader2 } from "lucide-react";
+import { ShieldCheck, CreditCard, AlertCircle, Loader2, Tag, CheckCircle2, ChevronDown, X } from "lucide-react";
 import { formatTND } from "@/lib/utils";
-import { useGetClass, useCheckout, useConfirmPayment } from "@workspace/api-client-react";
+import { useGetClass, useCheckout, useConfirmPayment, getToken } from "@workspace/api-client-react";
 
 export function Checkout() {
   const [, params] = useRoute("/checkout/:id");
   const classId = Number(params?.id);
   const [, setLocation] = useLocation();
 
-  const { data: cls, isLoading: isClassLoading, isError } = useGetClass(classId, { query: { enabled: !!classId } });
+  const { data: cls, isLoading: isClassLoading, isError } = useGetClass(classId, { query: { enabled: !!classId } as any });
   const checkoutMutation = useCheckout();
   const confirmPaymentMutation = useConfirmPayment();
 
@@ -21,15 +21,70 @@ export function Checkout() {
   const [cvv, setCvv] = useState("");
   const [formError, setFormError] = useState("");
 
-  const platformFee = (cls?.price ?? 0) * 0.15;
-  const total = (cls?.price ?? 0) + platformFee;
+  // Promo code state
+  const [promoOpen, setPromoOpen] = useState(false);
+  const [promoInput, setPromoInput] = useState("");
+  const [promoStatus, setPromoStatus] = useState<"idle" | "checking" | "applied" | "error">("idle");
+  const [promoError, setPromoError] = useState("");
+  const [appliedCode, setAppliedCode] = useState<string | null>(null);
+  const [discountPct, setDiscountPct] = useState(0);
+  const [discountAmt, setDiscountAmt] = useState(0);
+
+  const originalPrice = cls?.price ?? 0;
+  const total = appliedCode ? Math.round((originalPrice - discountAmt) * 100) / 100 : originalPrice;
+
+  const applyPromoCode = async () => {
+    const code = promoInput.trim().toUpperCase();
+    if (!code) return;
+    setPromoStatus("checking");
+    setPromoError("");
+    try {
+      const token = getToken();
+      const res = await fetch("/api/discount-codes/validate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ code, classPrice: originalPrice }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setAppliedCode(data.code);
+        setDiscountPct(data.discountPercentage);
+        setDiscountAmt(data.discountAmount);
+        setPromoStatus("applied");
+      } else {
+        setPromoStatus("error");
+        setPromoError(
+          data.reason === "Code expiré" ? "Code expiré" :
+          data.reason === "Code épuisé" ? "Ce code a atteint son nombre maximal d'utilisations" :
+          "Code promo invalide"
+        );
+      }
+    } catch {
+      setPromoStatus("error");
+      setPromoError("Erreur lors de la vérification du code");
+    }
+  };
+
+  const removePromoCode = () => {
+    setAppliedCode(null);
+    setDiscountPct(0);
+    setDiscountAmt(0);
+    setPromoInput("");
+    setPromoStatus("idle");
+    setPromoError("");
+  };
 
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
     try {
-      const checkoutRes = await checkoutMutation.mutateAsync({ data: { classId } });
-      const transactionId = checkoutRes?.transactionId ?? checkoutRes?.id;
+      const checkoutRes = await checkoutMutation.mutateAsync({
+        data: { classId, discountCode: appliedCode ?? undefined } as any,
+      });
+      const transactionId = checkoutRes?.transactionId;
       if (!transactionId) throw new Error("Transaction non créée");
       await confirmPaymentMutation.mutateAsync({
         data: {
@@ -176,25 +231,87 @@ export function Checkout() {
                   </p>
                 </div>
 
-                <div className="space-y-3 text-sm mb-6 pb-6 border-b border-border">
+                {/* Price breakdown */}
+                <div className="space-y-3 text-sm mb-4 pb-4 border-b border-border">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Prix du cours</span>
-                    <span className="font-medium">{formatTND(cls.price)}</span>
+                    <span className={`font-medium ${appliedCode ? "line-through text-muted-foreground" : ""}`}>
+                      {formatTND(originalPrice)}
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Frais de plateforme (15%)</span>
-                    <span className="font-medium">{formatTND(platformFee)}</span>
-                  </div>
+                  {appliedCode && (
+                    <div className="flex justify-between text-green-600">
+                      <span className="flex items-center gap-1.5">
+                        <Tag className="w-3.5 h-3.5" />
+                        Code {appliedCode} (−{discountPct}%)
+                      </span>
+                      <span className="font-semibold">−{formatTND(discountAmt)}</span>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex justify-between items-center text-lg font-bold">
-                  <span>Total</span>
-                  <span className="text-primary">{formatTND(total)}</span>
+                <div className="flex justify-between items-center text-lg font-bold mb-6">
+                  <span>Total à payer</span>
+                  <span className={`${appliedCode ? "text-green-600" : "text-primary"}`}>{formatTND(total)}</span>
                 </div>
 
-                <div className="mt-4 text-xs text-muted-foreground text-center">
-                  Le professeur perçoit {formatTND(cls.price * 0.85)} (85%)
-                </div>
+                {/* Promo code section */}
+                {promoStatus === "applied" ? (
+                  <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-xl">
+                    <div className="flex items-center gap-2 text-green-700">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span className="text-sm font-semibold">{appliedCode} appliqué !</span>
+                    </div>
+                    <button onClick={removePromoCode} className="text-green-600 hover:text-green-800 transition-colors">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setPromoOpen(o => !o)}
+                      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+                    >
+                      <Tag className="w-4 h-4" />
+                      Vous avez un code promo ?
+                      <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${promoOpen ? "rotate-180" : ""}`} />
+                    </button>
+
+                    {promoOpen && (
+                      <div className="mt-3 space-y-2">
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="ex: ETUDE20"
+                            value={promoInput}
+                            onChange={e => {
+                              setPromoInput(e.target.value.toUpperCase());
+                              if (promoStatus === "error") { setPromoStatus("idle"); setPromoError(""); }
+                            }}
+                            onKeyDown={e => e.key === "Enter" && (e.preventDefault(), applyPromoCode())}
+                            className="flex-1 uppercase text-sm"
+                            disabled={promoStatus === "checking"}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={applyPromoCode}
+                            disabled={promoStatus === "checking" || !promoInput.trim()}
+                            className="shrink-0"
+                          >
+                            {promoStatus === "checking" ? <Loader2 className="w-4 h-4 animate-spin" /> : "Appliquer"}
+                          </Button>
+                        </div>
+                        {promoStatus === "error" && (
+                          <p className="text-xs text-destructive flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" /> {promoError}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </Card>
             </div>
           </div>

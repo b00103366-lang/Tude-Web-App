@@ -1,77 +1,127 @@
+import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Button, Input, Label } from "@/components/ui/Premium";
+import { ProfileCard } from "@/components/shared/ProfileCard";
+import { LevelPicker } from "@/components/shared/LevelPicker";
 import { useAuth } from "@/hooks/use-auth";
-import { User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getToken } from "@workspace/api-client-react";
+import { KeyRound, Loader2, GraduationCap, Save } from "lucide-react";
+import { getLevelLabel } from "@/lib/educationConfig";
 
-export function StudentSettings() {
-  const { user } = useAuth();
+function ChangePasswordCard() {
   const { toast } = useToast();
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handle = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({ title: "Succès", description: "Profil mis à jour avec succès." });
+    if (next !== confirm) { toast({ title: "Erreur", description: "Les mots de passe ne correspondent pas.", variant: "destructive" }); return; }
+    if (next.length < 8) { toast({ title: "Erreur", description: "Minimum 8 caractères.", variant: "destructive" }); return; }
+    setSaving(true);
+    try {
+      const token = getToken();
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ currentPassword: current, newPassword: next }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erreur");
+      toast({ title: "Mot de passe mis à jour" });
+      setCurrent(""); setNext(""); setConfirm("");
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+    } finally { setSaving(false); }
   };
 
   return (
+    <Card className="p-8">
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border">
+        <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+          <KeyRound className="w-4 h-4 text-primary" />
+        </div>
+        <h3 className="font-bold text-lg">Changer le mot de passe</h3>
+      </div>
+      <form onSubmit={handle} className="space-y-4 max-w-sm">
+        <div><Label>Mot de passe actuel</Label><Input type="password" value={current} onChange={e => setCurrent(e.target.value)} placeholder="••••••••" /></div>
+        <div><Label>Nouveau mot de passe</Label><Input type="password" value={next} onChange={e => setNext(e.target.value)} placeholder="Minimum 8 caractères" /></div>
+        <div><Label>Confirmer</Label><Input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Répéter le mot de passe" /></div>
+        <Button type="submit" disabled={saving}>
+          {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Mise à jour…</> : "Changer le mot de passe"}
+        </Button>
+      </form>
+    </Card>
+  );
+}
+
+function EducationLevelCard() {
+  const { user, refreshUser } = useAuth();
+  const { toast } = useToast();
+  const currentLevel: string = (user as any)?.studentProfile?.gradeLevel ?? "";
+  const currentSection: string | null = (user as any)?.studentProfile?.educationSection ?? null;
+  const [niveauKey, setNiveauKey] = useState(currentLevel);
+  const [sectionKey, setSectionKey] = useState<string | null>(currentSection);
+  const [saving, setSaving] = useState(false);
+
+  const changed = niveauKey !== currentLevel || sectionKey !== currentSection;
+
+  const handle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!niveauKey) { toast({ title: "Erreur", description: "Sélectionnez un niveau.", variant: "destructive" }); return; }
+    setSaving(true);
+    try {
+      const token = getToken();
+      const res = await fetch(`/api/users/${(user as any).id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ gradeLevel: niveauKey, educationSection: sectionKey }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error((d as any).error ?? "Erreur"); }
+      await refreshUser();
+      toast({ title: "Niveau mis à jour", description: `Vous êtes maintenant en ${getLevelLabel(niveauKey)}.` });
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <Card className="p-8">
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border">
+        <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+          <GraduationCap className="w-4 h-4 text-primary" />
+        </div>
+        <div>
+          <h3 className="font-bold text-lg">Niveau scolaire</h3>
+          {currentLevel && (
+            <p className="text-xs text-muted-foreground mt-0.5">Actuel : <strong>{getLevelLabel(currentLevel)}</strong></p>
+          )}
+        </div>
+      </div>
+      <p className="text-sm text-muted-foreground mb-4">
+        Votre niveau détermine quels cours vous sont affichés. Modifiez-le si vous avez fait une erreur ou si vous avez changé d'année.
+      </p>
+      <form onSubmit={handle} className="space-y-4">
+        <LevelPicker niveauValue={niveauKey} sectionValue={sectionKey} onChange={(n, s) => { setNiveauKey(n); setSectionKey(s); }} />
+        <Button type="submit" disabled={saving || !changed || !niveauKey}>
+          {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Mise à jour…</> : <><Save className="w-4 h-4 mr-2" />Enregistrer le niveau</>}
+        </Button>
+      </form>
+    </Card>
+  );
+}
+
+export function StudentSettings() {
+  return (
     <DashboardLayout>
       <FadeIn>
-        <PageHeader 
-          title="Paramètres du compte" 
-          description="Gérez vos informations personnelles."
-        />
-
-        <div className="max-w-3xl">
-          <Card className="p-8 mb-8">
-            <div className="flex items-center gap-6 mb-8 pb-8 border-b border-border">
-              <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center border-4 border-background shadow-lg">
-                <User className="w-10 h-10 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold">{user?.fullName}</h3>
-                <p className="text-muted-foreground">Élève • {user?.email}</p>
-                <Button variant="outline" size="sm" className="mt-3">Changer la photo</Button>
-              </div>
-            </div>
-
-            <form onSubmit={handleSave} className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <Label>Nom complet</Label>
-                  <Input defaultValue={user?.fullName} />
-                </div>
-                <div>
-                  <Label>Email</Label>
-                  <Input defaultValue={user?.email} disabled className="bg-muted" />
-                </div>
-                <div>
-                  <Label>Ville</Label>
-                  <Input defaultValue="Tunis" />
-                </div>
-                <div>
-                  <Label>Niveau scolaire</Label>
-                  <select className="flex h-12 w-full rounded-xl border-2 border-border bg-background px-4 py-2 text-sm focus-visible:outline-none focus-visible:border-primary">
-                    <option>Baccalauréat</option>
-                    <option>3ème Année Secondaire</option>
-                  </select>
-                </div>
-                <div className="md:col-span-2">
-                  <Label>Lycée / Établissement</Label>
-                  <Input defaultValue="Lycée Pilote de Tunis" />
-                </div>
-              </div>
-              
-              <div className="pt-6">
-                <Button type="submit">Enregistrer les modifications</Button>
-              </div>
-            </form>
-          </Card>
-
-          <Card className="p-8 border-destructive/20 bg-destructive/5">
-            <h3 className="font-bold text-lg text-destructive mb-2">Zone de danger</h3>
-            <p className="text-muted-foreground text-sm mb-6">La suppression de votre compte effacera toutes vos données et votre historique de cours de manière permanente.</p>
-            <Button variant="destructive">Supprimer mon compte</Button>
-          </Card>
+        <PageHeader title="Mon profil" description="Gérez vos informations personnelles et votre niveau scolaire." />
+        <div className="max-w-3xl space-y-6">
+          <ProfileCard />
+          <EducationLevelCard />
+          <ChangePasswordCard />
         </div>
       </FadeIn>
     </DashboardLayout>

@@ -1,6 +1,7 @@
 export * from "./users";
 export * from "./professors";
 export * from "./classes";
+export * from "./audit-logs";
 export * from "./sessions";
 export * from "./enrollments";
 export * from "./materials";
@@ -11,3 +12,10 @@ export * from "./grades";
 export * from "./notifications";
 export * from "./transactions";
 export * from "./reviews";
+export * from "./announcements";
+export * from "./credits";
+export { emailVerificationsTable, studentProfilesTable } from "./users";
+export * from "./discountCodes";
+export * from "./professorSubjectRequests";
+export * from "./teacherQualifications";
+export * from "./teacherQualificationRequests";
