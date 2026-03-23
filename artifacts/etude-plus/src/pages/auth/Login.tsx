@@ -18,6 +18,7 @@ export function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -27,7 +28,7 @@ export function Login() {
   const onSubmit = async (data: z.infer<typeof schema>) => {
     setIsLoading(true);
     try {
-      const user = await loginFn(data);
+      const user = await loginFn({ ...data, rememberMe });
       setLocation(getDashboardPath(user.role));
     } catch (e: any) {
       const msg = e?.data?.error ?? e?.message ?? "Identifiants invalides";
@@ -66,6 +67,22 @@ export function Login() {
               <Input type="password" {...register("password")} placeholder="••••••••" autoComplete="current-password" />
               {errors.password && <p className="text-destructive text-sm mt-1">{errors.password.message}</p>}
             </div>
+
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <div
+                onClick={() => setRememberMe(v => !v)}
+                className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${rememberMe ? "bg-primary border-primary" : "border-border bg-background"}`}
+              >
+                {rememberMe && (
+                  <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 12 12">
+                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+              <span className="text-sm text-muted-foreground" onClick={() => setRememberMe(v => !v)}>
+                Se souvenir de moi pendant 30 jours
+              </span>
+            </label>
 
             <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>
               Se connecter

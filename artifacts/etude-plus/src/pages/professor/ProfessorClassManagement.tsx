@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { PracticeQuestionsTab } from "@/components/shared/PracticeQuestionsTab";
 import { useRoute, Link } from "wouter";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -361,6 +362,7 @@ export function ProfessorClassManagement() {
     { id: "assignments", label: "Devoirs", icon: BookOpen },
     { id: "students", label: `Élèves (${enrollments.length})`, icon: Users },
     { id: "reviews", label: `Avis${reviews.length > 0 ? ` (${reviews.length})` : ""}`, icon: Star },
+    { id: "practice", label: "Questions d'entraînement", icon: BookOpen },
     { id: "settings", label: "Paramètres", icon: Settings },
   ];
 
@@ -875,6 +877,13 @@ export function ProfessorClassManagement() {
                 </div>
               )}
             </div>
+          </FadeIn>
+        )}
+
+        {/* ─── PRACTICE QUESTIONS ─── */}
+        {activeTab === "practice" && cls && (
+          <FadeIn>
+            <PracticeQuestionsTab classId={cls.id} readOnly />
           </FadeIn>
         )}
 

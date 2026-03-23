@@ -9,8 +9,7 @@ import {
   isLegacyPasswordHash,
 } from "../lib/auth";
 import { logEvent } from "../lib/auditLog";
-import { sendVerificationEmail, isSmtpConfigured } from "../lib/email";
-import { sendAccountVerificationEmail } from "../services/emailService";
+import { sendOtpEmail, sendAccountVerificationEmail } from "../services/emailService";
 import { randomBytes } from "crypto";
 import { lt, isNull, or } from "drizzle-orm";
 
@@ -67,8 +66,21 @@ router.get("/me", requireAuth, async (req, res) => {
   });
 });
 
+const SESSION_COOKIE = "etude_session";
+const IS_PROD = process.env["NODE_ENV"] === "production";
+
+function setSessionCookie(res: any, token: string, rememberMe: boolean) {
+  res.cookie(SESSION_COOKIE, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: IS_PROD,
+    path: "/",
+    ...(rememberMe ? { maxAge: 30 * 24 * 60 * 60 * 1000 } : {}),
+  });
+}
+
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, rememberMe } = req.body;
   if (!email || !password) {
     res.status(400).json({ error: "Email and password required" });
     return;
@@ -123,6 +135,9 @@ router.post("/login", async (req, res) => {
 
   const token = generateToken(user.id);
 
+  // Set httpOnly session cookie
+  setSessionCookie(res, token, rememberMe === true);
+
   await logEvent(req, "user_login", "user", user.id, user.id, {
     email: user.email, role: user.role,
   });
@@ -168,11 +183,10 @@ router.post("/send-code", async (req, res) => {
 
   await db.insert(emailVerificationsTable).values({ email: normalizedEmail, code, expiresAt });
 
-  await sendVerificationEmail(normalizedEmail, code);
+  sendOtpEmail(normalizedEmail, code);
 
-  // In dev mode (no SMTP), return the code so the UI can display it
-  const devCode = isSmtpConfigured() ? undefined : code;
-  res.json({ success: true, message: "Code envoyé", devCode });
+  const IS_DEV = process.env["NODE_ENV"] !== "production";
+  res.json({ success: true, message: "Code envoyé", ...(IS_DEV ? { devCode: code } : {}) });
 });
 
 // POST /api/auth/verify-code — verify the OTP
@@ -206,7 +220,7 @@ router.post("/register", async (req, res) => {
   const {
     email, password, role, fullName, city, phone,
     subjects, gradeLevels, bio, qualifications, yearsExperience, currentSchool,
-    gradeLevel, schoolName,
+    gradeLevel, schoolName, termsAccepted,
   } = req.body;
 
   if (!email || !password || !role || !fullName) {
@@ -257,6 +271,7 @@ router.post("/register", async (req, res) => {
   const verificationToken = randomBytes(32).toString("hex");
   const verificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
+  const now = new Date();
   const [newUser] = await db.insert(usersTable).values({
     email: normalizedEmail,
     passwordHash: await hashPassword(password),
@@ -268,6 +283,8 @@ router.post("/register", async (req, res) => {
     emailVerified: false,
     emailVerificationToken: verificationToken,
     emailVerificationExpiresAt: verificationExpiresAt,
+    termsAccepted: termsAccepted === true,
+    termsAcceptedAt: termsAccepted === true ? now : null,
   }).returning();
 
   // Fire-and-forget: send email confirmation link
@@ -307,6 +324,9 @@ router.post("/register", async (req, res) => {
   }
 
   const token = generateToken(newUser.id);
+
+  // Set a session cookie (no rememberMe on registration — user must explicitly opt in on login)
+  setSessionCookie(res, token, false);
 
   await logEvent(req, "user_registered", "user", newUser.id, newUser.id, {
     email: newUser.email, role: newUser.role, fullName: newUser.fullName,
@@ -362,7 +382,16 @@ router.post("/change-password", requireAuth, async (req, res) => {
 });
 
 router.post("/logout", (_req, res) => {
+  res.clearCookie(SESSION_COOKIE, { httpOnly: true, sameSite: "lax", secure: IS_PROD, path: "/" });
   res.json({ success: true });
+});
+
+// POST /api/auth/restore-session — used by exitImpersonation to put the admin cookie back
+router.post("/restore-session", requireAuth, async (req, res) => {
+  const user = (req as any).user;
+  const newToken = generateToken(user.id);
+  setSessionCookie(res, newToken, true);
+  res.json({ success: true, token: newToken });
 });
 
 // GET /api/auth/verify-email?token=TOKEN — click-to-verify link

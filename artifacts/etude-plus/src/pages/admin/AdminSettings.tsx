@@ -130,11 +130,24 @@ export function AdminSettings() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Platform settings (display-only for production — values come from code)
+  // Platform settings — loaded from /api/admin/settings
   const [commission, setCommission] = useState("15");
   const [maxPrice, setMaxPrice] = useState("30");
   const [maintenance, setMaintenance] = useState(false);
   const [savingPlatform, setSavingPlatform] = useState(false);
+
+  // Load real settings on mount
+  const { data: platformSettings } = useQuery<any>({
+    queryKey: ["admin-platform-settings"],
+    queryFn: () => adminFetch("/api/admin/settings"),
+  });
+
+  // Sync state when settings load
+  if (platformSettings && commission === "15" && maxPrice === "30" && !maintenance) {
+    if (platformSettings.commissionRate !== undefined) setCommission(String(platformSettings.commissionRate));
+    if (platformSettings.maxCoursePrice !== undefined) setMaxPrice(String(platformSettings.maxCoursePrice));
+    if (platformSettings.maintenanceMode !== undefined) setMaintenance(!!platformSettings.maintenanceMode);
+  }
 
   // Password change
   const [currentPassword, setCurrentPassword] = useState("");
@@ -155,15 +168,23 @@ export function AdminSettings() {
       return;
     }
     setSavingPlatform(true);
-    // Simulate save (in production these would update DB settings)
-    await new Promise(r => setTimeout(r, 600));
-    setSavingPlatform(false);
-    toast({
-      title: "Paramètres enregistrés",
-      description: maintenance
-        ? "Mode maintenance activé. La plateforme est hors ligne pour les utilisateurs."
-        : "Paramètres de la plateforme mis à jour.",
-    });
+    try {
+      await adminFetch("/api/admin/settings", {
+        method: "PUT",
+        body: JSON.stringify({ commissionRate: c, maxCoursePrice: p, maintenanceMode: maintenance }),
+      });
+      qc.invalidateQueries({ queryKey: ["admin-platform-settings"] });
+      toast({
+        title: "Paramètres enregistrés",
+        description: maintenance
+          ? "Mode maintenance activé. La plateforme est hors ligne pour les utilisateurs."
+          : "Paramètres de la plateforme mis à jour.",
+      });
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingPlatform(false);
+    }
   };
 
   const handleSaveAccount = async (e: React.FormEvent) => {

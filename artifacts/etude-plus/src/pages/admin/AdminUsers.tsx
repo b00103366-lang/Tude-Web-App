@@ -36,10 +36,14 @@ const KYC_CONFIG = {
 
 // ── API Helper ────────────────────────────────────────────────────────────────
 
+const ADMIN_API_BASE = (import.meta as any).env?.VITE_API_BASE_URL ?? "";
+
 async function adminFetch(url: string, opts: RequestInit = {}) {
   const token = getToken();
-  const res = await fetch(url, {
+  const fullUrl = ADMIN_API_BASE && url.startsWith("/") ? `${ADMIN_API_BASE}${url}` : url;
+  const res = await fetch(fullUrl, {
     ...opts,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -669,7 +673,7 @@ export function AdminUsers() {
   const handleImpersonate = async (targetUser: any) => {
     try {
       const data = await adminFetch(`/api/admin/users/${targetUser.id}/impersonate`, { method: "POST" });
-      startImpersonation(data.token, data.user);
+      await startImpersonation(data.token, data.user);
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
     }

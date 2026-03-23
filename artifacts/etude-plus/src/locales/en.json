@@ -1,0 +1,59 @@
+{
+  "nav": {
+    "exploreCourses": "Explore Courses",
+    "pricing": "Pricing",
+    "about": "About",
+    "mySpace": "My Space",
+    "login": "Log In",
+    "register": "Sign Up"
+  },
+  "sidebar": {
+    "controlPanel": "Control Panel",
+    "administration": "Administration",
+    "logout": "Log Out",
+    "roles": {
+      "super_admin": "Super Admin",
+      "admin": "Admin",
+      "professor": "Teacher",
+      "student": "Student"
+    },
+    "student": {
+      "dashboard": "Dashboard",
+      "browse": "Browse",
+      "classes": "My Classes",
+      "calendar": "Calendar",
+      "grades": "Grades",
+      "payments": "Payments",
+      "notifications": "Notifications",
+      "settings": "Settings"
+    },
+    "professor": {
+      "dashboard": "Dashboard",
+      "classes": "My Classes",
+      "qualifications": "Qualifications",
+      "calendar": "Calendar",
+      "students": "Students",
+      "earnings": "Earnings",
+      "settings": "Settings"
+    },
+    "admin": {
+      "dashboard": "Overview",
+      "users": "Users",
+      "finances": "Finances",
+      "auditLogs": "Audit Log",
+      "settings": "Settings"
+    }
+  },
+  "kyc": {
+    "notSubmitted": "Complete your verification to publish courses",
+    "startVerification": "Start verification →",
+    "pending": "Your application is under review (24-48h)",
+    "rejected": "Your application was rejected.",
+    "seeReasons": "View reasons and resubmit →"
+  },
+  "impersonation": {
+    "actingAs": "Acting as",
+    "loggedInAs": "Logged in as",
+    "back": "Back to admin panel"
+  }
+}

@@ -51,28 +51,22 @@ export function generateToken(userId: number): string {
   return Buffer.from(`${payload}:${sig}`).toString("base64url");
 }
 
-/** Middleware: require a valid signed auth token. Attaches user to req. */
-export async function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const rawHeader = req.headers.authorization;
-  if (!rawHeader?.startsWith("Bearer ")) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
+const SESSION_COOKIE = "etude_session";
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: process.env["NODE_ENV"] === "production",
+  path: "/",
+};
+// Refresh the cookie if it was issued more than 23 days ago (for 30-day cookies)
+const REFRESH_THRESHOLD_MS = 23 * 24 * 60 * 60 * 1000;
 
-  const token = rawHeader.slice(7).trim();
-  if (!token) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+/** Parse and verify a token string. Returns { userId, issuedAt } or null. */
+function verifyToken(token: string): { userId: number; issuedAt: number } | null {
   try {
     const decoded = Buffer.from(token, "base64url").toString("utf-8");
-    // Format: "userId:timestamp:hmacHex"
     const lastColon = decoded.lastIndexOf(":");
-    if (lastColon < 0) {
-      res.status(401).json({ error: "Invalid token" });
-      return;
-    }
+    if (lastColon < 0) return null;
 
     const payload = decoded.slice(0, lastColon);
     const sig = decoded.slice(lastColon + 1);
@@ -82,7 +76,6 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       .update(payload)
       .digest("hex");
 
-    // Constant-time comparison
     let sigValid = false;
     try {
       const sigBuf = Buffer.from(sig, "hex");
@@ -90,34 +83,57 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       if (sigBuf.length === expectedBuf.length) {
         sigValid = crypto.timingSafeEqual(sigBuf, expectedBuf);
       }
-    } catch {
-      // Invalid hex — treat as invalid token
-    }
+    } catch { /* invalid hex */ }
 
-    if (!sigValid) {
-      res.status(401).json({ error: "Invalid token" });
-      return;
-    }
+    if (!sigValid) return null;
 
     const colonIdx = payload.indexOf(":");
-    if (colonIdx < 0) {
-      res.status(401).json({ error: "Invalid token" });
-      return;
-    }
+    if (colonIdx < 0) return null;
 
     const userId = parseInt(payload.slice(0, colonIdx), 10);
-    if (!userId || isNaN(userId) || userId <= 0) {
-      res.status(401).json({ error: "Invalid token" });
-      return;
-    }
+    const issuedAt = parseInt(payload.slice(colonIdx + 1), 10);
+    if (!userId || isNaN(userId) || userId <= 0) return null;
 
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+    return { userId, issuedAt };
+  } catch {
+    return null;
+  }
+}
+
+/** Middleware: require a valid signed auth token. Reads cookie first, then Authorization header. */
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
+  // Prefer session cookie, fall back to Authorization header
+  const cookieToken: string | undefined = (req as any).cookies?.[SESSION_COOKIE];
+  const rawHeader = req.headers.authorization;
+  const headerToken = rawHeader?.startsWith("Bearer ") ? rawHeader.slice(7).trim() : null;
+
+  const token = cookieToken || headerToken;
+  if (!token) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const parsed = verifyToken(token);
+  if (!parsed) {
+    res.status(401).json({ error: "Invalid token" });
+    return;
+  }
+
+  try {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, parsed.userId));
     if (!user) {
       res.status(401).json({ error: "User not found" });
       return;
     }
 
     (req as any).user = user;
+
+    // Auto-refresh: if the token came from a cookie and was issued > 23 days ago, reissue it
+    if (cookieToken && Date.now() - parsed.issuedAt > REFRESH_THRESHOLD_MS) {
+      const newToken = generateToken(user.id);
+      res.cookie(SESSION_COOKIE, newToken, { ...COOKIE_OPTIONS, maxAge: 30 * 24 * 60 * 60 * 1000 });
+    }
+
     next();
   } catch {
     res.status(401).json({ error: "Invalid token" });
@@ -129,28 +145,17 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
  * Used on public routes that return extra data to authenticated admins.
  */
 export async function optionalAuth(req: Request, _res: Response, next: NextFunction) {
+  const cookieToken: string | undefined = (req as any).cookies?.[SESSION_COOKIE];
   const rawHeader = req.headers.authorization;
-  if (rawHeader?.startsWith("Bearer ")) {
-    const token = rawHeader.slice(7).trim();
+  const headerToken = rawHeader?.startsWith("Bearer ") ? rawHeader.slice(7).trim() : null;
+  const token = cookieToken || headerToken;
+
+  if (token) {
     try {
-      const decoded = Buffer.from(token, "base64url").toString("utf-8");
-      const lastColon = decoded.lastIndexOf(":");
-      if (lastColon >= 0) {
-        const payload = decoded.slice(0, lastColon);
-        const sig = decoded.slice(lastColon + 1);
-        const expectedSig = crypto.createHmac("sha256", getTokenSecret()).update(payload).digest("hex");
-        const sigBuf = Buffer.from(sig, "hex");
-        const expectedBuf = Buffer.from(expectedSig, "hex");
-        if (sigBuf.length === expectedBuf.length && crypto.timingSafeEqual(sigBuf, expectedBuf)) {
-          const colonIdx = payload.indexOf(":");
-          if (colonIdx >= 0) {
-            const userId = parseInt(payload.slice(0, colonIdx), 10);
-            if (userId > 0 && !isNaN(userId)) {
-              const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
-              if (user) (req as any).user = user;
-            }
-          }
-        }
+      const parsed = verifyToken(token);
+      if (parsed && parsed.userId > 0) {
+        const [user] = await db.select().from(usersTable).where(eq(usersTable.id, parsed.userId));
+        if (user) (req as any).user = user;
       }
     } catch { /* ignore — token is optional */ }
   }

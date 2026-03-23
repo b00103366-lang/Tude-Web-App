@@ -8,6 +8,7 @@ import {
   Star, Send, Loader2, X, CheckCircle, XCircle, MessageSquare, ThumbsUp,
 } from "lucide-react";
 import { ClassAI } from "@/components/ai/ClassAI";
+import { PracticeQuestionsTab } from "@/components/shared/PracticeQuestionsTab";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getToken, useGetClass, useListClassMaterials, useListClassQuizzes,
@@ -404,6 +405,7 @@ export function StudentClassDetail() {
     { id: "assignments", label: `Devoirs${publishedAssignments.length > 0 ? ` (${publishedAssignments.length})` : ""}` },
     { id: "reviews", label: `Avis${reviews.length > 0 ? ` (${reviews.length})` : ""}` },
     { id: "ai", label: "✨ IA" },
+    { id: "practice", label: "Questions d'entraînement" },
   ];
 
   if (isLoading) {
@@ -1009,6 +1011,13 @@ export function StudentClassDetail() {
                 gradeLevel={cls.gradeLevel ?? "Lycée"}
                 classTitle={cls.title ?? ""}
               />
+            </FadeIn>
+          )}
+
+          {/* PRACTICE QUESTIONS TAB */}
+          {activeTab === "practice" && cls && (
+            <FadeIn>
+              <PracticeQuestionsTab classId={cls.id} userId={(cls as any).studentId ?? undefined} />
             </FadeIn>
           )}
         </div>

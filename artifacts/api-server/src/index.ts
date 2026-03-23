@@ -1,24 +1,28 @@
-import app from "./app";
+process.on("unhandledRejection", (reason) => {
+  console.error("UNHANDLED REJECTION:", reason);
+  process.exit(1);
+});
 
+process.on("uncaughtException", (error) => {
+  console.error("UNCAUGHT EXCEPTION:", error);
+  process.exit(1);
+});
+
+console.log("Loading app...");
+import app from "./app.js";
+
+console.log("Checking environment variables...");
 const rawPort = process.env["PORT"];
-if (!rawPort) {
-  throw new Error("PORT environment variable is required but was not provided.");
-}
+if (!rawPort) throw new Error("PORT environment variable is required but was not provided.");
 const port = Number(rawPort);
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
-
-if (!process.env["DATABASE_URL"]) {
-  throw new Error("DATABASE_URL environment variable is required but was not provided.");
-}
-
+if (Number.isNaN(port) || port <= 0) throw new Error(`Invalid PORT value: "${rawPort}"`);
+if (!process.env["DATABASE_URL"]) throw new Error("DATABASE_URL environment variable is required but was not provided.");
 if (!process.env["TOKEN_SECRET"] || process.env["TOKEN_SECRET"].length < 32) {
-  throw new Error(
-    "TOKEN_SECRET environment variable is required and must be at least 32 characters long."
-  );
+  throw new Error("TOKEN_SECRET environment variable is required and must be at least 32 characters long.");
 }
 
+console.log("Starting HTTP listener...");
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
+  console.log("Server ready.");
 });

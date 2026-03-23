@@ -1,0 +1,59 @@
+{
+  "nav": {
+    "exploreCourses": "استكشاف الدروس",
+    "pricing": "الأسعار",
+    "about": "من نحن",
+    "mySpace": "فضائي",
+    "login": "تسجيل الدخول",
+    "register": "إنشاء حساب"
+  },
+  "sidebar": {
+    "controlPanel": "لوحة التحكم",
+    "administration": "الإدارة",
+    "logout": "تسجيل الخروج",
+    "roles": {
+      "super_admin": "مدير عام",
+      "admin": "مشرف",
+      "professor": "أستاذ",
+      "student": "طالب"
+    },
+    "student": {
+      "dashboard": "لوحة التحكم",
+      "browse": "تصفح",
+      "classes": "دروسي",
+      "calendar": "التقويم",
+      "grades": "الدرجات",
+      "payments": "المدفوعات",
+      "notifications": "الإشعارات",
+      "settings": "الإعدادات"
+    },
+    "professor": {
+      "dashboard": "لوحة التحكم",
+      "classes": "دروسي",
+      "qualifications": "المؤهلات",
+      "calendar": "التقويم",
+      "students": "الطلاب",
+      "earnings": "الأرباح",
+      "settings": "الإعدادات"
+    },
+    "admin": {
+      "dashboard": "نظرة عامة",
+      "users": "المستخدمون",
+      "finances": "المالية",
+      "auditLogs": "سجل المراجعة",
+      "settings": "الإعدادات"
+    }
+  },
+  "kyc": {
+    "notSubmitted": "أكمل التحقق لنشر دروسك",
+    "startVerification": "بدء التحقق ←",
+    "pending": "ملفك قيد المراجعة (24-48 ساعة)",
+    "rejected": "تم رفض طلبك.",
+    "seeReasons": "عرض الأسباب وإعادة التقديم ←"
+  },
+  "impersonation": {
+    "actingAs": "تتصرف باسم",
+    "loggedInAs": "مسجل الدخول باسم",
+    "back": "العودة إلى لوحة المشرف"
+  }
+}

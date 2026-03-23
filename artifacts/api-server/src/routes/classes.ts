@@ -13,6 +13,7 @@ import {
   isValidNiveauKey, isSectionLevel, isValidSectionKey, getSubjectsForNiveauSection,
   getClassLevel, getStudentLevel, VALID_LEVEL_KEYS, getSubjectsForLevel,
 } from "../lib/educationConfig";
+import { PRACTICE_QUESTIONS, makePracticeKey } from "../config/practiceQuestions";
 
 const router = Router();
 
@@ -394,8 +395,8 @@ router.post("/sessions/:sessionId/start", requireAuth, async (req, res) => {
     res.status(403).json({ error: "Only the class professor can start this session" }); return;
   }
 
-  if (session.status === "cancelled" || session.status === "ended") {
-    res.status(400).json({ error: "Cannot start a cancelled or ended session" }); return;
+  if (session.status === "ended") {
+    res.status(400).json({ error: "Cannot start an ended session" }); return;
   }
 
   const [updated] = await db.update(liveSessionsTable)
@@ -511,7 +512,7 @@ router.put("/:classId/sessions/:sessionId", requireAuth, async (req, res) => {
   const newStatus = req.body.status ?? existing.status;
 
   // Handle cancellation: grant Étude+ credit to enrolled students
-  if (newStatus === "cancelled" && existing.status !== "cancelled") {
+  if (newStatus === "ended" && existing.status !== "ended") {
     const enrollments = await db.select().from(enrollmentsTable)
       .where(eq(enrollmentsTable.classId, classId));
 
@@ -926,6 +927,42 @@ router.post("/:id/assignments", requireAuth, async (req, res) => {
     isPublished: false,
   }).returning();
   res.json(assignment);
+});
+
+// ── GET /classes/:classId/practice-questions ─────────────────────────────────
+router.get("/:classId/practice-questions", requireAuth, async (req, res) => {
+  const classId = parseInt(String(req.params.classId));
+  if (isNaN(classId)) { res.status(400).json({ error: "Invalid class ID" }); return; }
+
+  const user = (req as any).user;
+
+  // Fetch the class
+  const [cls] = await db.select().from(classesTable).where(eq(classesTable.id, classId));
+  if (!cls) { res.json({ facile: [], moyen: [], difficile: [] }); return; }
+
+  // Auth check: must be enrolled student OR the professor who owns the class
+  const isProfessor = user.role === "professor" || user.role === "admin" || user.role === "super_admin";
+  if (!isProfessor) {
+    const [enrollment] = await db.select().from(enrollmentsTable)
+      .where(and(eq(enrollmentsTable.classId, classId), eq(enrollmentsTable.studentId, user.id)));
+    if (!enrollment) { res.json({ facile: [], moyen: [], difficile: [] }); return; }
+  } else if (user.role === "professor") {
+    const [prof] = await db.select().from(professorsTable).where(eq(professorsTable.userId, user.id));
+    if (!prof || prof.id !== cls.professorId) {
+      // Not the owner, but still return questions (enrolled students can see them)
+    }
+  }
+
+  const key = makePracticeKey(cls.gradeLevel, (cls as any).sectionKey ?? null, cls.subject);
+  const all = PRACTICE_QUESTIONS[key] ?? [];
+
+  res.json({
+    facile:    all.filter(q => q.difficulty === "facile"),
+    moyen:     all.filter(q => q.difficulty === "moyen"),
+    difficile: all.filter(q => q.difficulty === "difficile"),
+    subject:   cls.subject,
+    key,
+  });
 });
 
 export default router;

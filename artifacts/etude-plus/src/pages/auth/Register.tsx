@@ -95,6 +95,7 @@ export function Register() {
   const [devCode, setDevCode]             = useState<string | null>(null);
 
   const [isLoading, setIsLoading]         = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // ── Validation ───────────────────────────────────────────────────────────────
 
@@ -109,6 +110,7 @@ export function Register() {
     if (!city) return "Ville requise";
     if (role === "student" && !niveauKey) return "Sélectionnez ton niveau scolaire";
     if (role === "student" && isSectionLevel(niveauKey) && !sectionKey) return "Sélectionnez ta section (Sciences, Lettres, etc.)";
+    if (!termsAccepted) return "Vous devez accepter les conditions d'utilisation pour continuer.";
     return null;
   }
 
@@ -129,7 +131,7 @@ export function Register() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erreur lors de l'envoi");
       setRegisteredEmail(email.toLowerCase().trim());
-      setDevCode(data.devCode ?? null);
+      if (data.devCode) setDevCode(data.devCode);
       setStep("verify-email");
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
@@ -157,6 +159,7 @@ export function Register() {
       setIsLoading(true);
       const payload: any = {
         email: registeredEmail, password, role, fullName: fullName.trim(), city,
+        termsAccepted: true,
       };
       if (role === "student") {
         payload.gradeLevel = niveauKey;
@@ -217,18 +220,11 @@ export function Register() {
         </p>
         <p className="font-semibold text-foreground mb-6">{registeredEmail}</p>
 
+        {/* DEV ONLY — remove before launch */}
         {devCode && (
-          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-left">
-            <p className="text-xs font-semibold text-amber-700 mb-1">Mode développement — Email non configuré</p>
-            <p className="text-xs text-amber-600 mb-2">Votre code de vérification :</p>
-            <button
-              type="button"
-              onClick={() => setOtpCode(devCode)}
-              className="w-full text-center text-2xl font-bold tracking-[0.4em] py-2 bg-amber-100 hover:bg-amber-200 rounded-lg text-amber-900 transition-colors border-2 border-dashed border-amber-400"
-            >
-              {devCode}
-            </button>
-            <p className="text-xs text-amber-500 mt-1 text-center">Cliquez pour remplir automatiquement</p>
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-xl text-center">
+            <p className="text-xs text-yellow-700 font-semibold uppercase tracking-wide">DEV — Code de test</p>
+            <p className="text-2xl font-mono font-bold text-yellow-800 tracking-widest mt-1">{devCode}</p>
           </div>
         )}
 
@@ -255,9 +251,9 @@ export function Register() {
             setSendingCode(true);
             try {
               const res = await fetch("/api/auth/send-code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: registeredEmail }) });
-              const data = await res.json();
-              if (data.devCode) setDevCode(data.devCode);
-              toast({ title: "Code renvoyé", description: data.devCode ? "Code affiché ci-dessus (mode dev)." : "Vérifiez votre boite mail." });
+              const resendData = await res.json();
+              if (resendData.devCode) setDevCode(resendData.devCode);
+              toast({ title: "Code renvoyé", description: "Vérifiez votre boite mail." });
             } finally { setSendingCode(false); }
           }}
           disabled={sendingCode}
@@ -374,6 +370,50 @@ export function Register() {
             <p>Après la création de votre compte, vous devrez compléter un processus de vérification KYC (identité, diplômes, vidéo de présentation) pour pouvoir publier des cours.</p>
           </div>
         )}
+
+        {/* Terms acceptance */}
+        <label className="flex items-start gap-3 cursor-pointer group">
+          <div className="relative mt-0.5 flex-shrink-0">
+            <input
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={e => setTermsAccepted(e.target.checked)}
+              className="sr-only"
+            />
+            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+              termsAccepted ? "bg-primary border-primary" : "border-border bg-background group-hover:border-primary/50"
+            }`}>
+              {termsAccepted && (
+                <svg viewBox="0 0 12 10" fill="none" className="w-3 h-3">
+                  <path d="M1 5l3.5 3.5L11 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </div>
+          </div>
+          <span className="text-sm text-gray-600 leading-snug">
+            J'ai lu et j'accepte les{" "}
+            <a
+              href="/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary font-semibold hover:underline"
+              onClick={e => e.stopPropagation()}
+            >
+              Conditions d'utilisation
+            </a>
+            {" "}et la{" "}
+            <a
+              href="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary font-semibold hover:underline"
+              onClick={e => e.stopPropagation()}
+            >
+              Politique de confidentialité
+            </a>
+            {" "}d'Étude+
+          </span>
+        </label>
 
         <Button type="submit" className="w-full mt-2" size="lg" disabled={sendingCode}>
           {sendingCode

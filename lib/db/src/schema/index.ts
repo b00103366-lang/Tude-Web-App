@@ -19,3 +19,6 @@ export * from "./discountCodes";
 export * from "./professorSubjectRequests";
 export * from "./teacherQualifications";
 export * from "./teacherQualificationRequests";
+export * from "./aiUsage";
+export * from "./studyVideos";
+export * from "./userEvents";

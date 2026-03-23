@@ -102,7 +102,7 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
 // ── Admin: toggle active / update expiry or maxUses ───────────────────────────
 
 router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
   const { isActive, expiresAt, maxUses } = req.body;
@@ -123,7 +123,7 @@ router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
 // ── Admin: delete code ────────────────────────────────────────────────────────
 
 router.delete("/:id", requireAuth, requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(String(req.params.id));
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
   const [deleted] = await db.delete(discountCodesTable).where(eq(discountCodesTable.id, id)).returning();

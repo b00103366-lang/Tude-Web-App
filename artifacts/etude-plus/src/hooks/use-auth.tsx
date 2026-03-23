@@ -1,6 +1,7 @@
 import React, { createContext, useContext } from "react";
 import { User, useGetMe, getGetMeQueryKey, login, register, LoginRequest, RegisterRequest, saveToken, clearToken, getToken } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { trackEvent } from "@/lib/analytics";
 
 interface AuthContextType {
   user: User | null;
@@ -9,7 +10,7 @@ interface AuthContextType {
   registerFn: (data: RegisterRequest) => Promise<User>;
   logoutFn: () => void;
   refreshUser: () => Promise<void>;
-  startImpersonation: (token: string, targetUser: any) => void;
+  startImpersonation: (token: string, targetUser: any) => Promise<void>;
   exitImpersonation: () => void;
   impersonating: ImpersonationState | null;
 }
@@ -72,7 +73,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const res = await login(data);
     saveToken(res.token);
     saveAccount(res.user);
-    queryClient.setQueryData([`/api/auth/me`], res.user);
+    trackEvent("login");
+    // Cancel any in-flight /me requests BEFORE setting data — an unauthenticated
+    // 401 response that was still in flight would otherwise overwrite the user.
+    await queryClient.cancelQueries({ queryKey: getGetMeQueryKey() });
+    queryClient.setQueryData(getGetMeQueryKey(), res.user);
     return res.user;
   };
 
@@ -80,30 +85,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const res = await register(data);
     saveToken(res.token);
     saveAccount(res.user);
-    queryClient.setQueryData([`/api/auth/me`], res.user);
+    trackEvent("signup_completed");
+    await queryClient.cancelQueries({ queryKey: getGetMeQueryKey() });
+    queryClient.setQueryData(getGetMeQueryKey(), res.user);
     return res.user;
   };
 
-  const logoutFn = () => {
-    // If impersonating, exit that first
+  const logoutFn = async () => {
+    // If impersonating, exit impersonation rather than actually logging out
     const imp = getImpersonationState();
     if (imp) {
-      localStorage.removeItem(IMPERSONATION_KEY);
-      saveToken(imp.adminToken);
+      await exitImpersonation();
+      return;
     }
+    trackEvent("logout");
+    // Clear server-side session cookie (fire-and-forget)
+    fetch("/api/auth/logout", { method: "POST", credentials: "include" }).catch(() => {});
     clearToken();
     queryClient.setQueryData([`/api/auth/me`], null);
     queryClient.clear();
-    window.location.href = "/";
+    window.location.href = "/login";
   };
 
   const refreshUser = async () => {
     await queryClient.invalidateQueries({ queryKey: [`/api/auth/me`] });
   };
 
-  const startImpersonation = (token: string, targetUser: any) => {
-    const adminToken = getToken();
-    if (!adminToken || !user) return;
+  const startImpersonation = async (token: string, targetUser: any) => {
+    if (!user) return;
+
+    // Ensure we have an admin bearer token saved — if the session came from a cookie
+    // (e.g. page refresh) there may be no localStorage token yet.
+    let adminToken = getToken();
+    if (!adminToken) {
+      try {
+        const res = await fetch("/api/auth/restore-session", {
+          method: "POST",
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (data.token) {
+          adminToken = data.token as string;
+          saveToken(adminToken);
+        }
+      } catch {}
+    }
+
+    if (!adminToken) return;
 
     const state: ImpersonationState = {
       adminToken,
@@ -112,17 +140,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     localStorage.setItem(IMPERSONATION_KEY, JSON.stringify(state));
     saveToken(token);
-    queryClient.setQueryData([`/api/auth/me`], { ...targetUser, passwordHash: undefined });
-    queryClient.invalidateQueries();
+    queryClient.clear();
     window.location.href = getDashboardPath(targetUser.role);
   };
 
-  const exitImpersonation = () => {
+  const exitImpersonation = async () => {
     const imp = getImpersonationState();
     if (!imp) return;
     localStorage.removeItem(IMPERSONATION_KEY);
     saveToken(imp.adminToken);
-    queryClient.setQueryData([`/api/auth/me`], null);
+    // Restore the admin's session cookie by calling restore-session with the admin bearer token
+    await fetch("/api/auth/restore-session", {
+      method: "POST",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${imp.adminToken}` },
+    }).catch(() => {});
     queryClient.clear();
     window.location.href = "/admin/users";
   };

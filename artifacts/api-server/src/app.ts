@@ -1,5 +1,6 @@
 import express, { type Express } from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import router from "./routes";
 
 const app: Express = express();
@@ -31,10 +32,27 @@ app.use(
   })
 );
 
-// Limit request body size to prevent payload attacks
-app.use(express.json({ limit: "1mb" }));
-app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+// Storage uploads (base64 file content) need a higher limit than other routes
+app.use("/api/storage/uploads/direct", express.json({ limit: "20mb" }));
+
+// All other routes: keep a tight limit
+app.use(cookieParser());
+app.use(express.json({ limit: "2mb" }));
+app.use(express.urlencoded({ extended: true, limit: "2mb" }));
 
 app.use("/api", router);
+
+// 404 handler — return JSON for unknown API routes
+app.use("/api", (_req, res) => {
+  res.status(404).json({ error: "Not found" });
+});
+
+// Global error handler — return JSON instead of HTML
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  const status = err?.status ?? err?.statusCode ?? 500;
+  const message = err?.message ?? "Internal server error";
+  console.error("Express error:", err);
+  res.status(status).json({ error: message });
+});
 
 export default app;

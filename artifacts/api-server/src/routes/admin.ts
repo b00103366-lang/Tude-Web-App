@@ -1,10 +1,43 @@
 import { Router } from "express";
+import { readFileSync, writeFileSync, existsSync } from "fs";
+import { join } from "path";
 import { db, usersTable, classesTable, professorsTable, transactionsTable, enrollmentsTable, auditLogsTable, studentProfilesTable, gradesTable, reviewsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { requireAuth, requireAdmin, requireSuperAdmin, hashPassword, generateToken } from "../lib/auth";
 import { logAdminAction } from "../lib/auditLog";
 
+// ─── Platform Settings (file-backed) ─────────────────────────────────────────
+
+const SETTINGS_FILE = join(process.cwd(), "platform-settings.json");
+
+function loadPlatformSettings(): Record<string, unknown> {
+  try {
+    if (existsSync(SETTINGS_FILE)) {
+      return JSON.parse(readFileSync(SETTINGS_FILE, "utf-8"));
+    }
+  } catch {}
+  return { commissionRate: 15, maxCoursePrice: 30, maintenanceMode: false };
+}
+
+function savePlatformSettings(settings: Record<string, unknown>): void {
+  try {
+    writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Failed to save platform settings:", err);
+  }
+}
+
 const router = Router();
+
+const SESSION_COOKIE = "etude_session";
+const IS_PROD = process.env["NODE_ENV"] === "production";
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: IS_PROD,
+  path: "/",
+  maxAge: 30 * 24 * 60 * 60 * 1000,
+};
 
 // ─── Users ──────────────────────────────────────────────────────────────────
 
@@ -59,6 +92,7 @@ router.post("/create-user", requireAuth, requireSuperAdmin, async (req, res) => 
     passwordHash: await hashPassword(password),
     role: role as AdminAllowedRole,
     fullName: fullName.trim(),
+    emailVerified: true,
   }).returning();
 
   if (role === "professor") {
@@ -261,11 +295,8 @@ router.get("/users/:id/details", requireAuth, requireAdmin, async (req, res) => 
     }
   }
 
-  const requestingAdmin = (req as any).user;
-  const isSuperAdmin = requestingAdmin?.role === "super_admin";
-
   res.json({
-    user: isSuperAdmin ? user : { ...user, passwordHash: "[Accès super_admin requis]" },
+    user: { ...user, passwordHash: undefined },
     studentProfile: studentProfile ?? null,
     grades,
     reviews,
@@ -316,6 +347,9 @@ router.post("/users/:id/impersonate", requireAuth, requireSuperAdmin, async (req
     targetRole: target.role,
     adminEmail: admin.email,
   });
+
+  // Overwrite the session cookie so the cookie-based auth also resolves to the target user
+  res.cookie(SESSION_COOKIE, token, COOKIE_OPTIONS);
 
   res.json({
     token,
@@ -454,6 +488,55 @@ router.patch("/transactions/:id/status", requireAuth, requireSuperAdmin, async (
   });
 
   res.json(updated);
+});
+
+/** GET platform settings. super_admin only. */
+router.get("/settings", requireAuth, requireSuperAdmin, (_req, res) => {
+  res.json(loadPlatformSettings());
+});
+
+/** PUT platform settings. super_admin only. */
+router.put("/settings", requireAuth, requireSuperAdmin, async (req, res) => {
+  const { commissionRate, maxCoursePrice, maintenanceMode } = req.body;
+  const current = loadPlatformSettings();
+
+  if (commissionRate !== undefined) {
+    const c = parseFloat(commissionRate);
+    if (isNaN(c) || c < 1 || c > 50) {
+      res.status(400).json({ error: "commissionRate must be between 1 and 50" });
+      return;
+    }
+    current.commissionRate = c;
+  }
+  if (maxCoursePrice !== undefined) {
+    const p = parseFloat(maxCoursePrice);
+    if (isNaN(p) || p < 1) {
+      res.status(400).json({ error: "maxCoursePrice must be greater than 0" });
+      return;
+    }
+    current.maxCoursePrice = p;
+  }
+  if (typeof maintenanceMode === "boolean") {
+    current.maintenanceMode = maintenanceMode;
+  }
+
+  savePlatformSettings(current);
+  await logAdminAction(req, "update_platform_settings", "settings", 0, {
+    commissionRate: current.commissionRate,
+    maxCoursePrice: current.maxCoursePrice,
+    maintenanceMode: current.maintenanceMode,
+  });
+  res.json(current);
+});
+
+/** Verify all unverified accounts. super_admin only. One-time fix for accounts created before emailVerified was set. */
+router.post("/verify-all-users", requireAuth, requireSuperAdmin, async (req, res) => {
+  const { ne } = await import("drizzle-orm");
+  const updated = await db.update(usersTable)
+    .set({ emailVerified: true })
+    .where(ne(usersTable.emailVerified, true))
+    .returning({ id: usersTable.id, email: usersTable.email });
+  res.json({ updated: updated.length, users: updated });
 });
 
 // ─── Audit Logs ───────────────────────────────────────────────────────────────

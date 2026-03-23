@@ -4,11 +4,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { BookPlus, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export function Navbar() {
   const { user, logoutFn } = useAuth();
   const [location] = useLocation();
   const [scrolled, setScrolled] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -38,17 +41,19 @@ export function Navbar() {
 
         {!user && (
           <nav className="hidden md:flex items-center gap-8 font-medium text-sm">
-            <Link href="/courses" className="text-foreground/80 hover:text-primary transition-colors">Explorer les Cours</Link>
-            <Link href="/pricing" className="text-foreground/80 hover:text-primary transition-colors">Tarifs</Link>
-            <Link href="/about" className="text-foreground/80 hover:text-primary transition-colors">À Propos</Link>
+            <Link href="/courses" className="text-foreground/80 hover:text-primary transition-colors">{t("nav.exploreCourses")}</Link>
+            <Link href="/pricing" className="text-foreground/80 hover:text-primary transition-colors">{t("nav.pricing")}</Link>
+            <Link href="/about" className="text-foreground/80 hover:text-primary transition-colors">{t("nav.about")}</Link>
           </nav>
         )}
 
         <div className="flex items-center gap-3">
+          <LanguageSwitcher />
+
           {user && location !== "/" ? (
             <>
               <Link href={getDashboardLink()} className="hidden sm:block">
-                <Button variant="ghost" className="font-semibold">Mon Espace</Button>
+                <Button variant="ghost" className="font-semibold">{t("nav.mySpace")}</Button>
               </Link>
               <div className="flex items-center gap-2 pl-4 border-l border-border">
                 <Link href="/account">
@@ -64,10 +69,10 @@ export function Navbar() {
           ) : !user ? (
             <>
               <Link href="/login" className="hidden sm:block">
-                <Button variant="ghost">Connexion</Button>
+                <Button variant="ghost">{t("nav.login")}</Button>
               </Link>
               <Link href="/select-role">
-                <Button>S'inscrire</Button>
+                <Button>{t("nav.register")}</Button>
               </Link>
             </>
           ) : null}

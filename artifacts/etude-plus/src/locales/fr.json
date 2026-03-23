@@ -1,0 +1,59 @@
+{
+  "nav": {
+    "exploreCourses": "Explorer les Cours",
+    "pricing": "Tarifs",
+    "about": "À Propos",
+    "mySpace": "Mon Espace",
+    "login": "Connexion",
+    "register": "S'inscrire"
+  },
+  "sidebar": {
+    "controlPanel": "Panneau de contrôle",
+    "administration": "Administration",
+    "logout": "Déconnexion",
+    "roles": {
+      "super_admin": "Super Admin",
+      "admin": "Admin",
+      "professor": "Professeur",
+      "student": "Élève"
+    },
+    "student": {
+      "dashboard": "Tableau de Bord",
+      "browse": "Parcourir",
+      "classes": "Mes Cours",
+      "calendar": "Calendrier",
+      "grades": "Notes",
+      "payments": "Paiements",
+      "notifications": "Notifications",
+      "settings": "Paramètres"
+    },
+    "professor": {
+      "dashboard": "Tableau de Bord",
+      "classes": "Mes Cours",
+      "qualifications": "Qualifications",
+      "calendar": "Calendrier",
+      "students": "Étudiants",
+      "earnings": "Revenus",
+      "settings": "Paramètres"
+    },
+    "admin": {
+      "dashboard": "Vue d'ensemble",
+      "users": "Utilisateurs",
+      "finances": "Finances",
+      "auditLogs": "Journal d'audit",
+      "settings": "Paramètres"
+    }
+  },
+  "kyc": {
+    "notSubmitted": "Complétez votre vérification pour publier vos cours",
+    "startVerification": "Commencer la vérification →",
+    "pending": "Votre dossier est en cours d'examen (24-48h)",
+    "rejected": "Votre demande a été refusée.",
+    "seeReasons": "Voir les raisons et soumettre à nouveau →"
+  },
+  "impersonation": {
+    "actingAs": "Vous agissez en tant que",
+    "loggedInAs": "Connecté en tant que",
+    "back": "Retour au panneau admin"
+  }
+}

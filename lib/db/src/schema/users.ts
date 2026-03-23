@@ -18,6 +18,8 @@ export const usersTable = pgTable("users", {
   merchantId: text("merchant_id").unique(),
   emailVerificationToken: text("email_verification_token"),
   emailVerificationExpiresAt: timestamp("email_verification_expires_at"),
+  termsAccepted: boolean("terms_accepted").notNull().default(false),
+  termsAcceptedAt: timestamp("terms_accepted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

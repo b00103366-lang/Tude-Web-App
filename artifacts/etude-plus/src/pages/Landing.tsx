@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button, FadeIn } from "@/components/ui/Premium";
 import { MathBackground } from "@/components/ui/MathBackground";
+import { FloatingSymbols } from "@/components/ui/FloatingSymbols";
 import {
   ArrowRight, Star, BookOpen, Video, ShieldCheck, Trophy,
   GraduationCap, Users, Zap, Globe, CheckCircle, ChevronRight
@@ -91,8 +92,10 @@ export function Landing() {
 
       <main className="relative" style={{ zIndex: 1 }}>
         {/* ── HERO ─────────────────────────────────────────── */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-36 pb-24">
-          <div className="grid lg:grid-cols-2 gap-16 items-center min-h-[80vh]">
+        <section className="relative overflow-hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-36 pb-24">
+          {/* Interactive floating symbols — background layer only */}
+          <FloatingSymbols />
+          <div className="relative grid lg:grid-cols-2 gap-16 items-center min-h-[80vh]" style={{ zIndex: 1 }}>
             {/* Left copy */}
             <FadeIn className="max-w-2xl">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-50 border border-amber-300/60 text-amber-700 font-semibold text-sm mb-8 shadow-sm">
@@ -347,6 +350,10 @@ export function Landing() {
           <div className="flex items-center gap-6 text-sm text-gray-500">
             <Link href="/about" className="hover:text-amber-600 transition-colors">À propos</Link>
             <Link href="/pricing" className="hover:text-amber-600 transition-colors">Tarifs</Link>
+            <Link href="/terms" className="hover:text-amber-600 transition-colors">Conditions d'utilisation</Link>
+            <Link href="/privacy" className="hover:text-amber-600 transition-colors">Confidentialité</Link>
+            <Link href="/cookies" className="hover:text-amber-600 transition-colors">Politique des cookies</Link>
+            <a href="mailto:support@etude-plus.tn" className="hover:text-amber-600 transition-colors">Contact</a>
             <Link href="/login" className="hover:text-amber-600 transition-colors">Connexion</Link>
           </div>
           <p className="text-xs text-gray-400">© 2025 Étude+. Tous droits réservés.</p>

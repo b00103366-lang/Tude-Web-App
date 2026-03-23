@@ -4,7 +4,7 @@ import type { ReviewFeedback } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, requireAdmin, optionalAuth } from "../lib/auth";
 import { logAdminAction } from "../lib/auditLog";
-import { sendKycSubmittedEmail, sendKycApprovedEmail } from "../services/emailService";
+import { sendKycSubmittedEmail, sendKycApprovedEmail, sendKycRejectedEmail } from "../services/emailService";
 
 const router = Router();
 
@@ -140,7 +140,7 @@ router.post("/:id/submit-kyc", requireAuth, async (req, res) => {
 
   const {
     cinFrontUrl, cinBackUrl, universityDiplomaUrl, teachingCertUrl,
-    pitchVideoUrl, legalName, dateOfBirth, phone, declaredSubjects,
+    additionalDocUrl, legalName, dateOfBirth, phone,
   } = req.body;
 
   if (!cinFrontUrl || !cinBackUrl) {
@@ -149,34 +149,8 @@ router.post("/:id/submit-kyc", requireAuth, async (req, res) => {
   if (!universityDiplomaUrl) {
     res.status(400).json({ error: "Le diplôme universitaire est requis." }); return;
   }
-  if (!teachingCertUrl) {
-    res.status(400).json({ error: "Le certificat d'enseignement est requis." }); return;
-  }
-  if (!pitchVideoUrl) {
-    res.status(400).json({ error: "La vidéo de présentation est requise." }); return;
-  }
   if (!legalName || !dateOfBirth || !phone) {
     res.status(400).json({ error: "Nom légal, date de naissance et téléphone sont requis." }); return;
-  }
-  if (!Array.isArray(declaredSubjects) || declaredSubjects.length === 0) {
-    res.status(400).json({ error: "Sélectionnez au moins une matière." }); return;
-  }
-
-  // Validate declared subjects against educationConfig
-  const { isValidNiveauKey, isSectionLevel, isValidSectionKey, getSubjectsForNiveauSection } = await import("../lib/educationConfig");
-  for (const entry of declaredSubjects) {
-    if (!isValidNiveauKey(entry.niveauKey)) {
-      res.status(400).json({ error: `Niveau invalide: ${entry.niveauKey}` }); return;
-    }
-    if (isSectionLevel(entry.niveauKey) && !isValidSectionKey(entry.niveauKey, entry.sectionKey)) {
-      res.status(400).json({ error: `Section invalide pour ${entry.niveauKey}` }); return;
-    }
-    const validSubjects = getSubjectsForNiveauSection(entry.niveauKey, entry.sectionKey ?? null);
-    for (const s of entry.subjects) {
-      if (!validSubjects.includes(s)) {
-        res.status(400).json({ error: `Matière invalide: ${s}` }); return;
-      }
-    }
   }
 
   // Update phone on user record
@@ -188,13 +162,11 @@ router.post("/:id/submit-kyc", requireAuth, async (req, res) => {
     cinFrontUrl,
     cinBackUrl,
     universityDiplomaUrl,
-    teachingCertUrl,
-    pitchVideoUrl,
+    teachingCertUrl: teachingCertUrl ?? null,
     legalName,
     dateOfBirth,
     kycStatus: "pending",
     kycSubmittedAt: new Date(),
-    kycDeclaredSubjects: declaredSubjects,
     status: "kyc_submitted",
     idDocumentUrl: cinFrontUrl, // backward compat
   }).where(eq(professorsTable.id, id)).returning();
@@ -206,7 +178,7 @@ router.post("/:id/submit-kyc", requireAuth, async (req, res) => {
   if (teacherUser) {
     sendKycSubmittedEmail(
       { email: teacherUser.email, fullName: teacherUser.fullName, merchantId: teacherUser.merchantId },
-      declaredSubjects
+      []
     );
   }
 
@@ -275,6 +247,16 @@ router.post("/:id/review-kyc", requireAuth, requireAdmin, async (req, res) => {
     }).where(eq(professorsTable.id, id)).returning();
 
     await logAdminAction(req, "kyc_rejected", "professor", id, { rejectionReasons });
+
+    // Fire-and-forget: notify teacher their KYC was rejected
+    const [rejectedUser] = await db.select().from(usersTable).where(eq(usersTable.id, prof.userId));
+    if (rejectedUser) {
+      sendKycRejectedEmail(
+        { email: rejectedUser.email, fullName: rejectedUser.fullName },
+        rejectionReasons ?? [],
+      );
+    }
+
     res.json(updated);
   } else {
     // request_info — keep status as pending but log the request

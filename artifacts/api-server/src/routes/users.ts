@@ -65,7 +65,7 @@ router.put("/:id", requireAuth, async (req, res) => {
     return;
   }
 
-  const { fullName, city, profilePhoto, gradeLevel, schoolName, preferredSubjects, subjects, gradeLevels, yearsOfExperience, bio, qualifications } = req.body;
+  const { fullName, city, profilePhoto, gradeLevel, educationSection, schoolName, preferredSubjects, subjects, gradeLevels, yearsOfExperience, bio, qualifications } = req.body;
 
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id));
   if (!user) {
@@ -84,13 +84,14 @@ router.put("/:id", requireAuth, async (req, res) => {
     profilePhoto: profilePhoto !== undefined ? profilePhoto : user.profilePhoto,
   }).where(eq(usersTable.id, id));
 
-  if (user.role === "student" && (gradeLevel || schoolName || preferredSubjects)) {
+  if (user.role === "student" && (gradeLevel !== undefined || educationSection !== undefined || schoolName !== undefined || preferredSubjects !== undefined)) {
     const [sp] = await db.select().from(studentProfilesTable).where(eq(studentProfilesTable.userId, id));
     if (sp) {
       await db.update(studentProfilesTable).set({
-        gradeLevel: gradeLevel || sp.gradeLevel,
-        schoolName: schoolName || sp.schoolName,
-        preferredSubjects: preferredSubjects || sp.preferredSubjects,
+        gradeLevel: gradeLevel !== undefined ? (gradeLevel || null) : sp.gradeLevel,
+        educationSection: educationSection !== undefined ? (educationSection || null) : sp.educationSection,
+        schoolName: schoolName !== undefined ? (schoolName || null) : sp.schoolName,
+        preferredSubjects: preferredSubjects !== undefined ? preferredSubjects : sp.preferredSubjects,
       }).where(eq(studentProfilesTable.userId, id));
     }
   }

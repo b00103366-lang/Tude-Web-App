@@ -134,7 +134,7 @@ router.post("/storage/uploads/direct", requireAuth, async (req: Request, res: Re
  * Serve locally stored files. No auth required — filenames are unguessable UUIDs.
  */
 router.get("/storage/local/:filename", async (req: Request, res: Response) => {
-  const filename = req.params.filename;
+  const filename = String(req.params.filename);
   if (!filename || filename.includes("..") || filename.includes("/")) {
     res.status(400).json({ error: "Invalid filename" });
     return;

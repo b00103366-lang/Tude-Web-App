@@ -6,57 +6,66 @@ import {
   CreditCard, Bell, Settings, LogOut, Users, CheckSquare,
   DollarSign, ScrollText, Crown,
   TrendingUp, UserCog, ArrowLeftRight, BadgeCheck, AlertCircle, Clock, XCircle,
+  Sparkles, Play, BarChart2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-// Super Admin: 5 purposeful items — full platform control
-const SUPER_ADMIN_NAV = [
-  { icon: LayoutDashboard, label: "Vue d'ensemble", href: "/admin/dashboard" },
-  { icon: Users, label: "Utilisateurs", href: "/admin/users" },
-  { icon: TrendingUp, label: "Finances", href: "/admin/finances" },
-  { icon: ScrollText, label: "Journal d'audit", href: "/admin/audit-logs" },
-  { icon: Settings, label: "Paramètres", href: "/admin/settings" },
-];
-
-// Regular Admin: limited — can view dashboard + manage users/KYC, nothing else
-const ADMIN_NAV = [
-  { icon: LayoutDashboard, label: "Vue d'ensemble", href: "/admin/dashboard" },
-  { icon: Users, label: "Utilisateurs", href: "/admin/users" },
-];
-
-const NAV_ITEMS: Record<string, { icon: any; label: string; href: string }[]> = {
-  student: [
-    { icon: LayoutDashboard, label: "Tableau de Bord", href: "/student/dashboard" },
-    { icon: BookOpen, label: "Parcourir", href: "/student/browse" },
-    { icon: GraduationCap, label: "Mes Cours", href: "/student/classes" },
-    { icon: Calendar, label: "Calendrier", href: "/student/calendar" },
-    { icon: CheckSquare, label: "Notes", href: "/student/grades" },
-    { icon: CreditCard, label: "Paiements", href: "/student/payments" },
-    { icon: Bell, label: "Notifications", href: "/student/notifications" },
-    { icon: Settings, label: "Paramètres", href: "/student/settings" },
-  ],
-  professor: [
-    { icon: LayoutDashboard, label: "Tableau de Bord", href: "/professor/dashboard" },
-    { icon: BookOpen, label: "Mes Cours", href: "/professor/classes" },
-    { icon: BadgeCheck, label: "Qualifications", href: "/professor/qualifications" },
-    { icon: Calendar, label: "Calendrier", href: "/professor/calendar" },
-    { icon: Users, label: "Étudiants", href: "/professor/students" },
-    { icon: DollarSign, label: "Revenus", href: "/professor/earnings" },
-    { icon: Settings, label: "Paramètres", href: "/professor/settings" },
-  ],
-  admin: ADMIN_NAV,
-  super_admin: SUPER_ADMIN_NAV,
-};
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logoutFn, impersonating, exitImpersonation } = useAuth();
   const [location] = useLocation();
+  const { t } = useTranslation();
 
   if (!user) return null;
 
-  const items = NAV_ITEMS[user.role as keyof typeof NAV_ITEMS] || [];
   const isSuperAdmin = user.role === "super_admin";
   const isAdmin = user.role === "admin" || isSuperAdmin;
+
+  const NAV_ITEMS: Record<string, { icon: any; label: string; href: string; special?: boolean }[]> = {
+    student: [
+      { icon: LayoutDashboard, label: t("sidebar.student.dashboard"), href: "/student/dashboard" },
+      { icon: BookOpen,        label: t("sidebar.student.browse"),    href: "/student/browse" },
+      { icon: GraduationCap,  label: t("sidebar.student.classes"),   href: "/student/classes" },
+      { icon: Sparkles,        label: "Mon Prof Étude",               href: "/student/mon-prof", special: true },
+      { icon: Calendar,        label: t("sidebar.student.calendar"),  href: "/student/calendar" },
+      { icon: CheckSquare,     label: t("sidebar.student.grades"),    href: "/student/grades" },
+      { icon: CreditCard,      label: t("sidebar.student.payments"),  href: "/student/payments" },
+      { icon: Bell,            label: t("sidebar.student.notifications"), href: "/student/notifications" },
+      { icon: Settings,        label: t("sidebar.student.settings"),  href: "/student/settings" },
+    ],
+    professor: [
+      { icon: LayoutDashboard, label: t("sidebar.professor.dashboard"),      href: "/professor/dashboard" },
+      { icon: BookOpen,        label: t("sidebar.professor.classes"),        href: "/professor/classes" },
+      { icon: BadgeCheck,      label: t("sidebar.professor.qualifications"), href: "/professor/qualifications" },
+      { icon: Calendar,        label: t("sidebar.professor.calendar"),       href: "/professor/calendar" },
+      { icon: Users,           label: t("sidebar.professor.students"),       href: "/professor/students" },
+      { icon: DollarSign,      label: t("sidebar.professor.earnings"),       href: "/professor/earnings" },
+      { icon: Settings,        label: t("sidebar.professor.settings"),       href: "/professor/settings" },
+    ],
+    admin: [
+      { icon: LayoutDashboard, label: t("sidebar.admin.dashboard"), href: "/admin/dashboard" },
+      { icon: Users,           label: t("sidebar.admin.users"),     href: "/admin/users" },
+      { icon: Play,            label: "Shorts Étude",               href: "/admin/videos" },
+    ],
+    super_admin: [
+      { icon: LayoutDashboard, label: t("sidebar.admin.dashboard"),  href: "/admin/dashboard" },
+      { icon: BarChart2,       label: "Analytiques",                 href: "/admin/analytics" },
+      { icon: Users,           label: t("sidebar.admin.users"),      href: "/admin/users" },
+      { icon: Play,            label: "Shorts Étude",                href: "/admin/videos" },
+      { icon: TrendingUp,      label: t("sidebar.admin.finances"),   href: "/admin/finances" },
+      { icon: ScrollText,      label: t("sidebar.admin.auditLogs"),  href: "/admin/audit-logs" },
+      { icon: Settings,        label: t("sidebar.admin.settings"),   href: "/admin/settings" },
+    ],
+  };
+
+  const items = NAV_ITEMS[user.role as keyof typeof NAV_ITEMS] || [];
+
+  const roleLabel =
+    isSuperAdmin ? t("sidebar.roles.super_admin") :
+    user.role === "admin" ? t("sidebar.roles.admin") :
+    user.role === "professor" ? t("sidebar.roles.professor") :
+    t("sidebar.roles.student");
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -80,7 +89,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* User profile — click avatar to go to settings */}
+        {/* User profile */}
         <Link href={
           isSuperAdmin || user.role === "admin" ? "/admin/settings" :
           user.role === "professor" ? "/professor/settings" : "/student/settings"
@@ -99,7 +108,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <p className="font-semibold text-sm truncate group-hover:text-sidebar-primary transition-colors">{user.fullName}</p>
               <p className="text-xs text-sidebar-foreground/60 flex items-center gap-1">
                 {isSuperAdmin && <Crown className="w-3 h-3 text-yellow-400" />}
-                {isSuperAdmin ? "Super Admin" : user.role === "admin" ? "Admin" : user.role === "professor" ? "Professeur" : "Élève"}
+                {roleLabel}
               </p>
             </div>
           </div>
@@ -107,10 +116,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
         {/* Navigation */}
         <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-          {/* Section label for admin panels */}
           {isAdmin && (
             <p className="px-4 pb-2 text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30">
-              {isSuperAdmin ? "Panneau de contrôle" : "Administration"}
+              {isSuperAdmin ? t("sidebar.controlPanel") : t("sidebar.administration")}
             </p>
           )}
 
@@ -123,25 +131,29 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
                   active
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/20"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    ? item.special
+                      ? "bg-yellow-400/20 text-yellow-300 shadow-lg shadow-yellow-400/10"
+                      : "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/20"
+                    : item.special
+                      ? "text-yellow-400/80 hover:bg-yellow-400/10 hover:text-yellow-300"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 )}
               >
-                <item.icon className="w-5 h-5 shrink-0" />
+                <item.icon className={cn("w-5 h-5 shrink-0", item.special && "text-yellow-400")} />
                 {item.label}
               </Link>
             );
           })}
-
         </nav>
 
-        <div className="p-4 border-t border-sidebar-border mt-auto">
+        <div className="p-4 border-t border-sidebar-border mt-auto space-y-2">
+          <LanguageSwitcher className="w-full justify-center" />
           <button
             onClick={logoutFn}
             className="flex w-full items-center gap-3 px-4 py-3 rounded-xl text-sidebar-foreground/70 hover:bg-destructive/10 hover:text-destructive transition-colors font-medium"
           >
             <LogOut className="w-5 h-5" />
-            Déconnexion
+            {t("sidebar.logout")}
           </button>
         </div>
       </aside>
@@ -154,8 +166,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-2.5 text-sm font-semibold">
               <UserCog className="w-4 h-4 shrink-0" />
               <span>
-                Vous agissez en tant que <strong>{impersonating.targetUser.fullName}</strong> ({impersonating.targetUser.email})
-                &nbsp;·&nbsp;Connecté en tant que&nbsp;<strong>{impersonating.adminUser.fullName}</strong>
+                {t("impersonation.actingAs")} <strong>{impersonating.targetUser.fullName}</strong> ({impersonating.targetUser.email})
+                &nbsp;·&nbsp;{t("impersonation.loggedInAs")}&nbsp;<strong>{impersonating.adminUser.fullName}</strong>
               </span>
             </div>
             <button
@@ -163,13 +175,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-950/20 hover:bg-amber-950/30 text-amber-950 font-bold text-xs transition-colors shrink-0"
             >
               <ArrowLeftRight className="w-3.5 h-3.5" />
-              Retour au panneau admin
+              {t("impersonation.back")}
             </button>
           </div>
         )}
         <header className="h-16 border-b border-border bg-card/50 backdrop-blur sticky top-0 z-30 flex items-center px-6 lg:hidden">
           <span className="text-xl font-serif font-bold">Étude+</span>
         </header>
+
         {/* KYC Status Banner — professor only */}
         {user.role === "professor" && (() => {
           const kycStatus = (user as any)?.professorProfile?.kycStatus ?? "not_submitted";
@@ -179,10 +192,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2 text-sm text-amber-800">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>Complétez votre vérification pour publier vos cours</span>
+                  <span>{t("kyc.notSubmitted")}</span>
                 </div>
                 <Link href="/professor/kyc" className="text-xs font-semibold text-amber-700 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
-                  Commencer la vérification →
+                  {t("kyc.startVerification")}
                 </Link>
               </div>
             );
@@ -191,7 +204,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             return (
               <div className="bg-blue-50 border-b border-blue-200 px-6 py-3 flex items-center gap-2 text-sm text-blue-800">
                 <Clock className="w-4 h-4 flex-shrink-0" />
-                <span>Votre dossier est en cours d'examen (24-48h)</span>
+                <span>{t("kyc.pending")}</span>
               </div>
             );
           }
@@ -200,10 +213,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <div className="bg-red-50 border-b border-red-200 px-6 py-3 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2 text-sm text-red-800">
                   <XCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>Votre demande a été refusée.</span>
+                  <span>{t("kyc.rejected")}</span>
                 </div>
                 <Link href="/professor/kyc" className="text-xs font-semibold text-red-700 bg-red-100 hover:bg-red-200 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
-                  Voir les raisons et soumettre à nouveau →
+                  {t("kyc.seeReasons")}
                 </Link>
               </div>
             );

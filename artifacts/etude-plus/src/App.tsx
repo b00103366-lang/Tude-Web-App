@@ -1,7 +1,10 @@
+import { useEffect } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import { trackEvent } from "@/lib/analytics";
 import { AuthProvider, useAuth, getDashboardPath } from "@/hooks/use-auth";
+import { getToken } from "@workspace/api-client-react";
 import NotFound from "@/pages/not-found";
 
 // Pages
@@ -25,6 +28,7 @@ import { StudentPayments } from "@/pages/student/StudentPayments";
 import { StudentNotifications } from "@/pages/student/StudentNotifications";
 import { StudentSettings } from "@/pages/student/StudentSettings";
 import { CoursePreview } from "@/pages/student/CoursePreview";
+import { MonProfEtude } from "@/pages/student/MonProfEtude";
 
 // Professor Pages
 import { ProfessorDashboard } from "@/pages/professor/ProfessorDashboard";
@@ -44,6 +48,16 @@ import { AdminUsers } from "@/pages/admin/AdminUsers";
 import { AdminFinances } from "@/pages/admin/AdminFinances";
 import { AdminSettings } from "@/pages/admin/AdminSettings";
 import { AdminAuditLogs } from "@/pages/admin/AdminAuditLogs";
+import { AdminVideos } from "@/pages/admin/AdminVideos";
+import { AdminAnalytics } from "@/pages/admin/AdminAnalytics";
+
+// Legal pages
+import { Terms } from "@/pages/Terms";
+import { Privacy } from "@/pages/Privacy";
+import { Cookies } from "@/pages/Cookies";
+
+// Cookie consent
+import { CookieBanner } from "@/components/CookieBanner";
 
 // Shared Pages
 import { Checkout } from "@/pages/checkout/Checkout";
@@ -52,12 +66,24 @@ import { Classroom } from "@/pages/classroom/Classroom";
 
 const queryClient = new QueryClient();
 
+const Spinner = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+  </div>
+);
+
 // Protected Route Component
 function ProtectedRoute({ component: Component, allowedRoles }: { component: any, allowedRoles?: string[] }) {
   const { user, isLoading } = useAuth();
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
-  
+  // Show spinner while auth query is in flight
+  if (isLoading) return <Spinner />;
+
+  // Safety net: if a token exists but user hasn't propagated yet (e.g. setQueryData
+  // race between loginFn and the initial unauthenticated /me request), wait one
+  // more render rather than bouncing immediately to /login.
+  if (!user && getToken()) return <Spinner />;
+
   if (!user) {
     return <Redirect to="/login" />;
   }
@@ -70,11 +96,20 @@ function ProtectedRoute({ component: Component, allowedRoles }: { component: any
 }
 
 function Router() {
+  const [location] = useLocation();
+
+  useEffect(() => {
+    trackEvent("page_view", { path: location });
+  }, [location]);
+
   return (
     <Switch>
       <Route path="/" component={Landing} />
       <Route path="/about" component={About} />
       <Route path="/pricing" component={Pricing} />
+      <Route path="/terms" component={Terms} />
+      <Route path="/privacy" component={Privacy} />
+      <Route path="/cookies" component={Cookies} />
       <Route path="/courses" component={PublicBrowse} />
       <Route path="/account">
         {() => <ProtectedRoute component={Account} />}
@@ -113,6 +148,9 @@ function Router() {
       </Route>
       <Route path="/student/settings">
         {() => <ProtectedRoute component={StudentSettings} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/student/mon-prof">
+        {() => <ProtectedRoute component={MonProfEtude} allowedRoles={["student"]} />}
       </Route>
 
       {/* Shared/Special Routes */}
@@ -167,6 +205,9 @@ function Router() {
       </Route>
 
       {/* Super Admin only routes */}
+      <Route path="/admin/analytics">
+        {() => <ProtectedRoute component={AdminAnalytics} allowedRoles={["super_admin"]} />}
+      </Route>
       <Route path="/admin/finances">
         {() => <ProtectedRoute component={AdminFinances} allowedRoles={["super_admin"]} />}
       </Route>
@@ -175,6 +216,9 @@ function Router() {
       </Route>
       <Route path="/admin/settings">
         {() => <ProtectedRoute component={AdminSettings} allowedRoles={["super_admin"]} />}
+      </Route>
+      <Route path="/admin/videos">
+        {() => <ProtectedRoute component={AdminVideos} allowedRoles={["admin", "super_admin"]} />}
       </Route>
 
       {/* Redirect deprecated routes */}
@@ -201,6 +245,7 @@ function App() {
           <Router />
         </WouterRouter>
         <Toaster />
+        <CookieBanner />
       </AuthProvider>
     </QueryClientProvider>
   );

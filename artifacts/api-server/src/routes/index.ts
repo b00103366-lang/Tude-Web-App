@@ -17,6 +17,9 @@ import announcementsRouter from "./announcements";
 import creditsRouter from "./credits";
 import discountCodesRouter from "./discountCodes";
 import qualificationsRouter from "./qualifications";
+import monProfRouter from "./monProf";
+import analyticsRouter from "./analytics";
+import adminAnalyticsRouter from "./adminAnalytics";
 
 const router: IRouter = Router();
 
@@ -40,5 +43,8 @@ router.use("/credits", creditsRouter);
 router.use("/discount-codes", discountCodesRouter);
 router.use("/admin/discount-codes", discountCodesRouter);
 router.use("/qualifications", qualificationsRouter);
+router.use("/mon-prof", monProfRouter);
+router.use("/analytics", analyticsRouter);
+router.use("/admin/analytics", adminAnalyticsRouter);
 
 export default router;
