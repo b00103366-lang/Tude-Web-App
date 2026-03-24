@@ -11,6 +11,9 @@ RUN npm install -g pnpm@10.32.1
 # Copy workspace config files explicitly (better cache + guarantees lockfile is present)
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json .npmrc tsconfig.base.json tsconfig.json ./
 
+# Debug: confirm build context has what we need
+RUN echo "=== Root ===" && ls -1 && echo "=== pnpm-lock present ===" && test -f pnpm-lock.yaml && echo YES || echo NO
+
 # Copy workspace packages needed by the API server
 COPY lib/ ./lib/
 COPY artifacts/api-server/ ./artifacts/api-server/
