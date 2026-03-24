@@ -34,6 +34,14 @@ export interface VideoRoomProps {
 
 const DEFAULT_DOMAIN = "8x8.vc";
 
+// Allowlist of approved Jitsi server domains.
+// An attacker-controlled API response must not be able to inject an arbitrary script src.
+const ALLOWED_JITSI_DOMAINS = new Set(["8x8.vc", "meet.jit.si", "jitsi.etude.tn"]);
+
+function sanitizeDomain(domain: string): string {
+  return ALLOWED_JITSI_DOMAINS.has(domain) ? domain : DEFAULT_DOMAIN;
+}
+
 function getScriptSrc(domain: string) {
   return `https://${domain}/external_api.js`;
 }
@@ -61,7 +69,8 @@ function loadJitsiScript(domain: string): Promise<void> {
   });
 }
 
-export function VideoRoom({ roomName, displayName, onLeave, jwt, domain = DEFAULT_DOMAIN }: VideoRoomProps) {
+export function VideoRoom({ roomName, displayName, onLeave, jwt, domain: rawDomain = DEFAULT_DOMAIN }: VideoRoomProps) {
+  const domain = sanitizeDomain(rawDomain);
   const containerRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<JitsiAPI | null>(null);
   const onLeaveRef = useRef(onLeave);

@@ -65,6 +65,15 @@ const ChartContainer = React.forwardRef<
 })
 ChartContainer.displayName = "Chart"
 
+// Allowlist of safe CSS color formats.
+// Prevents CSS injection if a color value ever comes from user-controlled data.
+const SAFE_COLOR_RE = /^(#[0-9a-fA-F]{3,8}|rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)|rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*[\d.]+\s*\)|hsl\(\s*[\d.]+\s*,\s*[\d.]+%\s*,\s*[\d.]+%\s*\)|hsla\(\s*[\d.]+\s*,\s*[\d.]+%\s*,\s*[\d.]+%\s*,\s*[\d.]+\s*\)|[a-zA-Z]{2,30})$/
+
+function sanitizeCssColor(color: string): string | null {
+  const trimmed = color.trim()
+  return SAFE_COLOR_RE.test(trimmed) ? trimmed : null
+}
+
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(
     ([, config]) => config.theme || config.color
@@ -74,28 +83,44 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null
   }
 
-  return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
-${colorConfig
-  .map(([key, itemConfig]) => {
-    const color =
-      itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
-      itemConfig.color
-    return color ? `  --color-${key}: ${color};` : null
-  })
-  .join("\n")}
+  // Build CSS text with sanitized color values — no dangerouslySetInnerHTML needed.
+  // key is a JS object key (already safe as a CSS variable name suffix after stripping non-word chars).
+  const cssText = Object.entries(THEMES)
+    .map(([theme, prefix]) => {
+      const declarations = colorConfig
+        .map(([key, itemConfig]) => {
+          const rawColor =
+            itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
+            itemConfig.color
+          if (!rawColor) return null
+          const safeColor = sanitizeCssColor(rawColor)
+          if (!safeColor) return null
+          // Strip anything that isn't a word char or hyphen from the key before using as CSS var name
+          const safeKey = key.replace(/[^\w-]/g, "")
+          return `  --color-${safeKey}: ${safeColor};`
+        })
+        .filter(Boolean)
+        .join("\n")
+      if (!declarations) return ""
+      return `${prefix} [data-chart=${id}] {\n${declarations}\n}`
+    })
+    .filter(Boolean)
+    .join("\n")
+
+  // dangerouslySetInnerHTML removed — use a ref-based approach so the style content
+  // is set as textContent (never parsed as HTML) then injected as a real stylesheet.
+  return <ChartStyleTag css={cssText} />
 }
-`
-          )
-          .join("\n"),
-      }}
-    />
-  )
+
+function ChartStyleTag({ css }: { css: string }) {
+  const ref = React.useRef<HTMLStyleElement>(null)
+  React.useEffect(() => {
+    if (ref.current) {
+      // textContent on a <style> element sets the stylesheet text without HTML parsing
+      ref.current.textContent = css
+    }
+  }, [css])
+  return <style ref={ref} />
 }
 
 const ChartTooltip = RechartsPrimitive.Tooltip
