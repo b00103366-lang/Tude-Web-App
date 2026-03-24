@@ -117,9 +117,9 @@ router.post("/login", async (req, res) => {
     return;
   }
 
-  // Block login if email not verified (except the admin account)
-  const BYPASS_EMAIL = "rayanbahloul2006@gmail.com";
-  if (!user.emailVerified && normalizedEmail !== BYPASS_EMAIL) {
+  // Block login if email not verified (except admin accounts)
+  const BYPASS_EMAILS = ["rayanbahloul2006@gmail.com", "rayan@etude.com"];
+  if (!user.emailVerified && !BYPASS_EMAILS.includes(normalizedEmail)) {
     res.status(403).json({
       error: "email_not_verified",
       message: "Veuillez confirmer votre email avant de vous connecter.",
@@ -459,6 +459,18 @@ router.post("/resend-verification", async (req, res) => {
   );
 
   res.json({ success: true, message: "Email de confirmation renvoyé." });
+});
+
+// Verify all unverified users (admin-only, one-time fix)
+router.post("/verify-all-users", requireAuth, async (req, res) => {
+  const user = (req as any).user;
+  if (user.role !== "admin" && user.role !== "super_admin") {
+    res.status(403).json({ error: "Admin only" }); return;
+  }
+  const result = await db.update(usersTable)
+    .set({ emailVerified: true, emailVerificationToken: null, emailVerificationExpiresAt: null })
+    .where(eq(usersTable.emailVerified, false));
+  res.json({ success: true, message: "All users verified" });
 });
 
 // Backfill merchant IDs for existing users (one-time admin endpoint)
