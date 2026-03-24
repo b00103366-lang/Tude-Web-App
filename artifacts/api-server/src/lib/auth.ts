@@ -61,6 +61,9 @@ const COOKIE_OPTIONS = {
 // Refresh the cookie if it was issued more than 23 days ago (for 30-day cookies)
 const REFRESH_THRESHOLD_MS = 23 * 24 * 60 * 60 * 1000;
 
+// Tokens older than 30 days are rejected even if the signature is valid
+const TOKEN_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
 /** Parse and verify a token string. Returns { userId, issuedAt } or null. */
 function verifyToken(token: string): { userId: number; issuedAt: number } | null {
   try {
@@ -93,6 +96,10 @@ function verifyToken(token: string): { userId: number; issuedAt: number } | null
     const userId = parseInt(payload.slice(0, colonIdx), 10);
     const issuedAt = parseInt(payload.slice(colonIdx + 1), 10);
     if (!userId || isNaN(userId) || userId <= 0) return null;
+    if (isNaN(issuedAt) || issuedAt <= 0) return null;
+
+    // Reject tokens older than TOKEN_MAX_AGE_MS
+    if (Date.now() - issuedAt > TOKEN_MAX_AGE_MS) return null;
 
     return { userId, issuedAt };
   } catch {

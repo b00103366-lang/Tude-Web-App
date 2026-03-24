@@ -125,6 +125,22 @@ router.post("/chat", requireAuth, async (req, res) => {
     return;
   }
 
+  // Prevent oversized requests that could abuse API credits
+  if (messages.length > 20) {
+    res.status(400).json({ error: "Too many messages in conversation" });
+    return;
+  }
+  for (const m of messages) {
+    if (typeof m.content !== "string" || m.content.length > 4000) {
+      res.status(400).json({ error: "Message too long (max 4000 chars)" });
+      return;
+    }
+    if (m.role !== "user" && m.role !== "assistant") {
+      res.status(400).json({ error: "Invalid message role" });
+      return;
+    }
+  }
+
   const systemPrompt = getSystemPrompt(subject ?? "Général", gradeLevel ?? "Lycée");
 
   try {

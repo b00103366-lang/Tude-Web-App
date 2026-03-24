@@ -131,9 +131,9 @@ router.post("/storage/uploads/direct", requireAuth, async (req: Request, res: Re
 
 /**
  * GET /storage/local/:filename
- * Serve locally stored files. No auth required — filenames are unguessable UUIDs.
+ * Serve locally stored files. Requires auth — UUIDs are hard to guess but not a security boundary.
  */
-router.get("/storage/local/:filename", async (req: Request, res: Response) => {
+router.get("/storage/local/:filename", requireAuth, async (req: Request, res: Response) => {
   const filename = String(req.params.filename);
   if (!filename || filename.includes("..") || filename.includes("/")) {
     res.status(400).json({ error: "Invalid filename" });
@@ -150,8 +150,16 @@ router.get("/storage/local/:filename", async (req: Request, res: Response) => {
       jpg: "image/jpeg",
       jpeg: "image/jpeg",
       png: "image/png",
+      gif: "image/gif",
+      webp: "image/webp",
+      mp4: "video/mp4",
+      webm: "video/webm",
+      mp3: "audio/mpeg",
     };
-    res.setHeader("Content-Type", mimeMap[ext ?? ""] ?? "application/octet-stream");
+    const contentType = mimeMap[ext ?? ""] ?? "application/octet-stream";
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", "inline"); // never execute as HTML
+    res.setHeader("X-Content-Type-Options", "nosniff");
     res.send(data);
   } catch {
     res.status(404).json({ error: "File not found" });

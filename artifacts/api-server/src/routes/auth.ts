@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { rateLimit } from "express-rate-limit";
 import { db, usersTable, professorsTable, studentProfilesTable, emailVerificationsTable } from "@workspace/db";
 import { eq, and, gt } from "drizzle-orm";
 import {
@@ -10,8 +11,41 @@ import {
 } from "../lib/auth";
 import { logEvent } from "../lib/auditLog";
 import { sendOtpEmail, sendAccountVerificationEmail } from "../services/emailService";
-import { randomBytes } from "crypto";
+import { randomBytes, randomInt } from "crypto";
 import { lt, isNull, or } from "drizzle-orm";
+
+// ── Rate limiters ────────────────────────────────────────────────────────────
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 10,                 // 10 attempts per window per IP
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { error: "Trop de tentatives de connexion. Réessayez dans 15 minutes." },
+});
+
+const otpLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  limit: 5,                  // 5 OTP sends per hour per IP
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { error: "Trop de demandes de code. Réessayez dans une heure." },
+});
+
+const verifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 10,                 // 10 verify attempts per window per IP
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  limit: 10,                 // 10 registrations per hour per IP
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { error: "Trop d'inscriptions depuis cette IP. Réessayez dans une heure." },
+});
 
 function generateMerchantId(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -79,7 +113,7 @@ function setSessionCookie(res: any, token: string, rememberMe: boolean) {
   });
 }
 
-router.post("/login", async (req, res) => {
+router.post("/login", loginLimiter, async (req, res) => {
   const { email, password, rememberMe } = req.body;
   if (!email || !password) {
     res.status(400).json({ error: "Email and password required" });
@@ -117,9 +151,8 @@ router.post("/login", async (req, res) => {
     return;
   }
 
-  // Block login if email not verified (except admin accounts)
-  const BYPASS_EMAILS = ["rayanbahloul2006@gmail.com", "rayan@etude.com"];
-  if (!user.emailVerified && !BYPASS_EMAILS.includes(normalizedEmail)) {
+  // Block login if email not verified
+  if (!user.emailVerified) {
     res.status(403).json({
       error: "email_not_verified",
       message: "Veuillez confirmer votre email avant de vous connecter.",
@@ -160,7 +193,7 @@ router.post("/login", async (req, res) => {
 });
 
 // POST /api/auth/send-code — send a 6-digit OTP to email
-router.post("/send-code", async (req, res) => {
+router.post("/send-code", otpLimiter, async (req, res) => {
   const { email } = req.body;
   if (!email || !EMAIL_RE.test(email.toLowerCase().trim())) {
     res.status(400).json({ error: "Email invalide" }); return;
@@ -178,7 +211,7 @@ router.post("/send-code", async (req, res) => {
     .set({ used: true })
     .where(eq(emailVerificationsTable.email, normalizedEmail));
 
-  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const code = String(randomInt(100000, 1000000)); // cryptographically secure 6-digit OTP
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
   await db.insert(emailVerificationsTable).values({ email: normalizedEmail, code, expiresAt });
@@ -190,7 +223,7 @@ router.post("/send-code", async (req, res) => {
 });
 
 // POST /api/auth/verify-code — verify the OTP
-router.post("/verify-code", async (req, res) => {
+router.post("/verify-code", verifyLimiter, async (req, res) => {
   const { email, code } = req.body;
   if (!email || !code) {
     res.status(400).json({ error: "Email et code requis" }); return;
@@ -216,7 +249,7 @@ router.post("/verify-code", async (req, res) => {
   res.json({ success: true, verified: true });
 });
 
-router.post("/register", async (req, res) => {
+router.post("/register", registerLimiter, async (req, res) => {
   const {
     email, password, role, fullName, city, phone,
     subjects, gradeLevels, bio, qualifications, yearsExperience, currentSchool,

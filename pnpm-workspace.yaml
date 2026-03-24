@@ -38,6 +38,8 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 overrides:
+  # Security: patch fast-xml-parser CVEs (GHSA-8gc5-j5rx-235r, GHSA-jp2q-39xq-3w4g)
+  fast-xml-parser: '>=5.5.7'
   '@esbuild-kit/esm-loader': npm:tsx@^4.21.0
   '@expo/ngrok-bin>@expo/ngrok-bin-darwin-arm64': '-'
   '@expo/ngrok-bin>@expo/ngrok-bin-darwin-x64': '-'

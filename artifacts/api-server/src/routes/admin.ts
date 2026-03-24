@@ -2,7 +2,7 @@ import { Router } from "express";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
 import { db, usersTable, classesTable, professorsTable, transactionsTable, enrollmentsTable, auditLogsTable, studentProfilesTable, gradesTable, reviewsTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, count } from "drizzle-orm";
 import { requireAuth, requireAdmin, requireSuperAdmin, hashPassword, generateToken } from "../lib/auth";
 import { logAdminAction } from "../lib/auditLog";
 
@@ -548,7 +548,9 @@ router.get("/audit-logs", requireAuth, requireAdmin, async (req, res) => {
   const limitNum = Math.min(200, Math.max(1, parseInt(limit) || 50));
   const offset = (pageNum - 1) * limitNum;
 
-  const all = await db.select({
+  const [{ total }] = await db.select({ total: count() }).from(auditLogsTable);
+
+  const paginated = await db.select({
     log: auditLogsTable,
     admin: {
       id: usersTable.id,
@@ -559,13 +561,13 @@ router.get("/audit-logs", requireAuth, requireAdmin, async (req, res) => {
   })
     .from(auditLogsTable)
     .leftJoin(usersTable, eq(auditLogsTable.adminId, usersTable.id))
-    .orderBy(desc(auditLogsTable.createdAt));
-
-  const paginated = all.slice(offset, offset + limitNum);
+    .orderBy(desc(auditLogsTable.createdAt))
+    .limit(limitNum)
+    .offset(offset);
 
   res.json({
     logs: paginated.map(r => ({ ...r.log, admin: r.admin })),
-    total: all.length,
+    total,
     page: pageNum,
     limit: limitNum,
   });
