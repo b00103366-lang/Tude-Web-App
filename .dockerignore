@@ -1,0 +1,25 @@
+# Dependencies (will be reinstalled inside Docker)
+**/node_modules
+
+# Build outputs (will be rebuilt inside Docker)
+**/dist
+**/.expo
+
+# Local uploads (not needed for build)
+artifacts/api-server/local-uploads
+
+# Frontend app (not needed for backend build)
+artifacts/etude-plus
+
+# Env files
+**/.env
+**/.env.*
+!**/.env.example
+
+# Editor / OS
+.DS_Store
+**/.vscode
+**/.idea
+
+# Git
+.git
