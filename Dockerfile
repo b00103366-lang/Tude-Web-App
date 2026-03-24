@@ -5,8 +5,8 @@ RUN apk add --no-cache libc6-compat python3 make g++
 
 WORKDIR /app
 
-# Pin pnpm to match lockfileVersion 9.0
-RUN npm install -g pnpm@9
+# Match local pnpm version (lockfile was created with pnpm 10)
+RUN npm install -g pnpm@10
 
 # Copy entire repo (node_modules, dist, local-uploads excluded via .dockerignore)
 COPY . .
