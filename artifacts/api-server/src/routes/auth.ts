@@ -106,7 +106,9 @@ const IS_PROD = process.env["NODE_ENV"] === "production";
 function setSessionCookie(res: any, token: string, rememberMe: boolean) {
   res.cookie(SESSION_COOKIE, token, {
     httpOnly: true,
-    sameSite: "lax",
+    // "none" is required for cross-origin requests (e.g. Netlify frontend → Railway API).
+    // "lax" only works when frontend and backend share the same registrable domain.
+    sameSite: IS_PROD ? "none" : "lax",
     secure: IS_PROD,
     path: "/",
     ...(rememberMe ? { maxAge: 30 * 24 * 60 * 60 * 1000 } : {}),
@@ -415,7 +417,7 @@ router.post("/change-password", requireAuth, async (req, res) => {
 });
 
 router.post("/logout", (_req, res) => {
-  res.clearCookie(SESSION_COOKIE, { httpOnly: true, sameSite: "lax", secure: IS_PROD, path: "/" });
+  res.clearCookie(SESSION_COOKIE, { httpOnly: true, sameSite: IS_PROD ? "none" : "lax", secure: IS_PROD, path: "/" });
   res.json({ success: true });
 });
 

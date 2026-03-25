@@ -157,6 +157,7 @@ router.post("/chat", requireAuth, async (req, res) => {
         system: systemPrompt,
         messages: messages.slice(-10), // keep last 10 turns for context
       }),
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!response.ok) {
@@ -210,6 +211,7 @@ Inclure: 2 QCM (avec 4 choix et la bonne réponse indiquée), 1 vrai/faux avec j
 Formate clairement avec numéros et types de questions. Pour les QCM et vrai/faux, indique la réponse correcte à la fin.`,
         }],
       }),
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!response.ok) throw new Error(`Anthropic ${response.status}`);

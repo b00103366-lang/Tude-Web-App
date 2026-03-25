@@ -21,6 +21,21 @@ if (!process.env["TOKEN_SECRET"] || process.env["TOKEN_SECRET"].length < 32) {
   throw new Error("TOKEN_SECRET environment variable is required and must be at least 32 characters long.");
 }
 
+const IS_PROD_STARTUP = process.env["NODE_ENV"] === "production";
+if (IS_PROD_STARTUP) {
+  if (!process.env["APP_URL"]) {
+    // Fatal: without APP_URL, email verification links point to localhost and users can never verify their email.
+    throw new Error("APP_URL environment variable is required in production (email links will otherwise point to localhost).");
+  }
+  if (!process.env["RESEND_API_KEY"]) {
+    // Non-fatal but critical: registration OTPs and all transactional emails will silently be dropped.
+    console.warn("WARNING: RESEND_API_KEY is not set. All transactional emails (OTP, welcome, etc.) will be silently dropped in production.");
+  }
+  if (!process.env["IP_HASH_SALT"]) {
+    console.warn("WARNING: IP_HASH_SALT is not set. Falling back to default salt — set a random secret to strengthen IP pseudonymisation.");
+  }
+}
+
 console.log("Starting HTTP listener...");
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
