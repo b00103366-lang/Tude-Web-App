@@ -8,8 +8,7 @@
 # Local uploads (not needed for build)
 artifacts/api-server/local-uploads
 
-# Frontend app (not needed for backend build)
-artifacts/etude-plus
+
 
 # Env files
 **/.env
