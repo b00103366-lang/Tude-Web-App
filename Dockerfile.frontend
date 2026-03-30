@@ -4,7 +4,7 @@ WORKDIR /app
 RUN npm install -g pnpm@10.32.1
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json .npmrc tsconfig.base.json tsconfig.json ./
 COPY lib/ ./lib/
-COPY artifacts/etude-plus/ ./artifacts/etude-plus/
+COPY artifacts/ ./artifacts/
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @workspace/etude-plus run build
 RUN npm install -g serve
