@@ -1,3 +1,4 @@
+# rebuild
 # Dependencies (will be reinstalled inside Docker)
 **/node_modules
 
