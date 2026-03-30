@@ -1,16 +1,13 @@
-!artifacts/
-# rebuild
 # Dependencies (will be reinstalled inside Docker)
 **/node_modules
 
 # Build outputs (will be rebuilt inside Docker)
 **/dist
+
 **/.expo
 
 # Local uploads (not needed for build)
 artifacts/api-server/local-uploads
-
-
 
 # Env files
 **/.env
@@ -24,3 +21,6 @@ artifacts/api-server/local-uploads
 
 # Git
 .git
+
+# Explicitly include frontend
+!artifacts/etude-plus
