@@ -1,0 +1,12 @@
+FROM node:20-alpine
+RUN apk add --no-cache libc6-compat python3 make g++
+WORKDIR /app
+RUN npm install -g pnpm@10.32.1
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json .npmrc tsconfig.base.json tsconfig.json ./
+COPY lib/ ./lib/
+COPY artifacts/etude-plus/ ./artifacts/etude-plus/
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @workspace/etude-plus run build
+RUN npm install -g serve
+EXPOSE 3000
+CMD ["serve", "artifacts/etude-plus/dist", "-s", "-l", "3000"]
