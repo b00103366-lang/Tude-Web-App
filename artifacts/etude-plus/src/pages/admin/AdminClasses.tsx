@@ -7,6 +7,7 @@ import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { formatTND } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 async function adminFetch(path: string, method = "GET", body?: unknown) {
   const token = getToken();
@@ -20,7 +21,7 @@ async function adminFetch(path: string, method = "GET", body?: unknown) {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error((err as any).error ?? `Erreur ${res.status}`);
+    throw new Error((err as any).error ?? `Error ${res.status}`);
   }
   return res.json();
 }
@@ -35,6 +36,7 @@ function useAdminClasses(search: string) {
 function useClassAction(action: "archive" | "unarchive" | "delete") {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: (classId: number) =>
       action === "delete"
@@ -42,20 +44,21 @@ function useClassAction(action: "archive" | "unarchive" | "delete") {
         : adminFetch(`/api/admin/classes/${classId}/${action}`, "POST"),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/admin/classes"] });
-      const labels: Record<string, string> = {
-        archive: "Cours archivé",
-        unarchive: "Cours restauré",
-        delete: "Cours supprimé",
+      const labelKeys: Record<string, string> = {
+        archive: "admin.classes.archived",
+        unarchive: "admin.classes.restored",
+        delete: "admin.classes.deleted",
       };
-      toast({ title: labels[action] });
+      toast({ title: t(labelKeys[action]) });
     },
     onError: (err: any) => {
-      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     },
   });
 }
 
 export function AdminClasses() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const isSuperAdmin = user?.role === "super_admin";
   const [search, setSearch] = useState("");
@@ -73,13 +76,13 @@ export function AdminClasses() {
   return (
     <DashboardLayout>
       <FadeIn>
-        <PageHeader title="Cours" description="Gestion de tous les cours de la plateforme." />
+        <PageHeader title={t("admin.classes.title")} description={t("admin.classes.description")} />
 
         <div className="grid sm:grid-cols-3 gap-6 mb-8">
           {[
-            { label: "Cours actifs", value: published.length, icon: BookOpen, color: "text-primary", bg: "bg-primary/10" },
-            { label: "Inscriptions totales", value: totalEnrolled, icon: Users, color: "text-blue-600", bg: "bg-blue-100" },
-            { label: "Volume inscriptions", value: formatTND(totalVolume), icon: DollarSign, color: "text-green-600", bg: "bg-green-100" },
+            { label: t("admin.classes.activeCourses"), value: published.length, icon: BookOpen, color: "text-primary", bg: "bg-primary/10" },
+            { label: t("admin.classes.totalEnrollments"), value: totalEnrolled, icon: Users, color: "text-blue-600", bg: "bg-blue-100" },
+            { label: t("admin.classes.enrollmentVolume"), value: formatTND(totalVolume), icon: DollarSign, color: "text-green-600", bg: "bg-green-100" },
           ].map((s, i) => (
             <Card key={i} className="p-6 flex items-center gap-4">
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${s.bg}`}>
@@ -95,7 +98,7 @@ export function AdminClasses() {
 
         <div className="relative mb-6 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <Input className="pl-10" placeholder="Rechercher un cours..." value={search} onChange={e => setSearch(e.target.value)} />
+          <Input className="pl-10" placeholder={t("admin.classes.searchPlaceholder")} value={search} onChange={e => setSearch(e.target.value)} />
         </div>
 
         {isLoading ? (
@@ -106,13 +109,13 @@ export function AdminClasses() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
-                    <th className="text-left p-4 font-semibold text-muted-foreground">Cours</th>
-                    <th className="text-left p-4 font-semibold text-muted-foreground">Professeur</th>
-                    <th className="text-left p-4 font-semibold text-muted-foreground">Matière</th>
-                    <th className="text-center p-4 font-semibold text-muted-foreground">Élèves</th>
-                    <th className="text-right p-4 font-semibold text-muted-foreground">Prix/s.</th>
-                    <th className="text-center p-4 font-semibold text-muted-foreground">Statut</th>
-                    <th className="text-right p-4 font-semibold text-muted-foreground">Actions</th>
+                    <th className="text-left p-4 font-semibold text-muted-foreground">{t("admin.classes.colCourse")}</th>
+                    <th className="text-left p-4 font-semibold text-muted-foreground">{t("admin.classes.colProfessor")}</th>
+                    <th className="text-left p-4 font-semibold text-muted-foreground">{t("admin.classes.colSubject")}</th>
+                    <th className="text-center p-4 font-semibold text-muted-foreground">{t("admin.classes.colStudents")}</th>
+                    <th className="text-right p-4 font-semibold text-muted-foreground">{t("admin.classes.colPrice")}</th>
+                    <th className="text-center p-4 font-semibold text-muted-foreground">{t("admin.classes.colStatus")}</th>
+                    <th className="text-right p-4 font-semibold text-muted-foreground">{t("admin.classes.colActions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -131,11 +134,11 @@ export function AdminClasses() {
                       <td className="p-4 text-right font-bold">{formatTND(cls.price)}</td>
                       <td className="p-4 text-center">
                         {cls.isArchived ? (
-                          <Badge variant="destructive">Archivé</Badge>
+                          <Badge variant="destructive">{t("admin.classes.statusArchived")}</Badge>
                         ) : cls.isPublished ? (
-                          <Badge variant="success">Publié</Badge>
+                          <Badge variant="success">{t("admin.classes.statusPublished")}</Badge>
                         ) : (
-                          <Badge variant="secondary">Brouillon</Badge>
+                          <Badge variant="secondary">{t("admin.classes.statusDraft")}</Badge>
                         )}
                       </td>
                       <td className="p-4 text-right">
@@ -148,7 +151,7 @@ export function AdminClasses() {
                               disabled={unarchiveMutation.isPending}
                               onClick={() => unarchiveMutation.mutate(cls.id)}
                             >
-                              <ArchiveRestore className="w-4 h-4 mr-1" /> Restaurer
+                              <ArchiveRestore className="w-4 h-4 mr-1" /> {t("admin.classes.restore")}
                             </Button>
                           ) : (
                             <Button
@@ -158,7 +161,7 @@ export function AdminClasses() {
                               disabled={archiveMutation.isPending}
                               onClick={() => archiveMutation.mutate(cls.id)}
                             >
-                              <Archive className="w-4 h-4 mr-1" /> Archiver
+                              <Archive className="w-4 h-4 mr-1" /> {t("admin.classes.archive")}
                             </Button>
                           )}
                           {isSuperAdmin && (
@@ -168,7 +171,7 @@ export function AdminClasses() {
                               className="text-destructive border-destructive/30 hover:bg-destructive/10"
                               disabled={deleteMutation.isPending}
                               onClick={() => {
-                                if (confirm(`Supprimer définitivement "${cls.title}" ? Cette action est irréversible.`)) {
+                                if (confirm(t("admin.classes.deleteConfirm", { title: cls.title }))) {
                                   deleteMutation.mutate(cls.id);
                                 }
                               }}
@@ -185,7 +188,7 @@ export function AdminClasses() {
               {classes.length === 0 && (
                 <div className="py-16 text-center text-muted-foreground">
                   <BookOpen className="w-10 h-10 opacity-30 mx-auto mb-3" />
-                  <p>{search ? `Aucun résultat pour "${search}".` : "Aucun cours."}</p>
+                  <p>{search ? t("admin.classes.noResultsFor", { search }) : t("admin.classes.noClasses")}</p>
                 </div>
               )}
             </div>

@@ -3,30 +3,33 @@ import { PageHeader, Card, FadeIn, Badge } from "@/components/ui/Premium";
 import { CreditCard, Receipt, Clock, Wallet } from "lucide-react";
 import { formatTND } from "@/lib/utils";
 import { useGetMyTransactions } from "@workspace/api-client-react";
+import { useTranslation } from "react-i18next";
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-const statusConfig: Record<string, { label: string; variant: "success" | "secondary" | "destructive" }> = {
-  completed: { label: "Payé", variant: "success" },
-  pending: { label: "En attente", variant: "secondary" },
-  failed: { label: "Échoué", variant: "destructive" },
-};
-
 export function StudentPayments() {
+  const { t } = useTranslation();
+
+  const statusConfig: Record<string, { label: string; variant: "success" | "secondary" | "destructive" }> = {
+    completed: { label: t("student.payments.statusPaid"), variant: "success" },
+    pending: { label: t("student.payments.statusPending"), variant: "secondary" },
+    failed: { label: t("student.payments.statusFailed"), variant: "destructive" },
+  };
+
   const { data: transactions = [], isLoading } = useGetMyTransactions() as any;
 
   const totalSpent = transactions
     .filter((t: any) => t.status === "completed")
-    .reduce((s: number, t: any) => s + (t.amount ?? 0), 0);
+    .reduce((s: number, tx: any) => s + (tx.amount ?? 0), 0);
 
   return (
     <DashboardLayout>
       <FadeIn>
         <PageHeader
-          title="Paiements"
-          description="Historique de vos transactions et factures."
+          title={t("student.payments.title")}
+          description={t("student.payments.description")}
         />
 
         <div className="mb-8 grid md:grid-cols-3 gap-6">
@@ -36,15 +39,15 @@ export function StudentPayments() {
                 <CreditCard className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <p className="font-medium text-muted-foreground">Paiements en TND</p>
-                <p className="font-bold text-lg">Plateforme Étude+</p>
+                <p className="font-medium text-muted-foreground">{t("student.payments.paymentTnd")}</p>
+                <p className="font-bold text-lg">{t("student.payments.platform")}</p>
               </div>
             </div>
           </Card>
           <Card className="p-6">
             <div className="flex items-center gap-3 mb-2">
               <Wallet className="w-5 h-5 text-primary" />
-              <p className="text-sm font-medium text-muted-foreground">Total dépensé</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("student.payments.totalSpent")}</p>
             </div>
             <p className="text-4xl font-bold text-primary">{formatTND(totalSpent)}</p>
           </Card>
@@ -52,7 +55,7 @@ export function StudentPayments() {
 
         <Card className="overflow-hidden border border-border">
           <div className="p-6 border-b border-border bg-muted/30">
-            <h3 className="font-bold text-lg">Historique des transactions</h3>
+            <h3 className="font-bold text-lg">{t("student.payments.transactionHistory")}</h3>
           </div>
           {isLoading ? (
             <div className="p-6 space-y-4">
@@ -61,8 +64,8 @@ export function StudentPayments() {
           ) : transactions.length === 0 ? (
             <div className="p-12 text-center text-muted-foreground">
               <Receipt className="w-12 h-12 mx-auto mb-4 opacity-30" />
-              <p className="font-medium">Aucune transaction pour l'instant.</p>
-              <p className="text-sm mt-1">Vos paiements de cours apparaîtront ici.</p>
+              <p className="font-medium">{t("student.payments.noTransactions")}</p>
+              <p className="text-sm mt-1">{t("student.payments.noTransactionsDesc")}</p>
             </div>
           ) : (
             <div className="divide-y divide-border">

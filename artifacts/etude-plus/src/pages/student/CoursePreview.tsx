@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, FadeIn, Button, Badge } from "@/components/ui/Premium";
+import { useTranslation } from "react-i18next";
 import {
   Star, MapPin, Clock, BookOpen, Users, FileText, Video,
   Lock, ChevronLeft, MessageSquare, ThumbsUp, Award,
@@ -37,6 +38,7 @@ function RatingBar({ label, count, total }: { label: string; count: number; tota
 }
 
 export function CoursePreview() {
+  const { t } = useTranslation();
   const [, params] = useRoute("/student/browse/:id");
   const classId = params?.id ? parseInt(params.id) : 0;
   const [activeReviewTab, setActiveReviewTab] = useState<"course" | "professor">("course");
@@ -81,7 +83,7 @@ export function CoursePreview() {
     <DashboardLayout>
       <FadeIn>
         <Link href="/student/browse" className="text-sm font-medium text-muted-foreground hover:text-primary mb-6 inline-flex items-center gap-1 transition-colors">
-          <ChevronLeft className="w-4 h-4" /> Retour aux cours
+          <ChevronLeft className="w-4 h-4" /> {t("student.coursePreview.backToCourses")}
         </Link>
 
         {/* Hero */}
@@ -102,13 +104,13 @@ export function CoursePreview() {
                 <div className="flex items-center gap-2">
                   <StarsDisplay rating={courseRating} size="md" />
                   <span className="font-bold">{courseRating.toFixed(1)}</span>
-                  <span className="text-muted-foreground text-sm">({(cls as any).totalCourseReviews} avis cours)</span>
+                  <span className="text-muted-foreground text-sm">({(cls as any).totalCourseReviews} {t("student.coursePreview.reviewsCourse")})</span>
                 </div>
               )}
               {profRating !== null && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Award className="w-4 h-4 text-amber-500" />
-                  Prof. noté {profRating.toFixed(1)}/5
+                  {t("student.coursePreview.profRating", { rating: profRating.toFixed(1) })}
                 </div>
               )}
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -119,11 +121,11 @@ export function CoursePreview() {
             <div className="flex items-center gap-4">
               <div>
                 <p className="text-3xl font-bold text-primary">{formatTND(cls.price)}</p>
-                <p className="text-xs text-muted-foreground">par session</p>
+                <p className="text-xs text-muted-foreground">{t("student.coursePreview.perSession")}</p>
               </div>
               <Link href={`/checkout/${cls.id}`}>
                 <Button size="lg" className="px-8">
-                  S'inscrire maintenant
+                  {t("student.coursePreview.enrollNow")}
                 </Button>
               </Link>
             </div>
@@ -135,12 +137,12 @@ export function CoursePreview() {
 
             {/* What's inside — teaser */}
             <Card className="p-6">
-              <h2 className="font-bold text-xl mb-5">Ce que contient ce cours</h2>
+              <h2 className="font-bold text-xl mb-5">{t("student.coursePreview.courseContents")}</h2>
               <div className="grid sm:grid-cols-3 gap-4 mb-6">
                 {[
-                  { icon: FileText, label: "Supports de cours", count: materials.length },
-                  { icon: Video, label: "Sessions live", count: sessions.length },
-                  { icon: Users, label: "Élèves inscrits", count: cls.enrolledCount ?? 0 },
+                  { icon: FileText, label: t("student.coursePreview.materials"), count: materials.length },
+                  { icon: Video, label: t("student.coursePreview.liveSessions"), count: sessions.length },
+                  { icon: Users, label: t("student.coursePreview.enrolledStudents"), count: cls.enrolledCount ?? 0 },
                 ].map(item => (
                   <div key={item.label} className="text-center p-4 bg-secondary/50 rounded-2xl">
                     <item.icon className="w-6 h-6 text-primary mx-auto mb-2" />
@@ -153,7 +155,7 @@ export function CoursePreview() {
               {/* Blurred preview of materials */}
               {materials.length > 0 && (
                 <div>
-                  <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Aperçu des supports</p>
+                  <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">{t("student.coursePreview.materialsPreview")}</p>
                   <div className="space-y-2">
                     {(materials as any[]).slice(0, 3).map((m: any, i: number) => (
                       <div key={m.id} className={`flex items-center gap-3 p-3 rounded-xl border border-border ${i > 0 ? "opacity-40 blur-[2px] select-none" : ""}`}>
@@ -166,7 +168,7 @@ export function CoursePreview() {
                     ))}
                     {materials.length > 3 && (
                       <div className="text-center py-3 text-sm text-muted-foreground">
-                        + {materials.length - 3} autres supports disponibles après inscription
+                        {t("student.coursePreview.moreAfterEnroll", { count: materials.length - 3 })}
                       </div>
                     )}
                   </div>
@@ -176,7 +178,7 @@ export function CoursePreview() {
               {/* Upcoming sessions teaser */}
               {upcomingSessions.length > 0 && (
                 <div className="mt-5">
-                  <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Prochaine session</p>
+                  <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">{t("student.coursePreview.nextSession")}</p>
                   <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl flex items-center gap-4">
                     <div className="w-12 h-12 bg-primary/10 rounded-xl flex flex-col items-center justify-center shrink-0">
                       <span className="text-[10px] text-primary font-bold uppercase">
@@ -200,10 +202,10 @@ export function CoursePreview() {
               )}
 
               <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-center">
-                <p className="text-sm font-semibold text-amber-800 mb-2">Inscrivez-vous pour accéder à tout le contenu</p>
+                <p className="text-sm font-semibold text-amber-800 mb-2">{t("student.coursePreview.enrollToAccess")}</p>
                 <Link href={`/checkout/${cls.id}`}>
                   <Button size="sm" className="bg-amber-500 hover:bg-amber-600">
-                    S'inscrire pour {formatTND(cls.price)}
+                    {t("student.coursePreview.enrollFor", { price: formatTND(cls.price) })}
                   </Button>
                 </Link>
               </div>
@@ -213,15 +215,15 @@ export function CoursePreview() {
             <Card className="p-6">
               <div className="flex items-center gap-3 mb-6">
                 <MessageSquare className="w-5 h-5 text-primary" />
-                <h2 className="font-bold text-xl">Avis</h2>
-                <span className="text-muted-foreground text-sm">({reviews.length} avis)</span>
+                <h2 className="font-bold text-xl">{t("student.coursePreview.reviews")}</h2>
+                <span className="text-muted-foreground text-sm">({reviews.length} {t("student.coursePreview.reviews")})</span>
               </div>
 
               {/* Tabs: course vs professor */}
               <div className="flex gap-1 mb-6 p-1 bg-muted rounded-xl w-fit">
                 {[
-                  { id: "course" as const, label: "Cours" },
-                  { id: "professor" as const, label: "Professeur" },
+                  { id: "course" as const, label: t("student.coursePreview.course") },
+                  { id: "professor" as const, label: t("student.coursePreview.professor") },
                 ].map(tab => (
                   <button
                     key={tab.id}
@@ -255,8 +257,8 @@ export function CoursePreview() {
               {reviews.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <MessageSquare className="w-12 h-12 opacity-20 mx-auto mb-3" />
-                  <p className="font-semibold">Aucun avis pour l'instant</p>
-                  <p className="text-sm mt-1">Soyez le premier à noter ce cours après votre inscription.</p>
+                  <p className="font-semibold">{t("student.coursePreview.noReviews")}</p>
+                  <p className="text-sm mt-1">{t("student.coursePreview.firstReview")}</p>
                 </div>
               ) : (
                 <div className="space-y-5">
@@ -279,7 +281,7 @@ export function CoursePreview() {
                           <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{r.comment}</p>
                         )}
                         <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mt-2 transition-colors">
-                          <ThumbsUp className="w-3 h-3" /> Utile
+                          <ThumbsUp className="w-3 h-3" /> {t("student.coursePreview.helpful")}
                         </button>
                       </div>
                     </div>
@@ -293,7 +295,7 @@ export function CoursePreview() {
           <div className="space-y-6">
             {/* Professor card */}
             <Card className="p-6">
-              <h3 className="font-bold text-lg mb-4">Votre professeur</h3>
+              <h3 className="font-bold text-lg mb-4">{t("student.coursePreview.yourProfessor")}</h3>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-16 h-16 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center font-bold text-primary text-xl shrink-0">
                   {prof?.profilePhoto
@@ -318,7 +320,7 @@ export function CoursePreview() {
                 {prof?.totalStudents != null && (
                   <div className="flex-1 p-3 bg-secondary/50 rounded-xl">
                     <p className="text-xl font-bold">{prof.totalStudents}</p>
-                    <p className="text-xs text-muted-foreground">élèves</p>
+                    <p className="text-xs text-muted-foreground">{t("student.coursePreview.students")}</p>
                   </div>
                 )}
                 {prof?.totalReviews != null && (
@@ -331,14 +333,14 @@ export function CoursePreview() {
 
               {prof?.bio && (
                 <div className="mb-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Biographie</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">{t("student.coursePreview.biography")}</p>
                   <p className="text-sm text-muted-foreground leading-relaxed">{prof.bio}</p>
                 </div>
               )}
 
               {prof?.qualifications && (
                 <div className="mb-4">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Qualifications</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">{t("student.coursePreview.qualifications")}</p>
                   <p className="text-sm font-medium">{prof.qualifications}</p>
                 </div>
               )}
@@ -356,13 +358,13 @@ export function CoursePreview() {
             <Card className="p-6 sticky top-24 border-primary/30 shadow-lg shadow-primary/5">
               <div className="text-center mb-4">
                 <p className="text-3xl font-bold text-primary">{formatTND(cls.price)}</p>
-                <p className="text-sm text-muted-foreground">par session</p>
+                <p className="text-sm text-muted-foreground">{t("student.coursePreview.perSession")}</p>
               </div>
               <Link href={`/checkout/${cls.id}`}>
-                <Button size="lg" className="w-full mb-3">S'inscrire maintenant</Button>
+                <Button size="lg" className="w-full mb-3">{t("student.coursePreview.enrollNow")}</Button>
               </Link>
               <p className="text-center text-xs text-muted-foreground">
-                Accès immédiat après paiement
+                {t("student.coursePreview.immediateAccess")}
               </p>
               {courseRating !== null && (
                 <div className="mt-4 pt-4 border-t border-border flex items-center justify-center gap-2">

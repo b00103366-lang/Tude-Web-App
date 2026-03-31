@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { TUNISIA_CITIES } from "@/lib/constants";
 import { isSectionLevel } from "@/lib/educationConfig";
 import { LevelPicker } from "@/components/shared/LevelPicker";
+import { useTranslation } from "react-i18next";
 
 // ─── Step types ───────────────────────────────────────────────────────────────
 
@@ -18,19 +19,18 @@ type StudentStep = SharedStep | "done";
 
 // ─── Step bar ─────────────────────────────────────────────────────────────────
 
-const PROF_STEPS = [
-  { id: "form",         label: "Profil"   },
-  { id: "verify-email", label: "Email"   },
-  { id: "done",         label: "Terminé" },
-];
-
-const STUDENT_STEPS = [
-  { id: "form",         label: "Profil"  },
-  { id: "verify-email", label: "Email"  },
-  { id: "done",         label: "Terminé" },
-];
-
 function StepBar({ current, role }: { current: string; role: "student" | "professor" }) {
+  const { t } = useTranslation();
+  const PROF_STEPS = [
+    { id: "form",         label: t("register.stepProfile") },
+    { id: "verify-email", label: t("register.stepEmail") },
+    { id: "done",         label: t("register.stepDone") },
+  ];
+  const STUDENT_STEPS = [
+    { id: "form",         label: t("register.stepProfile") },
+    { id: "verify-email", label: t("register.stepEmail") },
+    { id: "done",         label: t("register.stepDone") },
+  ];
   const steps = role === "professor" ? PROF_STEPS : STUDENT_STEPS;
   const idx = steps.findIndex(s => s.id === current);
   return (
@@ -65,6 +65,7 @@ function StepBar({ current, role }: { current: string; role: "student" | "profes
 // ─── Main component ────────────────────────────────────────────────────────────
 
 export function Register() {
+  const { t } = useTranslation();
   const { registerFn } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -102,15 +103,15 @@ export function Register() {
   const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
 
   function validateForm(): string | null {
-    if (!firstName.trim() || firstName.trim().length < 2) return "Prénom requis (min 2 caractères)";
-    if (!lastName.trim() || lastName.trim().length < 2) return "Nom de famille requis (min 2 caractères)";
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Email invalide";
-    if (password.length < 8) return "Mot de passe : 8 caractères minimum";
-    if (password !== confirmPassword) return "Les mots de passe ne correspondent pas";
-    if (!city) return "Ville requise";
-    if (role === "student" && !niveauKey) return "Sélectionnez ton niveau scolaire";
-    if (role === "student" && isSectionLevel(niveauKey) && !sectionKey) return "Sélectionnez ta section (Sciences, Lettres, etc.)";
-    if (!termsAccepted) return "Vous devez accepter les conditions d'utilisation pour continuer.";
+    if (!firstName.trim() || firstName.trim().length < 2) return t("register.errorFirstName");
+    if (!lastName.trim() || lastName.trim().length < 2) return t("register.errorLastName");
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return t("register.errorEmail");
+    if (password.length < 8) return t("register.errorPassword");
+    if (password !== confirmPassword) return t("register.errorPasswordMatch");
+    if (!city) return t("register.errorCity");
+    if (role === "student" && !niveauKey) return t("register.errorLevel");
+    if (role === "student" && isSectionLevel(niveauKey) && !sectionKey) return t("register.errorSection");
+    if (!termsAccepted) return t("register.errorTerms");
     return null;
   }
 
@@ -119,7 +120,7 @@ export function Register() {
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const err = validateForm();
-    if (err) { toast({ title: "Erreur", description: err, variant: "destructive" }); return; }
+    if (err) { toast({ title: t("common.error"), description: err, variant: "destructive" }); return; }
 
     setSendingCode(true);
     try {
@@ -129,12 +130,12 @@ export function Register() {
         body: JSON.stringify({ email: email.toLowerCase().trim() }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Erreur lors de l'envoi");
+      if (!res.ok) throw new Error(data.error ?? t("register.errorSending"));
       setRegisteredEmail(email.toLowerCase().trim());
       if (data.devCode) setDevCode(data.devCode);
       setStep("verify-email");
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: e.message, variant: "destructive" });
     } finally {
       setSendingCode(false);
     }
@@ -143,7 +144,7 @@ export function Register() {
   // ── Step 2 → Verify OTP → Register ──────────────────────────────────────────
 
   const handleVerifyOtp = async () => {
-    if (otpCode.length !== 6) { toast({ title: "Erreur", description: "Le code doit contenir 6 chiffres", variant: "destructive" }); return; }
+    if (otpCode.length !== 6) { toast({ title: t("common.error"), description: t("register.errorCodeLength"), variant: "destructive" }); return; }
     setOtpLoading(true);
     try {
       // Verify code
@@ -153,7 +154,7 @@ export function Register() {
         body: JSON.stringify({ email: registeredEmail, code: otpCode }),
       });
       const verifyData = await verifyRes.json();
-      if (!verifyRes.ok) throw new Error(verifyData.error ?? "Code incorrect");
+      if (!verifyRes.ok) throw new Error(verifyData.error ?? t("register.errorCodeInvalid"));
 
       // Create account
       setIsLoading(true);
@@ -179,8 +180,8 @@ export function Register() {
         setTimeout(() => setLocation(getDashboardPath(registeredUser.role)), 800);
       }
     } catch (e: any) {
-      const msg = e?.data?.error ?? e?.message ?? "Erreur";
-      toast({ title: "Erreur", description: msg, variant: "destructive" });
+      const msg = e?.data?.error ?? e?.message ?? t("common.error");
+      toast({ title: t("common.error"), description: msg, variant: "destructive" });
     } finally {
       setOtpLoading(false);
       setIsLoading(false);
@@ -193,10 +194,10 @@ export function Register() {
       <FadeIn className="w-full max-w-xl">
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => step === "form" ? history.back() : setStep("form")} className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Retour
+            <ArrowLeft className="w-4 h-4" /> {t("common.back")}
           </button>
           <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-            <Home className="w-4 h-4" /> Accueil
+            <Home className="w-4 h-4" /> {t("common.home")}
           </Link>
         </div>
         <StepBar current={step} role={role} />
@@ -214,9 +215,9 @@ export function Register() {
         <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center mb-5">
           <Mail className="w-8 h-8 text-primary" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">Vérifiez votre email</h2>
+        <h2 className="text-2xl font-bold mb-2">{t("register.verifyTitle")}</h2>
         <p className="text-muted-foreground mb-1">
-          Un code à 6 chiffres a été envoyé à
+          {t("register.verifySent")}
         </p>
         <p className="font-semibold text-foreground mb-6">{registeredEmail}</p>
 
@@ -229,7 +230,7 @@ export function Register() {
         )}
 
         <div className="mb-6">
-          <Label>Code de vérification</Label>
+          <Label>{t("register.verificationCode")}</Label>
           <Input
             className="mt-2 text-center text-2xl font-bold tracking-[0.5em] h-14"
             maxLength={6}
@@ -242,7 +243,7 @@ export function Register() {
         </div>
 
         <Button className="w-full" size="lg" disabled={otpLoading || isLoading || otpCode.length !== 6} onClick={handleVerifyOtp}>
-          {otpLoading || isLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Vérification...</> : <><CheckCircle2 className="w-4 h-4 mr-2" /> Confirmer et créer mon compte</>}
+          {otpLoading || isLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t("register.verifying")}</> : <><CheckCircle2 className="w-4 h-4 mr-2" /> {t("register.confirmCreate")}</>}
         </Button>
 
         <button
@@ -253,15 +254,15 @@ export function Register() {
               const res = await fetch("/api/auth/send-code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: registeredEmail }) });
               const resendData = await res.json();
               if (resendData.devCode) setDevCode(resendData.devCode);
-              toast({ title: "Code renvoyé", description: "Vérifiez votre boite mail." });
+              toast({ title: t("register.codeSent"), description: t("register.checkInbox") });
             } finally { setSendingCode(false); }
           }}
           disabled={sendingCode}
         >
-          {sendingCode ? "Envoi..." : "Renvoyer le code"}
+          {sendingCode ? t("register.sending") : t("register.resendCode")}
         </button>
 
-        <p className="text-xs text-muted-foreground mt-4">Le code expire dans 10 minutes.</p>
+        <p className="text-xs text-muted-foreground mt-4">{t("register.codeExpiry")}</p>
       </Card>
     );
   }
@@ -278,7 +279,7 @@ export function Register() {
             className={`flex-1 py-3 text-sm font-bold rounded-lg transition-colors ${role === r ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
             onClick={() => { setRole(r); setStep("form"); }}
           >
-            {r === "student" ? "Je suis un Élève" : "Je suis un Professeur"}
+            {r === "student" ? t("register.iAmStudent") : t("register.iAmProfessor")}
           </button>
         ))}
       </div>
@@ -286,59 +287,59 @@ export function Register() {
       <form onSubmit={handleFormSubmit} className="p-8 space-y-5">
         <div className="text-center mb-2">
           <h1 className="text-2xl font-bold">
-            {role === "student" ? "Créer mon compte élève" : "Devenir professeur sur Étude+"}
+            {role === "student" ? t("register.createStudentAccount") : t("register.becomeProfessor")}
           </h1>
-          {role === "professor" && <p className="text-sm text-muted-foreground mt-1">Étape 1 — Renseignez votre profil</p>}
+          {role === "professor" && <p className="text-sm text-muted-foreground mt-1">{t("register.profStep1")}</p>}
         </div>
 
         {/* First + Last name */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label>Prénom</Label>
-            <Input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Prénom" className="mt-1.5" />
+            <Label>{t("register.firstName")}</Label>
+            <Input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder={t("register.firstName")} className="mt-1.5" />
           </div>
           <div>
-            <Label>Nom de famille</Label>
-            <Input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Nom" className="mt-1.5" />
+            <Label>{t("register.lastName")}</Label>
+            <Input value={lastName} onChange={e => setLastName(e.target.value)} placeholder={t("register.lastName")} className="mt-1.5" />
           </div>
         </div>
 
         {/* Email */}
         <div>
-          <Label>Adresse email</Label>
-          <Input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="vous@exemple.com" className="mt-1.5" />
+          <Label>{t("register.emailAddress")}</Label>
+          <Input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder={t("login.emailPlaceholder")} className="mt-1.5" />
         </div>
 
         {/* Password + confirm */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <Label>Mot de passe</Label>
+            <Label>{t("register.password")}</Label>
             <div className="relative mt-1.5">
               <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="8 caractères min." className="pl-9" />
+              <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={t("register.passwordMin")} className="pl-9" />
             </div>
           </div>
           <div>
-            <Label>Confirmer le mot de passe</Label>
+            <Label>{t("register.confirmPassword")}</Label>
             <div className="relative mt-1.5">
               <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 type="password"
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
-                placeholder="Répétez le mot de passe"
+                placeholder={t("register.repeatPassword")}
                 className={`pl-9 ${confirmPassword && confirmPassword !== password ? "border-red-400" : confirmPassword && confirmPassword === password ? "border-green-400" : ""}`}
               />
             </div>
             {confirmPassword && confirmPassword !== password && (
-              <p className="text-xs text-red-500 mt-1">Les mots de passe ne correspondent pas</p>
+              <p className="text-xs text-red-500 mt-1">{t("register.errorPasswordMatch")}</p>
             )}
           </div>
         </div>
 
         {/* City */}
         <div>
-          <Label>Ville</Label>
+          <Label>{t("register.city")}</Label>
           <select value={city} onChange={e => setCity(e.target.value)} className="mt-1.5 flex h-12 w-full rounded-xl border-2 border-border bg-background px-4 py-2 text-sm focus-visible:outline-none focus-visible:border-primary">
             {TUNISIA_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
@@ -348,8 +349,8 @@ export function Register() {
         {role === "student" && (
           <>
             <div>
-              <Label>Ton niveau scolaire <span className="text-destructive">*</span></Label>
-              <p className="text-xs text-muted-foreground mt-0.5 mb-2">Tu verras uniquement les cours adaptés à ton niveau.</p>
+              <Label>{t("register.gradeLevel")} <span className="text-destructive">*</span></Label>
+              <p className="text-xs text-muted-foreground mt-0.5 mb-2">{t("register.gradeLevelHint")}</p>
               <LevelPicker
                 niveauValue={niveauKey}
                 sectionValue={sectionKey}
@@ -357,8 +358,8 @@ export function Register() {
               />
             </div>
             <div>
-              <Label>École / Lycée (optionnel)</Label>
-              <Input value={schoolName} onChange={e => setSchoolName(e.target.value)} placeholder="Nom de votre établissement" className="mt-1.5" />
+              <Label>{t("register.schoolName")}</Label>
+              <Input value={schoolName} onChange={e => setSchoolName(e.target.value)} placeholder={t("register.schoolNamePlaceholder")} className="mt-1.5" />
             </div>
           </>
         )}
@@ -366,8 +367,8 @@ export function Register() {
         {/* ── PROFESSOR INFO NOTE ── */}
         {role === "professor" && (
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800">
-            <p className="font-semibold mb-1">Vérification requise</p>
-            <p>Après la création de votre compte, vous devrez compléter un processus de vérification KYC (identité, diplômes, vidéo de présentation) pour pouvoir publier des cours.</p>
+            <p className="font-semibold mb-1">{t("register.kycRequired")}</p>
+            <p>{t("register.kycDescription")}</p>
           </div>
         )}
 
@@ -391,7 +392,7 @@ export function Register() {
             </div>
           </div>
           <span className="text-sm text-gray-600 leading-snug">
-            J'ai lu et j'accepte les{" "}
+            {t("register.termsPrefix")}{" "}
             <a
               href="/terms"
               target="_blank"
@@ -399,9 +400,9 @@ export function Register() {
               className="text-primary font-semibold hover:underline"
               onClick={e => e.stopPropagation()}
             >
-              Conditions d'utilisation
+              {t("register.termsLink")}
             </a>
-            {" "}et la{" "}
+            {" "}{t("register.termsAnd")}{" "}
             <a
               href="/privacy"
               target="_blank"
@@ -409,20 +410,20 @@ export function Register() {
               className="text-primary font-semibold hover:underline"
               onClick={e => e.stopPropagation()}
             >
-              Politique de confidentialité
+              {t("register.privacyLink")}
             </a>
-            {" "}d'Étude+
+            {" "}{t("register.termsSuffix")}
           </span>
         </label>
 
         <Button type="submit" className="w-full mt-2" size="lg" disabled={sendingCode}>
           {sendingCode
-            ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Envoi du code...</>
-            : <><Mail className="w-4 h-4 mr-2" /> Continuer — Vérifier mon email</>}
+            ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t("register.sendingCode")}</>
+            : <><Mail className="w-4 h-4 mr-2" /> {t("register.continueVerify")}</>}
         </Button>
 
         <p className="text-center text-sm text-muted-foreground">
-          Déjà inscrit ?{" "}<Link href="/login" className="text-primary font-medium hover:underline">Se connecter</Link>
+          {t("register.alreadyRegistered")}{" "}<Link href="/login" className="text-primary font-medium hover:underline">{t("register.signIn")}</Link>
         </p>
       </form>
     </Card>

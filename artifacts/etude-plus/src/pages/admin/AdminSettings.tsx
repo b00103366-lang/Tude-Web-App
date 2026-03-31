@@ -11,6 +11,7 @@ import {
   Tag, Copy, Check, ToggleLeft, ToggleRight, Plus, Calendar,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 async function adminFetch(url: string, opts: RequestInit = {}) {
   const token = getToken();
@@ -28,9 +29,18 @@ async function adminFetch(url: string, opts: RequestInit = {}) {
 }
 
 export function AdminSettings() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { user } = useAuth();
   const qc = useQueryClient();
+
+  const audienceLabels: Record<string, string> = {
+    all: t("admin.settings.audienceAll"),
+    students: t("admin.settings.audienceStudents"),
+    professors: t("admin.settings.audienceProfessors"),
+    admins: t("admin.settings.audienceAdmins"),
+    specific: t("admin.settings.audienceSpecific"),
+  };
 
   // Announcements
   const [annTitle, setAnnTitle] = useState("");
@@ -58,14 +68,6 @@ export function AdminSettings() {
       ).slice(0, 8)
     : [];
 
-  const audienceLabels: Record<string, string> = {
-    all: "Tout le monde",
-    students: "Tous les étudiants",
-    professors: "Tous les professeurs",
-    admins: "Tous les admins",
-    specific: "Personnes spécifiques",
-  };
-
   const postAnn = useMutation({
     mutationFn: (data: { title: string; body: string; targetAudience: string; targetUserIds: number[] }) =>
       adminFetch("/api/announcements", { method: "POST", body: JSON.stringify(data) }),
@@ -73,9 +75,9 @@ export function AdminSettings() {
       qc.invalidateQueries({ queryKey: ["admin-announcements"] });
       qc.invalidateQueries({ queryKey: ["announcements"] });
       setAnnTitle(""); setAnnBody(""); setAnnAudience("all"); setSelectedUsers([]); setUserSearch("");
-      toast({ title: "Annonce publiée", description: `Visible pour : ${audienceLabels[annAudience]}.` });
+      toast({ title: t("admin.settings.annPublished"), description: t("admin.settings.annPublishedDesc", { audience: audienceLabels[annAudience] }) });
     },
-    onError: (err: any) => toast({ title: "Erreur", description: err.message, variant: "destructive" }),
+    onError: (err: any) => toast({ title: t("common.error"), description: err.message, variant: "destructive" }),
   });
 
   const deleteAnn = useMutation({
@@ -104,15 +106,15 @@ export function AdminSettings() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-discount-codes"] });
       setDcCode(""); setDcPct(""); setDcMaxUses(""); setDcExpiry("");
-      toast({ title: "Code créé", description: "Le code promo est maintenant actif." });
+      toast({ title: t("admin.settings.dcCreated"), description: t("admin.settings.dcCreatedDesc") });
     },
-    onError: (err: any) => toast({ title: "Erreur", description: err.message, variant: "destructive" }),
+    onError: (err: any) => toast({ title: t("common.error"), description: err.message, variant: "destructive" }),
   });
 
   const patchDc = useMutation({
     mutationFn: ({ id, ...data }: any) => adminFetch(`/api/admin/discount-codes/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-discount-codes"] }),
-    onError: (err: any) => toast({ title: "Erreur", description: err.message, variant: "destructive" }),
+    onError: (err: any) => toast({ title: t("common.error"), description: err.message, variant: "destructive" }),
   });
 
   const deleteDc = useMutation({
@@ -121,7 +123,7 @@ export function AdminSettings() {
       qc.invalidateQueries({ queryKey: ["admin-discount-codes"] });
       setConfirmDeleteDc(null);
     },
-    onError: (err: any) => toast({ title: "Erreur", description: err.message, variant: "destructive" }),
+    onError: (err: any) => toast({ title: t("common.error"), description: err.message, variant: "destructive" }),
   });
 
   const copyCode = (id: number, code: string) => {
@@ -160,11 +162,11 @@ export function AdminSettings() {
     const c = parseFloat(commission);
     const p = parseFloat(maxPrice);
     if (isNaN(c) || c < 1 || c > 50) {
-      toast({ title: "Erreur", description: "La commission doit être entre 1% et 50%.", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("admin.settings.commissionError"), variant: "destructive" });
       return;
     }
     if (isNaN(p) || p < 1) {
-      toast({ title: "Erreur", description: "Le prix maximum doit être supérieur à 0.", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("admin.settings.maxPriceError"), variant: "destructive" });
       return;
     }
     setSavingPlatform(true);
@@ -175,13 +177,13 @@ export function AdminSettings() {
       });
       qc.invalidateQueries({ queryKey: ["admin-platform-settings"] });
       toast({
-        title: "Paramètres enregistrés",
+        title: t("admin.settings.platformSaved"),
         description: maintenance
-          ? "Mode maintenance activé. La plateforme est hors ligne pour les utilisateurs."
-          : "Paramètres de la plateforme mis à jour.",
+          ? t("admin.settings.maintenanceActiveDesc")
+          : t("admin.settings.platformUpdated"),
       });
     } catch (err: any) {
-      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     } finally {
       setSavingPlatform(false);
     }
@@ -190,15 +192,15 @@ export function AdminSettings() {
   const handleSaveAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword && newPassword !== confirmPassword) {
-      toast({ title: "Erreur", description: "Les mots de passe ne correspondent pas.", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("admin.settings.passwordMismatch"), variant: "destructive" });
       return;
     }
     if (newPassword && newPassword.length < 8) {
-      toast({ title: "Erreur", description: "Le mot de passe doit faire au moins 8 caractères.", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("admin.settings.passwordTooShort"), variant: "destructive" });
       return;
     }
     if (!newPassword) {
-      toast({ title: "Rien à modifier", description: "Saisissez un nouveau mot de passe.", variant: "destructive" });
+      toast({ title: t("admin.settings.nothingToChange"), description: t("admin.settings.enterNewPassword"), variant: "destructive" });
       return;
     }
     setSavingAccount(true);
@@ -209,10 +211,10 @@ export function AdminSettings() {
           body: JSON.stringify({ currentPassword, newPassword }),
         });
       }
-      toast({ title: "Compte mis à jour", description: "Vos informations ont été sauvegardées." });
+      toast({ title: t("admin.settings.accountUpdated"), description: t("admin.settings.accountUpdatedDesc") });
       setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
     } catch (err: any) {
-      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     } finally {
       setSavingAccount(false);
     }
@@ -222,8 +224,8 @@ export function AdminSettings() {
     <DashboardLayout>
       <FadeIn>
         <PageHeader
-          title="Paramètres"
-          description="Configuration globale de la plateforme Étude+."
+          title={t("admin.settings.title")}
+          description={t("admin.settings.description")}
         />
 
         <div className="max-w-3xl space-y-6">
@@ -238,8 +240,8 @@ export function AdminSettings() {
                 <Settings className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-bold text-lg">Paramètres plateforme</h3>
-                <p className="text-sm text-muted-foreground">Règles financières et disponibilité de la plateforme</p>
+                <h3 className="font-bold text-lg">{t("admin.settings.platformTitle")}</h3>
+                <p className="text-sm text-muted-foreground">{t("admin.settings.platformDesc")}</p>
               </div>
             </div>
 
@@ -247,7 +249,7 @@ export function AdminSettings() {
               <div className="grid md:grid-cols-2 gap-5">
                 <div>
                   <Label className="flex items-center gap-2">
-                    <Percent className="w-4 h-4 text-muted-foreground" /> Commission plateforme (%)
+                    <Percent className="w-4 h-4 text-muted-foreground" /> {t("admin.settings.commissionLabel")}
                   </Label>
                   <div className="relative">
                     <Input
@@ -260,11 +262,11 @@ export function AdminSettings() {
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">%</span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">Prélevée sur chaque transaction (actuellement {commission}%)</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("admin.settings.commissionHint", { commission })}</p>
                 </div>
                 <div>
                   <Label className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-muted-foreground" /> Prix maximum par cours (TND)
+                    <DollarSign className="w-4 h-4 text-muted-foreground" /> {t("admin.settings.maxPriceLabel")}
                   </Label>
                   <div className="relative">
                     <Input
@@ -276,7 +278,7 @@ export function AdminSettings() {
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">TND</span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">Les professeurs ne peuvent pas dépasser cette limite</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("admin.settings.maxPriceHint")}</p>
                 </div>
               </div>
 
@@ -285,11 +287,11 @@ export function AdminSettings() {
                 <div className="flex items-center gap-3">
                   <AlertTriangle className={`w-5 h-5 ${maintenance ? "text-orange-500" : "text-muted-foreground"}`} />
                   <div>
-                    <p className="font-semibold text-sm">Mode maintenance</p>
+                    <p className="font-semibold text-sm">{t("admin.settings.maintenanceMode")}</p>
                     <p className="text-xs text-muted-foreground">
                       {maintenance
-                        ? "⚠️ La plateforme est actuellement hors ligne pour les utilisateurs"
-                        : "La plateforme est opérationnelle"}
+                        ? t("admin.settings.maintenanceOn")
+                        : t("admin.settings.maintenanceOff")}
                     </p>
                   </div>
                 </div>
@@ -306,14 +308,14 @@ export function AdminSettings() {
                 <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
                   <div className="text-sm text-orange-800">
-                    <p className="font-bold mb-1">Mode maintenance activé</p>
-                    <p>Les élèves et professeurs ne pourront pas accéder à la plateforme. Seuls les administrateurs restent connectés. Pensez à désactiver ce mode une fois votre maintenance terminée.</p>
+                    <p className="font-bold mb-1">{t("admin.settings.maintenanceWarningTitle")}</p>
+                    <p>{t("admin.settings.maintenanceWarningBody")}</p>
                   </div>
                 </div>
               )}
 
               <Button type="submit" disabled={savingPlatform}>
-                {savingPlatform ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sauvegarde…</> : <><Save className="w-4 h-4 mr-2" />Enregistrer les paramètres</>}
+                {savingPlatform ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("admin.settings.saving")}</> : <><Save className="w-4 h-4 mr-2" />{t("admin.settings.saveSettings")}</>}
               </Button>
             </form>
           </Card>
@@ -324,39 +326,39 @@ export function AdminSettings() {
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <KeyRound className="w-5 h-5 text-primary" />
               </div>
-              <h3 className="font-bold text-lg">Changer le mot de passe</h3>
+              <h3 className="font-bold text-lg">{t("admin.settings.changePassword")}</h3>
             </div>
 
             <form onSubmit={handleSaveAccount} className="space-y-4 max-w-sm">
               <div>
-                <Label>Mot de passe actuel</Label>
+                <Label>{t("admin.settings.currentPassword")}</Label>
                 <Input
                   type="password"
-                  placeholder="Requis pour changer le mot de passe"
+                  placeholder={t("admin.settings.currentPasswordPlaceholder")}
                   value={currentPassword}
                   onChange={e => setCurrentPassword(e.target.value)}
                 />
               </div>
               <div>
-                <Label>Nouveau mot de passe</Label>
+                <Label>{t("admin.settings.newPassword")}</Label>
                 <Input
                   type="password"
-                  placeholder="Minimum 8 caractères"
+                  placeholder={t("admin.settings.newPasswordPlaceholder")}
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
                 />
               </div>
               <div>
-                <Label>Confirmer</Label>
+                <Label>{t("admin.settings.confirmPassword")}</Label>
                 <Input
                   type="password"
-                  placeholder="Répéter le mot de passe"
+                  placeholder={t("admin.settings.confirmPasswordPlaceholder")}
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
                 />
               </div>
               <Button type="submit" disabled={savingAccount}>
-                {savingAccount ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Mise à jour…</> : <><Save className="w-4 h-4 mr-2" />Changer le mot de passe</>}
+                {savingAccount ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("admin.settings.updating")}</> : <><Save className="w-4 h-4 mr-2" />{t("admin.settings.changePasswordBtn")}</>}
               </Button>
             </form>
           </Card>
@@ -368,21 +370,21 @@ export function AdminSettings() {
                 <Megaphone className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-bold text-lg">Annonces plateforme</h3>
-                <p className="text-sm text-muted-foreground">Visibles sur les tableaux de bord de tous les utilisateurs</p>
+                <h3 className="font-bold text-lg">{t("admin.settings.announcementsTitle")}</h3>
+                <p className="text-sm text-muted-foreground">{t("admin.settings.announcementsDesc")}</p>
               </div>
             </div>
 
             <div className="space-y-4 mb-6">
               <div>
-                <Label>Titre</Label>
-                <Input placeholder="ex: Maintenance prévue le..." value={annTitle} onChange={e => setAnnTitle(e.target.value)} />
+                <Label>{t("admin.settings.annTitleLabel")}</Label>
+                <Input placeholder={t("admin.settings.annTitlePlaceholder")} value={annTitle} onChange={e => setAnnTitle(e.target.value)} />
               </div>
               <div>
-                <Label>Message</Label>
+                <Label>{t("admin.settings.annMessageLabel")}</Label>
                 <textarea
                   className="w-full mt-1 rounded-lg border border-border bg-background px-3 py-2 text-sm min-h-[100px] resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  placeholder="Contenu de l'annonce..."
+                  placeholder={t("admin.settings.annMessagePlaceholder")}
                   value={annBody}
                   onChange={e => setAnnBody(e.target.value)}
                 />
@@ -390,7 +392,7 @@ export function AdminSettings() {
 
               {/* Audience selector */}
               <div>
-                <Label>Destinataires</Label>
+                <Label>{t("admin.settings.annRecipients")}</Label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-1">
                   {(["all", "students", "professors", "admins", "specific"] as const).map(opt => (
                     <button
@@ -412,10 +414,10 @@ export function AdminSettings() {
               {/* User picker for "specific" */}
               {annAudience === "specific" && (
                 <div>
-                  <Label>Rechercher des utilisateurs</Label>
+                  <Label>{t("admin.settings.searchUsers")}</Label>
                   <div className="relative mt-1">
                     <Input
-                      placeholder="Nom ou email..."
+                      placeholder={t("admin.settings.searchUsersPlaceholder")}
                       value={userSearch}
                       onChange={e => setUserSearch(e.target.value)}
                     />
@@ -446,7 +448,7 @@ export function AdminSettings() {
                     </div>
                   )}
                   {selectedUsers.length === 0 && (
-                    <p className="text-xs text-muted-foreground mt-1">Ajoutez au moins une personne</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t("admin.settings.addAtLeastOne")}</p>
                   )}
                 </div>
               )}
@@ -464,13 +466,13 @@ export function AdminSettings() {
                 })}
               >
                 <Megaphone className="w-4 h-4 mr-2" />
-                {postAnn.isPending ? "Publication..." : `Publier → ${audienceLabels[annAudience]}`}
+                {postAnn.isPending ? t("admin.settings.publishing") : t("admin.settings.publishTo", { audience: audienceLabels[annAudience] })}
               </Button>
             </div>
 
             {announcements.length > 0 && (
               <div>
-                <p className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Annonces actives ({announcements.length})</p>
+                <p className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">{t("admin.settings.activeAnnouncements", { count: announcements.length })}</p>
                 <div className="space-y-3">
                   {announcements.map((a: any) => (
                     <div key={a.id} className="flex items-start justify-between gap-4 p-4 bg-muted/30 rounded-xl border border-border">
@@ -478,20 +480,20 @@ export function AdminSettings() {
                         <div className="flex items-center gap-2 mb-1">
                           <p className="font-semibold text-sm">{a.title}</p>
                           <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full capitalize">
-                            {audienceLabels[a.targetAudience] ?? "Tout le monde"}
+                            {audienceLabels[a.targetAudience] ?? t("admin.settings.audienceAll")}
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground line-clamp-2">{a.body}</p>
                         {a.targetAudience === "specific" && Array.isArray(a.targetUserIds) && a.targetUserIds.length > 0 && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            {a.targetUserIds.length} destinataire{a.targetUserIds.length > 1 ? "s" : ""}
+                            {t("admin.settings.recipientCount", { count: a.targetUserIds.length })}
                           </p>
                         )}
                       </div>
                       <button
                         onClick={() => deleteAnn.mutate(a.id)}
                         className="text-muted-foreground hover:text-red-500 transition-colors shrink-0"
-                        title="Supprimer"
+                        title={t("common.delete")}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -509,17 +511,17 @@ export function AdminSettings() {
                 <Tag className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-bold text-lg">Codes Promo</h3>
-                <p className="text-sm text-muted-foreground">Créez des codes de réduction pour vos étudiants</p>
+                <h3 className="font-bold text-lg">{t("admin.settings.promoCodesTitle")}</h3>
+                <p className="text-sm text-muted-foreground">{t("admin.settings.promoCodesDesc")}</p>
               </div>
             </div>
 
             {/* Create form */}
             <div className="mb-6 p-5 bg-secondary/50 rounded-xl border border-border">
-              <h4 className="font-semibold text-sm mb-4 flex items-center gap-2"><Plus className="w-4 h-4" />Créer un nouveau code</h4>
+              <h4 className="font-semibold text-sm mb-4 flex items-center gap-2"><Plus className="w-4 h-4" />{t("admin.settings.createNewCode")}</h4>
               <div className="grid sm:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <Label>Code (ex: SUMMER25)</Label>
+                  <Label>{t("admin.settings.codeLabelHint")}</Label>
                   <Input
                     placeholder="ETUDE20"
                     value={dcCode}
@@ -528,7 +530,7 @@ export function AdminSettings() {
                   />
                 </div>
                 <div>
-                  <Label>Réduction (%)</Label>
+                  <Label>{t("admin.settings.discountPct")}</Label>
                   <Input
                     type="number"
                     min="1"
@@ -539,7 +541,7 @@ export function AdminSettings() {
                   />
                 </div>
                 <div>
-                  <Label>Utilisations max (vide = illimité)</Label>
+                  <Label>{t("admin.settings.maxUses")}</Label>
                   <Input
                     type="number"
                     min="1"
@@ -549,7 +551,7 @@ export function AdminSettings() {
                   />
                 </div>
                 <div>
-                  <Label className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" />Date d'expiration (vide = jamais)</Label>
+                  <Label className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" />{t("admin.settings.expiryDate")}</Label>
                   <Input
                     type="date"
                     value={dcExpiry}
@@ -563,7 +565,7 @@ export function AdminSettings() {
                 disabled={createDc.isPending || !dcCode || !dcPct}
               >
                 {createDc.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
-                Créer le code
+                {t("admin.settings.createCode")}
               </Button>
             </div>
 
@@ -571,26 +573,32 @@ export function AdminSettings() {
             {discountCodes.length === 0 ? (
               <div className="text-center py-10 text-muted-foreground text-sm">
                 <Tag className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                Aucun code promo créé pour l'instant.
+                {t("admin.settings.noCodes")}
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-left text-xs text-muted-foreground uppercase tracking-wide">
-                      <th className="pb-3 pr-4">Code</th>
-                      <th className="pb-3 pr-4">Réduction</th>
-                      <th className="pb-3 pr-4">Utilisations</th>
-                      <th className="pb-3 pr-4">Expiration</th>
-                      <th className="pb-3 pr-4">Statut</th>
-                      <th className="pb-3">Actions</th>
+                      <th className="pb-3 pr-4">{t("admin.settings.colCode")}</th>
+                      <th className="pb-3 pr-4">{t("admin.settings.colDiscount")}</th>
+                      <th className="pb-3 pr-4">{t("admin.settings.colUses")}</th>
+                      <th className="pb-3 pr-4">{t("admin.settings.colExpiry")}</th>
+                      <th className="pb-3 pr-4">{t("admin.settings.colStatus")}</th>
+                      <th className="pb-3">{t("admin.settings.colActions")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     {discountCodes.map((dc: any) => {
                       const isExpired = dc.expiresAt && new Date() > new Date(dc.expiresAt);
                       const isExhausted = dc.maxUses !== null && dc.timesUsed >= dc.maxUses;
-                      const statusLabel = isExpired ? "Expiré" : isExhausted ? "Épuisé" : dc.isActive ? "Actif" : "Inactif";
+                      const statusLabel = isExpired
+                        ? t("admin.settings.statusExpired")
+                        : isExhausted
+                        ? t("admin.settings.statusExhausted")
+                        : dc.isActive
+                        ? t("admin.settings.statusActive")
+                        : t("admin.settings.statusInactive");
                       const statusClass = isExpired || isExhausted
                         ? "bg-red-100 text-red-700"
                         : dc.isActive
@@ -620,7 +628,7 @@ export function AdminSettings() {
                               <button
                                 onClick={() => copyCode(dc.id, dc.code)}
                                 className="w-7 h-7 rounded-lg hover:bg-muted flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground"
-                                title="Copier le code"
+                                title={t("admin.settings.copyCode")}
                               >
                                 {copiedId === dc.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
                               </button>
@@ -629,7 +637,7 @@ export function AdminSettings() {
                                 <button
                                   onClick={() => patchDc.mutate({ id: dc.id, isActive: !dc.isActive })}
                                   className="w-7 h-7 rounded-lg hover:bg-muted flex items-center justify-center transition-colors"
-                                  title={dc.isActive ? "Désactiver" : "Activer"}
+                                  title={dc.isActive ? t("admin.settings.deactivate") : t("admin.settings.activate")}
                                 >
                                   {dc.isActive
                                     ? <ToggleRight className="w-4 h-4 text-green-500" />
@@ -643,20 +651,20 @@ export function AdminSettings() {
                                     onClick={() => deleteDc.mutate(dc.id)}
                                     className="text-xs px-2 py-0.5 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90"
                                   >
-                                    Supprimer
+                                    {t("common.delete")}
                                   </button>
                                   <button
                                     onClick={() => setConfirmDeleteDc(null)}
                                     className="text-xs px-2 py-0.5 border border-border rounded-md hover:bg-muted"
                                   >
-                                    Annuler
+                                    {t("common.cancel")}
                                   </button>
                                 </div>
                               ) : (
                                 <button
                                   onClick={() => setConfirmDeleteDc(dc.id)}
                                   className="w-7 h-7 rounded-lg hover:bg-muted flex items-center justify-center transition-colors text-muted-foreground hover:text-red-500"
-                                  title="Supprimer"
+                                  title={t("common.delete")}
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -674,15 +682,15 @@ export function AdminSettings() {
 
           {/* Platform info */}
           <Card className="p-8">
-            <h3 className="font-bold text-base mb-4 pb-3 border-b border-border">Informations système</h3>
+            <h3 className="font-bold text-base mb-4 pb-3 border-b border-border">{t("admin.settings.systemInfo")}</h3>
             <dl className="space-y-2 text-sm">
               {[
-                ["Plateforme", "Étude+"],
-                ["Version", "2.0.0"],
-                ["Environnement", process.env.NODE_ENV ?? "production"],
-                ["Base de données", "PostgreSQL"],
-                ["Commission active", `${commission}%`],
-                ["Prix max cours", `${maxPrice} TND`],
+                [t("admin.settings.infoPlatform"), "Étude+"],
+                [t("admin.settings.infoVersion"), "2.0.0"],
+                [t("admin.settings.infoEnv"), process.env.NODE_ENV ?? "production"],
+                [t("admin.settings.infoDb"), "PostgreSQL"],
+                [t("admin.settings.infoCommission"), `${commission}%`],
+                [t("admin.settings.infoMaxPrice"), `${maxPrice} TND`],
               ].map(([k, v]) => (
                 <div key={String(k)} className="flex justify-between py-2 border-b border-border/30 last:border-0">
                   <dt className="text-muted-foreground">{k}</dt>

@@ -12,6 +12,7 @@ import {
   getSubjectsForNiveauSection, isSectionLevel,
 } from "@/lib/educationConfig";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -35,11 +36,15 @@ function comboLabel(niveauKey: string, sectionKey: string | null) {
 
 // ── File upload helper ────────────────────────────────────────────────────────
 
-function DocUploadSlot({ file, onUpload, onClear, isUploading }: {
+function DocUploadSlot({ file, onUpload, onClear, isUploading, uploadingLabel, chooseLabel, docLabel, docSubtitle }: {
   file: { name: string; objectPath: string } | null;
   onUpload: (f: File) => void;
   onClear: () => void;
   isUploading: boolean;
+  uploadingLabel: string;
+  chooseLabel: string;
+  docLabel: string;
+  docSubtitle: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   return (
@@ -50,8 +55,8 @@ function DocUploadSlot({ file, onUpload, onClear, isUploading }: {
             {file ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <FileText className="w-5 h-5 text-muted-foreground" />}
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-sm">Document justificatif <span className="text-destructive">*</span></p>
-            <p className="text-xs text-muted-foreground mt-0.5">Diplôme, attestation, relevé de notes (PDF, JPG, PNG)</p>
+            <p className="font-semibold text-sm">{docLabel} <span className="text-destructive">*</span></p>
+            <p className="text-xs text-muted-foreground mt-0.5">{docSubtitle}</p>
             {file && <p className="text-xs text-green-700 font-medium mt-1 truncate">{file.name}</p>}
           </div>
         </div>
@@ -68,7 +73,7 @@ function DocUploadSlot({ file, onUpload, onClear, isUploading }: {
           ) : (
             <Button type="button" size="sm" variant="outline" disabled={isUploading} onClick={() => inputRef.current?.click()}>
               {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-1" />}
-              {isUploading ? "Envoi..." : "Choisir"}
+              {isUploading ? uploadingLabel : chooseLabel}
             </Button>
           )}
         </div>
@@ -82,6 +87,7 @@ function DocUploadSlot({ file, onUpload, onClear, isUploading }: {
 // ── Add request form ──────────────────────────────────────────────────────────
 
 function AddRequestForm({ onDone }: { onDone: () => void }) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const { toast } = useToast();
   const [niveauKey, setNiveauKey] = useState("");
@@ -122,29 +128,29 @@ function AddRequestForm({ onDone }: { onDone: () => void }) {
         method: "POST", headers,
         body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
       });
-      if (!urlRes.ok) throw new Error("Impossible d'obtenir l'URL");
+      if (!urlRes.ok) throw new Error(t("prof.qualifications.uploadUrlError"));
       const { uploadURL, objectPath, local } = await urlRes.json();
       if (local) {
         const base64 = await readFileAsBase64(file);
         const up = await fetch("/api/storage/uploads/direct", { method: "POST", headers, body: JSON.stringify({ objectPath, content: base64, contentType: file.type }) });
-        if (!up.ok) throw new Error("Échec du téléversement");
+        if (!up.ok) throw new Error(t("prof.qualifications.uploadFailed"));
       } else {
         const up = await fetch(uploadURL, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
-        if (!up.ok) throw new Error("Échec du téléversement");
+        if (!up.ok) throw new Error(t("prof.qualifications.uploadFailed"));
       }
       setDocFile({ name: file.name, objectPath });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: e.message, variant: "destructive" });
     } finally {
       setUploading(false);
     }
   };
 
   const handleSave = async () => {
-    if (!niveauKey) { setError("Sélectionnez un niveau."); return; }
-    if (isSectionLevel(niveauKey) && !sectionKey) { setError("Sélectionnez une section."); return; }
-    if (selectedSubjects.length === 0) { setError("Sélectionnez au moins une matière."); return; }
-    if (!docFile) { setError("Téléversez un document justificatif."); return; }
+    if (!niveauKey) { setError(t("prof.qualifications.errorSelectLevel")); return; }
+    if (isSectionLevel(niveauKey) && !sectionKey) { setError(t("prof.qualifications.errorSelectSection")); return; }
+    if (selectedSubjects.length === 0) { setError(t("prof.qualifications.errorSelectSubject")); return; }
+    if (!docFile) { setError(t("prof.qualifications.errorUploadDoc")); return; }
 
     setError(null);
     setSaving(true);
@@ -154,9 +160,9 @@ function AddRequestForm({ onDone }: { onDone: () => void }) {
         headers: apiHeaders(),
         body: JSON.stringify({ niveauKey, sectionKey, subjects: selectedSubjects, documentUrl: docFile.objectPath }),
       });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error ?? "Erreur"); }
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error ?? t("common.error")); }
       await qc.invalidateQueries({ queryKey: ["/api/qualifications/requests/mine"] });
-      toast({ title: "Demande envoyée", description: "Un administrateur examinera votre demande sous 24-48h." });
+      toast({ title: t("prof.qualifications.requestSent"), description: t("prof.qualifications.requestSentDesc") });
       onDone();
     } catch (e: any) {
       setError(e.message);
@@ -175,9 +181,9 @@ function AddRequestForm({ onDone }: { onDone: () => void }) {
 
       {/* Niveau */}
       <div>
-        <Label className="text-sm font-semibold mb-2 block">1. Niveau</Label>
+        <Label className="text-sm font-semibold mb-2 block">1. {t("prof.qualifications.level")}</Label>
         <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Collège</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("prof.qualifications.college")}</p>
           <div className="flex flex-wrap gap-2">
             {Object.entries(SIMPLE_LEVELS).filter(([, v]) => v.cycle === "college").map(([k, v]) => (
               <button key={k} type="button" onClick={() => handleNiveauSelect(k)}
@@ -186,11 +192,11 @@ function AddRequestForm({ onDone }: { onDone: () => void }) {
               </button>
             ))}
           </div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mt-2">Lycée</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mt-2">{t("prof.qualifications.lycee")}</p>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => handleNiveauSelect("1ere_secondaire")}
               className={`px-3 py-1.5 rounded-lg text-sm border-2 font-medium transition-all ${niveauKey === "1ere_secondaire" ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-primary/40"}`}>
-              1ère année secondaire
+              {getNiveauLabel("1ere_secondaire")}
             </button>
             {(["2eme", "3eme", "bac"] as const).map(k => (
               <button key={k} type="button" onClick={() => handleNiveauSelect(k)}
@@ -205,7 +211,7 @@ function AddRequestForm({ onDone }: { onDone: () => void }) {
       {/* Section */}
       {niveauKey && isSectionLevel(niveauKey) && (
         <div>
-          <Label className="text-sm font-semibold mb-2 block">2. Section</Label>
+          <Label className="text-sm font-semibold mb-2 block">2. {t("prof.qualifications.section")}</Label>
           <div className="flex flex-wrap gap-2">
             {sections.map(([sk, sv]) => (
               <button key={sk} type="button" onClick={() => { setSectionKey(sk); setSelectedSubjects([]); }}
@@ -220,7 +226,7 @@ function AddRequestForm({ onDone }: { onDone: () => void }) {
       {/* Subjects */}
       {readyForSubjects && (
         <div>
-          <Label className="text-sm font-semibold mb-2 block">{isSectionLevel(niveauKey) ? "3." : "2."} Matières</Label>
+          <Label className="text-sm font-semibold mb-2 block">{isSectionLevel(niveauKey) ? "3." : "2."} {t("prof.qualifications.subjects")}</Label>
           <div className="flex flex-wrap gap-2">
             {[...availableSubjects].map(s => (
               <button key={s} type="button" onClick={() => toggleSubject(s)}
@@ -230,7 +236,7 @@ function AddRequestForm({ onDone }: { onDone: () => void }) {
             ))}
           </div>
           {selectedSubjects.length > 0 && (
-            <p className="text-xs text-primary mt-1.5">{selectedSubjects.length} matière{selectedSubjects.length > 1 ? "s" : ""} sélectionnée{selectedSubjects.length > 1 ? "s" : ""}</p>
+            <p className="text-xs text-primary mt-1.5">{t("prof.qualifications.selectedCount", { count: selectedSubjects.length })}</p>
           )}
         </div>
       )}
@@ -238,19 +244,21 @@ function AddRequestForm({ onDone }: { onDone: () => void }) {
       {/* Document */}
       {readyForSubjects && (
         <div>
-          <Label className="text-sm font-semibold mb-2 block">{isSectionLevel(niveauKey) ? "4." : "3."} Document justificatif</Label>
-          <p className="text-xs text-muted-foreground mb-2">
-            Téléversez un diplôme, attestation ou tout document prouvant que vous pouvez enseigner ces matières.
-          </p>
-          <DocUploadSlot file={docFile} onUpload={handleUpload} onClear={() => setDocFile(null)} isUploading={uploading} />
+          <Label className="text-sm font-semibold mb-2 block">{isSectionLevel(niveauKey) ? "4." : "3."} {t("prof.qualifications.supportingDoc")}</Label>
+          <p className="text-xs text-muted-foreground mb-2">{t("prof.qualifications.supportingDocHint")}</p>
+          <DocUploadSlot
+            file={docFile} onUpload={handleUpload} onClear={() => setDocFile(null)} isUploading={uploading}
+            uploadingLabel={t("prof.kyc.uploading")} chooseLabel={t("prof.kyc.choose")}
+            docLabel={t("prof.qualifications.docLabel")} docSubtitle={t("prof.qualifications.docSubtitle")}
+          />
         </div>
       )}
 
       <div className="flex gap-3 pt-1">
         <Button onClick={handleSave} disabled={saving || uploading}>
-          {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Envoi...</> : "Soumettre la demande"}
+          {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("prof.qualifications.sending")}</> : t("prof.qualifications.submitRequest")}
         </Button>
-        <Button variant="outline" onClick={onDone}>Annuler</Button>
+        <Button variant="outline" onClick={onDone}>{t("common.cancel")}</Button>
       </div>
     </div>
   );
@@ -258,13 +266,8 @@ function AddRequestForm({ onDone }: { onDone: () => void }) {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-const STATUS_CONFIG = {
-  pending:  { label: "En attente",  icon: Clock,          className: "bg-amber-50 border-amber-200 text-amber-800" },
-  approved: { label: "Approuvée",   icon: CheckCircle2,   className: "bg-green-50 border-green-200 text-green-800" },
-  rejected: { label: "Refusée",     icon: XCircle,        className: "bg-red-50 border-red-200 text-red-800"    },
-};
-
 export function ProfessorQualifications() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
 
   const { data: quals = [] } = useQuery<Qualification[]>({
@@ -300,26 +303,26 @@ export function ProfessorQualifications() {
     <DashboardLayout>
       <FadeIn>
         <PageHeader
-          title="Mes qualifications"
-          description="Soumettez des demandes avec un document justificatif. Un administrateur les approuvera avant activation."
+          title={t("prof.qualifications.title")}
+          description={t("prof.qualifications.description")}
         />
 
         {isLoading ? (
-          <p className="text-muted-foreground">Chargement...</p>
+          <p className="text-muted-foreground">{t("common.loading")}</p>
         ) : (
           <div className="max-w-3xl space-y-8">
 
             {/* ── Add button / form ── */}
             {!showAdd ? (
               <Button onClick={() => setShowAdd(true)} className="gap-2">
-                <Plus className="w-4 h-4" /> Soumettre une demande de qualification
+                <Plus className="w-4 h-4" /> {t("prof.qualifications.submitNew")}
               </Button>
             ) : (
               <Card className="p-6">
-                <h3 className="text-lg font-bold mb-5">Nouvelle demande de qualification</h3>
+                <h3 className="text-lg font-bold mb-5">{t("prof.qualifications.newRequestTitle")}</h3>
                 <div className="mb-4 flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
-                  <p>Votre demande sera examinée par un administrateur. Seuls les niveaux et matières approuvés apparaîtront dans la création de cours.</p>
+                  <p>{t("prof.qualifications.newRequestHint")}</p>
                 </div>
                 <AddRequestForm onDone={() => setShowAdd(false)} />
               </Card>
@@ -329,7 +332,7 @@ export function ProfessorQualifications() {
             {pending.length > 0 && (
               <div>
                 <h3 className="text-base font-bold mb-3 flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-amber-500" /> Demandes en attente
+                  <Clock className="w-4 h-4 text-amber-500" /> {t("prof.qualifications.pendingRequests")}
                 </h3>
                 <div className="space-y-3">
                   {pending.map(r => (
@@ -342,7 +345,7 @@ export function ProfessorQualifications() {
                           </p>
                         </div>
                         <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 border border-amber-200 text-amber-800 shrink-0">
-                          <Clock className="w-3 h-3" /> En attente
+                          <Clock className="w-3 h-3" /> {t("prof.qualifications.statusPending")}
                         </span>
                       </div>
                       <div className="mt-3 flex items-center gap-2">
@@ -350,7 +353,7 @@ export function ProfessorQualifications() {
                           onClick={() => window.open(`/api/storage${r.documentUrl}`, "_blank")}
                           className="flex items-center gap-1.5 text-xs text-primary hover:underline"
                         >
-                          <Eye className="w-3.5 h-3.5" /> Voir le document
+                          <Eye className="w-3.5 h-3.5" /> {t("prof.qualifications.viewDocument")}
                         </button>
                       </div>
                     </Card>
@@ -363,7 +366,7 @@ export function ProfessorQualifications() {
             {Object.keys(approvedGroups).length > 0 && (
               <div>
                 <h3 className="text-base font-bold mb-3 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-600" /> Qualifications approuvées
+                  <CheckCircle2 className="w-4 h-4 text-green-600" /> {t("prof.qualifications.approvedQuals")}
                 </h3>
                 <div className="space-y-3">
                   {Object.entries(approvedGroups).map(([groupKey, groupQuals]) => {
@@ -373,7 +376,7 @@ export function ProfessorQualifications() {
                         <div className="flex items-center justify-between mb-3">
                           <p className="font-bold">{comboLabel(nk, sk || null)}</p>
                           <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-green-50 border border-green-200 text-green-800">
-                            <CheckCircle2 className="w-3 h-3" /> Approuvée
+                            <CheckCircle2 className="w-3 h-3" /> {t("prof.qualifications.statusApproved")}
                           </span>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -395,7 +398,7 @@ export function ProfessorQualifications() {
             {rejected.length > 0 && (
               <div>
                 <h3 className="text-base font-bold mb-3 flex items-center gap-2">
-                  <XCircle className="w-4 h-4 text-red-500" /> Demandes refusées
+                  <XCircle className="w-4 h-4 text-red-500" /> {t("prof.qualifications.rejectedRequests")}
                 </h3>
                 <div className="space-y-3">
                   {rejected.map(r => (
@@ -406,12 +409,12 @@ export function ProfessorQualifications() {
                           <p className="text-xs text-muted-foreground mt-0.5">{r.subjects.join(" • ")}</p>
                           {r.adminNotes && (
                             <p className="text-xs text-red-600 mt-2 bg-red-50 rounded-lg px-3 py-2">
-                              <span className="font-semibold">Motif : </span>{r.adminNotes}
+                              <span className="font-semibold">{t("prof.qualifications.reason")} : </span>{r.adminNotes}
                             </p>
                           )}
                         </div>
                         <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-50 border border-red-200 text-red-800 shrink-0">
-                          <XCircle className="w-3 h-3" /> Refusée
+                          <XCircle className="w-3 h-3" /> {t("prof.qualifications.statusRejected")}
                         </span>
                       </div>
                     </Card>
@@ -424,10 +427,8 @@ export function ProfessorQualifications() {
             {!showAdd && quals.length === 0 && requests.length === 0 && (
               <Card className="p-10 text-center">
                 <AlertCircle className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                <p className="font-semibold text-lg mb-1">Aucune qualification</p>
-                <p className="text-sm text-muted-foreground">
-                  Soumettez une demande avec un document justificatif pour commencer à enseigner.
-                </p>
+                <p className="font-semibold text-lg mb-1">{t("prof.qualifications.noQuals")}</p>
+                <p className="text-sm text-muted-foreground">{t("prof.qualifications.noQualsDesc")}</p>
               </Card>
             )}
           </div>

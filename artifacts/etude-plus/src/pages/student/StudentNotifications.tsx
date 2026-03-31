@@ -3,6 +3,7 @@ import { PageHeader, Card, FadeIn, Button } from "@/components/ui/Premium";
 import { Bell, Info, CheckCircle, AlertTriangle, Calendar as CalIcon } from "lucide-react";
 import { useGetMyNotifications, useMarkNotificationRead } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 function getIcon(type: string) {
   switch (type) {
@@ -22,18 +23,19 @@ function getBg(type: string) {
   }
 }
 
-function fmtDate(iso: string) {
+function fmtDate(iso: string, t: (key: string, opts?: any) => string) {
   const d = new Date(iso);
   const now = Date.now();
   const diff = (now - d.getTime()) / 1000;
-  if (diff < 60) return "À l'instant";
-  if (diff < 3600) return `Il y a ${Math.floor(diff / 60)}min`;
-  if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)}h`;
-  if (diff < 172800) return "Hier";
+  if (diff < 60) return t("student.notifications.justNow");
+  if (diff < 3600) return t("student.notifications.minutesAgo", { minutes: Math.floor(diff / 60) });
+  if (diff < 86400) return t("student.notifications.hoursAgo", { hours: Math.floor(diff / 3600) });
+  if (diff < 172800) return t("student.notifications.yesterday");
   return d.toLocaleDateString("fr-FR");
 }
 
 export function StudentNotifications() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const { data: notifications = [], isLoading } = useGetMyNotifications() as any;
   const markRead = useMarkNotificationRead();
@@ -51,11 +53,11 @@ export function StudentNotifications() {
     <DashboardLayout>
       <FadeIn>
         <PageHeader
-          title="Notifications"
-          description="Restez informé des nouveautés et de vos rappels."
+          title={t("student.notifications.title")}
+          description={t("student.notifications.description")}
           action={
             unreadCount > 0
-              ? <Button variant="outline" onClick={handleMarkAllRead}>Tout marquer comme lu</Button>
+              ? <Button variant="outline" onClick={handleMarkAllRead}>{t("student.notifications.markAllRead")}</Button>
               : undefined
           }
         />
@@ -67,8 +69,8 @@ export function StudentNotifications() {
         ) : notifications.length === 0 ? (
           <Card className="p-12 text-center">
             <Bell className="w-12 h-12 text-muted-foreground opacity-30 mx-auto mb-4" />
-            <h3 className="text-xl font-bold mb-2">Aucune notification</h3>
-            <p className="text-muted-foreground">Vous serez notifié ici pour les nouvelles sessions, notes et rappels.</p>
+            <h3 className="text-xl font-bold mb-2">{t("student.notifications.noNotifications")}</h3>
+            <p className="text-muted-foreground">{t("student.notifications.noNotificationsDesc")}</p>
           </Card>
         ) : (
           <Card className="overflow-hidden border border-border">
@@ -87,7 +89,7 @@ export function StudentNotifications() {
                         {n.title}
                       </h4>
                       <span className="text-xs font-medium text-muted-foreground whitespace-nowrap ml-4">
-                        {n.createdAt ? fmtDate(n.createdAt) : ""}
+                        {n.createdAt ? fmtDate(n.createdAt, t) : ""}
                       </span>
                     </div>
                     <p className={`text-sm ${!n.isRead ? "text-foreground/90 font-medium" : "text-muted-foreground"}`}>

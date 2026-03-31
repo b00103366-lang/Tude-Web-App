@@ -28,6 +28,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { formatTND } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 function Modal({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
   if (!open) return null;
@@ -64,19 +65,20 @@ function EmptyState({ icon: Icon, title, description, action }: { icon: any; tit
   );
 }
 
-const Q_TYPES = [
-  { value: "multiple_choice", label: "QCM", desc: "Choix multiple" },
-  { value: "true_false", label: "Vrai/Faux", desc: "2 options" },
-  { value: "short_answer", label: "Courte", desc: "Réponse courte" },
-  { value: "long_answer", label: "Longue", desc: "Réponse développée" },
-  { value: "numeric", label: "Numérique", desc: "Valeur numérique" },
-] as const;
-
-function QuizTestBuilder({ mode, form, setForm, blankQ, isPending, onCancel, onSubmit }: {
+function QuizTestBuilder({ mode, form, setForm, blankQ, isPending, onCancel, onSubmit, t }: {
   mode: "quiz" | "test";
   form: any; setForm: any; blankQ: () => any;
   isPending: boolean; onCancel: () => void; onSubmit: (publish: boolean) => void;
+  t: (key: string, opts?: any) => string;
 }) {
+  const Q_TYPES = [
+    { value: "multiple_choice", label: t("prof.classManagement.qTypeQCM"), desc: t("prof.classManagement.qTypeQCMDesc") },
+    { value: "true_false", label: t("prof.classManagement.qTypeTrueFalse"), desc: t("prof.classManagement.qTypeTrueFalseDesc") },
+    { value: "short_answer", label: t("prof.classManagement.qTypeShort"), desc: t("prof.classManagement.qTypeShortDesc") },
+    { value: "long_answer", label: t("prof.classManagement.qTypeLong"), desc: t("prof.classManagement.qTypeLongDesc") },
+    { value: "numeric", label: t("prof.classManagement.qTypeNumeric"), desc: t("prof.classManagement.qTypeNumericDesc") },
+  ] as const;
+
   const totalPoints = form.questions.reduce((sum: number, q: any) => sum + (Number(q.points) || 0), 0);
 
   function setQ(idx: number, patch: any) {
@@ -120,28 +122,28 @@ function QuizTestBuilder({ mode, form, setForm, blankQ, isPending, onCancel, onS
     <div className="space-y-5">
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
-          <Label>Titre {mode === "quiz" ? "du quiz" : "du contrôle"}</Label>
-          <Input placeholder={mode === "quiz" ? "ex: Quiz – Dérivées" : "ex: Contrôle – Algèbre"} value={form.title} onChange={(e: any) => setForm((f: any) => ({ ...f, title: e.target.value }))} />
+          <Label>{mode === "quiz" ? t("prof.classManagement.quizTitleLabel") : t("prof.classManagement.testTitleLabel")}</Label>
+          <Input placeholder={mode === "quiz" ? t("prof.classManagement.quizTitlePlaceholder") : t("prof.classManagement.testTitlePlaceholder")} value={form.title} onChange={(e: any) => setForm((f: any) => ({ ...f, title: e.target.value }))} />
         </div>
         <div>
-          <Label>Date limite (optionnel)</Label>
+          <Label>{t("prof.classManagement.dueDateOptional")}</Label>
           <Input type="date" value={form.dueDate} onChange={(e: any) => setForm((f: any) => ({ ...f, dueDate: e.target.value }))} />
         </div>
         <div className="flex items-end">
           <div className="bg-muted rounded-xl px-4 py-2 text-sm font-semibold w-full text-center">
-            {form.questions.length} question{form.questions.length !== 1 ? "s" : ""} • {totalPoints} pts
+            {form.questions.length} {t("prof.classManagement.questionCount")} • {totalPoints} pts
           </div>
         </div>
       </div>
 
       <div className="border-t border-border pt-5">
-        <h4 className="font-bold mb-4 text-sm uppercase tracking-wider text-muted-foreground">Questions</h4>
+        <h4 className="font-bold mb-4 text-sm uppercase tracking-wider text-muted-foreground">{t("prof.classManagement.questionsSection")}</h4>
         <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-1">
           {form.questions.map((q: any, qi: number) => (
             <div key={qi} className="border-2 border-border rounded-xl p-4 space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <span className="w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">{qi + 1}</span>
-                <Input className="flex-1" placeholder="Énoncé de la question..." value={q.text} onChange={(e: any) => setQ(qi, { text: e.target.value })} />
+                <Input className="flex-1" placeholder={t("prof.classManagement.questionPlaceholder")} value={q.text} onChange={(e: any) => setQ(qi, { text: e.target.value })} />
                 {form.questions.length > 1 && (
                   <button onClick={() => removeQ(qi)} className="w-7 h-7 rounded-lg hover:bg-destructive/10 flex items-center justify-center shrink-0 text-muted-foreground hover:text-destructive transition-colors">
                     <X className="w-4 h-4" />
@@ -150,14 +152,14 @@ function QuizTestBuilder({ mode, form, setForm, blankQ, isPending, onCancel, onS
               </div>
 
               <div className="flex flex-wrap gap-2 pl-10">
-                {Q_TYPES.map(t => (
-                  <button key={t.value} onClick={() => setQ(qi, { type: t.value, options: t.value === "true_false" ? ["Vrai", "Faux"] : t.value === "multiple_choice" ? q.options : [], correct: 0 })}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-colors ${q.type === t.value ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-primary/50"}`}>
-                    {t.label}
+                {Q_TYPES.map(qtype => (
+                  <button key={qtype.value} onClick={() => setQ(qi, { type: qtype.value, options: qtype.value === "true_false" ? [t("prof.classManagement.true"), t("prof.classManagement.false")] : qtype.value === "multiple_choice" ? q.options : [], correct: 0 })}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-colors ${q.type === qtype.value ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-primary/50"}`}>
+                    {qtype.label}
                   </button>
                 ))}
                 <div className="ml-auto flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Points:</span>
+                  <span className="text-xs text-muted-foreground">{t("prof.classManagement.points")}:</span>
                   <Input type="number" min="1" className="w-16 text-center text-sm h-8" value={q.points} onChange={(e: any) => setQ(qi, { points: parseInt(e.target.value) || 1 })} />
                 </div>
               </div>
@@ -170,7 +172,7 @@ function QuizTestBuilder({ mode, form, setForm, blankQ, isPending, onCancel, onS
                         className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${q.correct === oi ? "border-green-500 bg-green-500" : "border-border hover:border-green-400"}`}>
                         {q.correct === oi && <Check className="w-3 h-3 text-white" />}
                       </button>
-                      <Input placeholder={`Option ${oi + 1}${q.correct === oi ? " (correcte)" : ""}`} value={opt} onChange={(e: any) => setOption(qi, oi, e.target.value)} className="flex-1 text-sm" />
+                      <Input placeholder={`${t("prof.classManagement.optionLabel")} ${oi + 1}${q.correct === oi ? ` (${t("prof.classManagement.correct")})` : ""}`} value={opt} onChange={(e: any) => setOption(qi, oi, e.target.value)} className="flex-1 text-sm" />
                       {q.options.length > 2 && (
                         <button onClick={() => removeOption(qi, oi)} className="text-muted-foreground hover:text-destructive"><X className="w-4 h-4" /></button>
                       )}
@@ -178,7 +180,7 @@ function QuizTestBuilder({ mode, form, setForm, blankQ, isPending, onCancel, onS
                   ))}
                   {q.options.length < 6 && (
                     <button onClick={() => addOption(qi)} className="text-xs text-primary hover:underline flex items-center gap-1">
-                      <Plus className="w-3 h-3" /> Ajouter une option
+                      <Plus className="w-3 h-3" /> {t("prof.classManagement.addOption")}
                     </button>
                   )}
                 </div>
@@ -186,7 +188,7 @@ function QuizTestBuilder({ mode, form, setForm, blankQ, isPending, onCancel, onS
 
               {q.type === "true_false" && (
                 <div className="pl-10 flex gap-3">
-                  {["Vrai", "Faux"].map((opt, oi) => (
+                  {[t("prof.classManagement.true"), t("prof.classManagement.false")].map((opt, oi) => (
                     <button key={oi} onClick={() => setQ(qi, { correct: oi })}
                       className={`flex-1 py-2 rounded-xl border-2 text-sm font-semibold transition-colors ${q.correct === oi ? (oi === 0 ? "border-green-500 bg-green-50 text-green-700" : "border-red-400 bg-red-50 text-red-700") : "border-border hover:border-primary/50"}`}>
                       {opt}
@@ -197,24 +199,24 @@ function QuizTestBuilder({ mode, form, setForm, blankQ, isPending, onCancel, onS
 
               {(q.type === "short_answer" || q.type === "long_answer" || q.type === "numeric") && (
                 <div className="pl-10">
-                  <Input placeholder={q.type === "numeric" ? "Réponse numérique attendue (optionnel)" : "Corrigé / réponse modèle (optionnel)"} value={q.modelAnswer} onChange={(e: any) => setQ(qi, { modelAnswer: e.target.value })} className="text-sm" />
+                  <Input placeholder={q.type === "numeric" ? t("prof.classManagement.numericAnswerPlaceholder") : t("prof.classManagement.modelAnswerPlaceholder")} value={q.modelAnswer} onChange={(e: any) => setQ(qi, { modelAnswer: e.target.value })} className="text-sm" />
                 </div>
               )}
             </div>
           ))}
         </div>
         <button onClick={addQ} className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">
-          <Plus className="w-4 h-4" /> Ajouter une question
+          <Plus className="w-4 h-4" /> {t("prof.classManagement.addQuestion")}
         </button>
       </div>
 
       <div className="flex gap-3 pt-2 border-t border-border">
-        <Button variant="outline" className="flex-1" onClick={onCancel}>Annuler</Button>
+        <Button variant="outline" className="flex-1" onClick={onCancel}>{t("common.cancel")}</Button>
         <Button variant="outline" className="flex-1" disabled={isPending} onClick={() => onSubmit(false)}>
-          <Save className="w-4 h-4 mr-2" /> Brouillon
+          <Save className="w-4 h-4 mr-2" /> {t("prof.classManagement.draft")}
         </Button>
         <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white" disabled={isPending} onClick={() => onSubmit(true)}>
-          {isPending ? "..." : <><Check className="w-4 h-4 mr-2" />Publier</>}
+          {isPending ? "..." : <><Check className="w-4 h-4 mr-2" />{t("prof.classManagement.publish")}</>}
         </Button>
       </div>
     </div>
@@ -222,6 +224,7 @@ function QuizTestBuilder({ mode, form, setForm, blankQ, isPending, onCancel, onS
 }
 
 export function ProfessorClassManagement() {
+  const { t } = useTranslation();
   const [, params] = useRoute("/professor/classes/:id");
   const classId = params?.id ? parseInt(params.id) : 0;
   const qc = useQueryClient();
@@ -290,16 +293,16 @@ export function ProfessorClassManagement() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Erreur lors de la sauvegarde");
+        throw new Error(body.error ?? t("prof.classManagement.saveError"));
       }
       return res.json();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [`/api/classes/${classId}`] });
-      toast({ title: "Succès", description: "Paramètres du cours mis à jour." });
+      toast({ title: t("prof.classManagement.saveSuccess"), description: t("prof.classManagement.saveSuccessDesc") });
     },
     onError: (err: any) => {
-      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     },
   });
 
@@ -311,14 +314,14 @@ export function ProfessorClassManagement() {
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ status: "cancelled" }),
       });
-      if (!res.ok) throw new Error("Erreur lors de l'annulation");
+      if (!res.ok) throw new Error(t("prof.classManagement.cancelError"));
       return res.json();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [`/api/classes/${classId}/sessions`] });
-      toast({ title: "Session annulée", description: "Les étudiants inscrits ont reçu un crédit Étude+." });
+      toast({ title: t("prof.classManagement.sessionCancelled"), description: t("prof.classManagement.sessionCancelledDesc") });
     },
-    onError: () => toast({ title: "Erreur", description: "Impossible d'annuler la session.", variant: "destructive" }),
+    onError: () => toast({ title: t("common.error"), description: t("prof.classManagement.cancelError"), variant: "destructive" }),
   });
 
   const postAnnouncement = useMutation({
@@ -329,15 +332,15 @@ export function ProfessorClassManagement() {
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Erreur lors de la publication");
+      if (!res.ok) throw new Error(t("prof.classManagement.announceError"));
       return res.json();
     },
     onSuccess: () => {
       setShowAnnouncement(false);
       setAnnForm({ title: "", body: "" });
-      toast({ title: "Annonce publiée", description: "Les étudiants inscrits verront cette annonce." });
+      toast({ title: t("prof.classManagement.announceSuccess"), description: t("prof.classManagement.announceSuccessDesc") });
     },
-    onError: () => toast({ title: "Erreur", description: "Impossible de publier l'annonce.", variant: "destructive" }),
+    onError: () => toast({ title: t("common.error"), description: t("prof.classManagement.announceError"), variant: "destructive" }),
   });
 
   const [sessionForm, setSessionForm] = useState({ title: "", description: "", price: "", durationHours: "2", scheduledAt: "" });
@@ -353,17 +356,17 @@ export function ProfessorClassManagement() {
   const invalidate = (key: string) => qc.invalidateQueries({ queryKey: [key] });
 
   const tabs = [
-    { id: "overview", label: "Aperçu", icon: LayoutDashboard },
-    { id: "live", label: "Sessions Live", icon: Video },
-    { id: "materials", label: "Supports", icon: FileText },
-    { id: "recordings", label: "Enregistrements", icon: PlayCircle },
-    { id: "quizzes", label: "Quiz", icon: FileQuestion },
-    { id: "tests", label: "Contrôles", icon: ClipboardList },
-    { id: "assignments", label: "Devoirs", icon: BookOpen },
-    { id: "students", label: `Élèves (${enrollments.length})`, icon: Users },
-    { id: "reviews", label: `Avis${reviews.length > 0 ? ` (${reviews.length})` : ""}`, icon: Star },
-    { id: "practice", label: "Questions d'entraînement", icon: BookOpen },
-    { id: "settings", label: "Paramètres", icon: Settings },
+    { id: "overview", label: t("prof.classManagement.tabOverview"), icon: LayoutDashboard },
+    { id: "live", label: t("prof.classManagement.tabLive"), icon: Video },
+    { id: "materials", label: t("prof.classManagement.tabMaterials"), icon: FileText },
+    { id: "recordings", label: t("prof.classManagement.tabRecordings"), icon: PlayCircle },
+    { id: "quizzes", label: t("prof.classManagement.tabQuizzes"), icon: FileQuestion },
+    { id: "tests", label: t("prof.classManagement.tabTests"), icon: ClipboardList },
+    { id: "assignments", label: t("prof.classManagement.tabAssignments"), icon: BookOpen },
+    { id: "students", label: `${t("prof.classManagement.tabStudents")} (${enrollments.length})`, icon: Users },
+    { id: "reviews", label: `${t("prof.classManagement.tabReviews")}${reviews.length > 0 ? ` (${reviews.length})` : ""}`, icon: Star },
+    { id: "practice", label: t("prof.classManagement.tabPractice"), icon: BookOpen },
+    { id: "settings", label: t("prof.classManagement.tabSettings"), icon: Settings },
   ];
 
   if (!classId || loadingClass) {
@@ -384,8 +387,8 @@ export function ProfessorClassManagement() {
       <DashboardLayout>
         <div className="text-center py-24">
           <AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Cours introuvable</h2>
-          <Link href="/professor/classes"><Button className="mt-2">Retour aux cours</Button></Link>
+          <h2 className="text-2xl font-bold mb-2">{t("prof.classManagement.notFound")}</h2>
+          <Link href="/professor/classes"><Button className="mt-2">{t("prof.classManagement.backToCourses")}</Button></Link>
         </div>
       </DashboardLayout>
     );
@@ -395,24 +398,24 @@ export function ProfessorClassManagement() {
     <DashboardLayout>
       <FadeIn>
         <Link href="/professor/classes" className="text-sm font-medium text-muted-foreground hover:text-primary mb-6 inline-flex items-center gap-1 transition-colors">
-          ← Retour aux cours
+          ← {t("prof.classManagement.backToCourses")}
         </Link>
 
         <PageHeader
           title={cls.title}
           description={`${cls.subject} • ${cls.gradeLevel} • ${cls.city}`}
-          action={<Badge variant={cls.isPublished ? "success" : "secondary"} className="text-sm px-4 py-1">{cls.isPublished ? "Publié" : "Brouillon"}</Badge>}
+          action={<Badge variant={cls.isPublished ? "success" : "secondary"} className="text-sm px-4 py-1">{cls.isPublished ? t("prof.classes.published") : t("prof.classes.draft")}</Badge>}
         />
 
         <div className="flex border-b border-border mb-8 overflow-x-auto">
-          {tabs.map(t => (
+          {tabs.map(tab => (
             <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              className={`px-5 py-3 font-semibold text-sm border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"}`}
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-5 py-3 font-semibold text-sm border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === tab.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"}`}
             >
-              <t.icon className="w-4 h-4" />
-              {t.label}
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
             </button>
           ))}
         </div>
@@ -422,10 +425,10 @@ export function ProfessorClassManagement() {
           <FadeIn>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {[
-                { label: "Élèves inscrits", value: enrollments.length, icon: Users, color: "bg-blue-100 text-blue-600" },
-                { label: "Sessions réalisées", value: sessions.filter((s: any) => s.status === "ended").length, icon: Video, color: "bg-green-100 text-green-600" },
-                { label: "Supports de cours", value: materials.length, icon: FileText, color: "bg-orange-100 text-orange-600" },
-                { label: "Prix par session", value: `${cls.price} TND`, icon: Clock, color: "bg-purple-100 text-purple-600" },
+                { label: t("prof.classManagement.enrolledStudents"), value: enrollments.length, icon: Users, color: "bg-blue-100 text-blue-600" },
+                { label: t("prof.classManagement.completedSessions"), value: sessions.filter((s: any) => s.status === "ended").length, icon: Video, color: "bg-green-100 text-green-600" },
+                { label: t("prof.classManagement.materials"), value: materials.length, icon: FileText, color: "bg-orange-100 text-orange-600" },
+                { label: t("prof.classManagement.pricePerSession"), value: `${cls.price} TND`, icon: Clock, color: "bg-purple-100 text-purple-600" },
               ].map(s => (
                 <Card key={s.label} className="p-6 flex items-center gap-4">
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${s.color}`}>
@@ -440,15 +443,15 @@ export function ProfessorClassManagement() {
             </div>
             <div className="grid md:grid-cols-2 gap-6">
               <Card className="p-6">
-                <h3 className="font-bold text-lg mb-4">Détails du cours</h3>
+                <h3 className="font-bold text-lg mb-4">{t("prof.classManagement.courseDetails")}</h3>
                 <dl className="space-y-3 text-sm">
                   {[
-                    ["Matière", cls.subject],
-                    ["Niveau", cls.gradeLevel],
-                    ["Ville", cls.city],
-                    ["Prix", `${cls.price} TND / session`],
-                    ["Durée", `${cls.durationHours}h par session`],
-                    ["Type", cls.isRecurring ? "Récurrent" : "Paiement unique"],
+                    [t("prof.classManagement.detailSubject"), cls.subject],
+                    [t("prof.classManagement.detailLevel"), cls.gradeLevel],
+                    [t("prof.classManagement.detailCity"), cls.city],
+                    [t("prof.classManagement.detailPrice"), `${cls.price} TND / ${t("prof.classManagement.session")}`],
+                    [t("prof.classManagement.detailDuration"), `${cls.durationHours}h ${t("prof.classManagement.perSession")}`],
+                    [t("prof.classManagement.detailType"), cls.isRecurring ? t("prof.classManagement.recurring") : t("prof.classManagement.oneTime")],
                   ].map(([k, v]) => (
                     <div key={k} className="flex justify-between py-2 border-b border-border/50 last:border-0">
                       <dt className="text-muted-foreground">{k}</dt>
@@ -457,18 +460,18 @@ export function ProfessorClassManagement() {
                   ))}
                 </dl>
                 <Button variant="outline" className="w-full mt-4" onClick={() => setActiveTab("settings")}>
-                  Modifier les infos
+                  {t("prof.classManagement.editInfo")}
                 </Button>
               </Card>
               <Card className="p-6">
-                <h3 className="font-bold text-lg mb-4">Description</h3>
+                <h3 className="font-bold text-lg mb-4">{t("prof.classManagement.description")}</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">{cls.description}</p>
                 <div className="mt-6 grid grid-cols-2 gap-3">
                   <Button variant="outline" onClick={() => setActiveTab("live")}>
-                    <Video className="w-4 h-4 mr-2" /> Sessions
+                    <Video className="w-4 h-4 mr-2" /> {t("prof.classManagement.sessions")}
                   </Button>
                   <Button variant="outline" onClick={() => setActiveTab("students")}>
-                    <Users className="w-4 h-4 mr-2" /> Élèves
+                    <Users className="w-4 h-4 mr-2" /> {t("prof.classManagement.students")}
                   </Button>
                 </div>
               </Card>
@@ -480,21 +483,21 @@ export function ProfessorClassManagement() {
         {activeTab === "live" && (
           <FadeIn>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold">Sessions Live</h3>
+              <h3 className="text-xl font-bold">{t("prof.classManagement.liveSessions")}</h3>
               <div className="flex gap-3">
                 <Button variant="outline" onClick={() => setShowAnnouncement(true)}>
-                  <Megaphone className="w-4 h-4 mr-2" /> Annoncer aux élèves
+                  <Megaphone className="w-4 h-4 mr-2" /> {t("prof.classManagement.announceToStudents")}
                 </Button>
                 <Button onClick={() => setShowCreateSession(true)}>
-                  <Plus className="w-4 h-4 mr-2" /> Programmer une session
+                  <Plus className="w-4 h-4 mr-2" /> {t("prof.classManagement.scheduleSession")}
                 </Button>
               </div>
             </div>
             {loadingSessions ? (
               <div className="space-y-4">{[1, 2].map(i => <div key={i} className="h-28 bg-muted rounded-2xl animate-pulse" />)}</div>
             ) : sessions.length === 0 ? (
-              <EmptyState icon={Video} title="Aucune session programmée" description="Créez votre première session live pour commencer à enseigner."
-                action={<Button onClick={() => setShowCreateSession(true)}><Plus className="w-4 h-4 mr-2" />Créer une session</Button>} />
+              <EmptyState icon={Video} title={t("prof.classManagement.noSessions")} description={t("prof.classManagement.noSessionsDesc")}
+                action={<Button onClick={() => setShowCreateSession(true)}><Plus className="w-4 h-4 mr-2" />{t("prof.classManagement.createSession")}</Button>} />
             ) : (
               <div className="space-y-4">
                 {sessions.map((s: any) => (
@@ -503,7 +506,7 @@ export function ProfessorClassManagement() {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <Badge className={s.status === "live" ? "bg-red-100 text-red-700" : s.status === "scheduled" ? "bg-blue-100 text-blue-700" : ""} variant={s.status === "ended" ? "secondary" : undefined}>
-                            {s.status === "live" ? "En direct" : s.status === "scheduled" ? "Programmée" : "Terminée"}
+                            {s.status === "live" ? t("prof.classManagement.statusLive") : s.status === "scheduled" ? t("prof.classManagement.statusScheduled") : t("prof.classManagement.statusEnded")}
                           </Badge>
                           <span className="text-sm text-muted-foreground">{s.price} TND</span>
                         </div>
@@ -523,25 +526,25 @@ export function ProfessorClassManagement() {
                               className="text-red-600 border-red-200 hover:bg-red-50"
                               disabled={cancelSession.isPending}
                               onClick={() => {
-                                if (confirm(`Annuler la session "${s.title}" ? Les étudiants inscrits recevront un crédit Étude+.`)) {
+                                if (confirm(t("prof.classManagement.cancelConfirm", { title: s.title }))) {
                                   cancelSession.mutate(s.id);
                                 }
                               }}
                             >
-                              <XCircle className="w-4 h-4 mr-2" /> Annuler
+                              <XCircle className="w-4 h-4 mr-2" /> {t("prof.classManagement.cancel")}
                             </Button>
                             <Link href={`/classroom/${s.id}`}>
                               <Button className="bg-red-600 hover:bg-red-700 text-white shadow-lg">
-                                <PlayCircle className="w-4 h-4 mr-2" /> Lancer
+                                <PlayCircle className="w-4 h-4 mr-2" /> {t("prof.classManagement.launch")}
                               </Button>
                             </Link>
                           </>
                         )}
                         {s.status === "ended" && (
-                          <Button variant="outline" size="sm"><Eye className="w-4 h-4 mr-2" />Résumé</Button>
+                          <Button variant="outline" size="sm"><Eye className="w-4 h-4 mr-2" />{t("prof.classManagement.summary")}</Button>
                         )}
                         {s.status === "cancelled" && (
-                          <Badge className="bg-red-100 text-red-700">Annulée</Badge>
+                          <Badge className="bg-red-100 text-red-700">{t("prof.classManagement.statusCancelled")}</Badge>
                         )}
                       </div>
                     </div>
@@ -556,14 +559,14 @@ export function ProfessorClassManagement() {
         {activeTab === "materials" && (
           <FadeIn>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold">Supports de cours</h3>
-              <Button onClick={() => setShowAddMaterial(true)}><Plus className="w-4 h-4 mr-2" />Ajouter</Button>
+              <h3 className="text-xl font-bold">{t("prof.classManagement.courseMaterials")}</h3>
+              <Button onClick={() => setShowAddMaterial(true)}><Plus className="w-4 h-4 mr-2" />{t("prof.classManagement.add")}</Button>
             </div>
             {loadingMaterials ? (
               <div className="space-y-3">{[1, 2].map(i => <div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />)}</div>
             ) : materials.length === 0 ? (
-              <EmptyState icon={FileText} title="Aucun support" description="Ajoutez vos premiers documents de cours."
-                action={<Button onClick={() => setShowAddMaterial(true)}><Plus className="w-4 h-4 mr-2" />Ajouter un support</Button>} />
+              <EmptyState icon={FileText} title={t("prof.classManagement.noMaterials")} description={t("prof.classManagement.noMaterialsDesc")}
+                action={<Button onClick={() => setShowAddMaterial(true)}><Plus className="w-4 h-4 mr-2" />{t("prof.classManagement.addMaterial")}</Button>} />
             ) : (
               <Card className="divide-y divide-border overflow-hidden">
                 {materials.map((m: any) => (
@@ -575,7 +578,7 @@ export function ProfessorClassManagement() {
                       <div>
                         <h4 className="font-semibold">{m.title}</h4>
                         {m.description && <p className="text-xs text-muted-foreground">{m.description}</p>}
-                        {m.createdAt && <p className="text-xs text-muted-foreground">Ajouté le {fmt(m.createdAt)}</p>}
+                        {m.createdAt && <p className="text-xs text-muted-foreground">{t("prof.classManagement.addedOn")} {fmt(m.createdAt)}</p>}
                       </div>
                     </div>
                     <Button
@@ -598,19 +601,19 @@ export function ProfessorClassManagement() {
           <FadeIn>
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h3 className="text-xl font-bold">Enregistrements</h3>
-                <p className="text-sm text-muted-foreground mt-0.5">Cours enregistrés et questions enregistrées accessibles aux élèves inscrits.</p>
+                <h3 className="text-xl font-bold">{t("prof.classManagement.recordings")}</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">{t("prof.classManagement.recordingsDesc")}</p>
               </div>
               <Button onClick={() => { setShowAddRecording(true); setRecordingFile(null); setRecordingUploadProgress("idle"); setRecordingForm({ title: "", description: "" }); }}>
-                <Plus className="w-4 h-4 mr-2" /> Ajouter un enregistrement
+                <Plus className="w-4 h-4 mr-2" /> {t("prof.classManagement.addRecording")}
               </Button>
             </div>
             {loadingMaterials ? (
               <div className="space-y-3">{[1, 2].map(i => <div key={i} className="h-20 bg-muted rounded-xl animate-pulse" />)}</div>
             ) : materials.filter((m: any) => m.type === "recorded_lecture" || m.type === "recorded_question").length === 0 ? (
-              <EmptyState icon={PlayCircle} title="Aucun enregistrement"
-                description="Publiez des cours ou questions enregistrés pour vos élèves."
-                action={<Button onClick={() => setShowAddRecording(true)}><Plus className="w-4 h-4 mr-2" />Ajouter</Button>} />
+              <EmptyState icon={PlayCircle} title={t("prof.classManagement.noRecordings")}
+                description={t("prof.classManagement.noRecordingsDesc")}
+                action={<Button onClick={() => setShowAddRecording(true)}><Plus className="w-4 h-4 mr-2" />{t("prof.classManagement.add")}</Button>} />
             ) : (
               <div className="space-y-3">
                 {materials.filter((m: any) => m.type === "recorded_lecture" || m.type === "recorded_question").map((m: any) => (
@@ -623,16 +626,16 @@ export function ProfessorClassManagement() {
                         <div className="flex items-center gap-2">
                           <h4 className="font-semibold">{m.title}</h4>
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.type === "recorded_lecture" ? "bg-purple-100 text-purple-700" : "bg-orange-100 text-orange-700"}`}>
-                            {m.type === "recorded_lecture" ? "Cours enregistré" : "Question enregistrée"}
+                            {m.type === "recorded_lecture" ? t("prof.classManagement.recordedLecture") : t("prof.classManagement.recordedQuestion")}
                           </span>
                         </div>
                         {m.description && <p className="text-xs text-muted-foreground">{m.description}</p>}
-                        <p className="text-xs text-muted-foreground">Ajouté le {fmt(m.createdAt)}</p>
+                        <p className="text-xs text-muted-foreground">{t("prof.classManagement.addedOn")} {fmt(m.createdAt)}</p>
                       </div>
                     </div>
                     {m.fileUrl && (
                       <Button variant="outline" size="sm" onClick={() => window.open(`/api/storage${m.fileUrl}`, "_blank")}>
-                        <Eye className="w-4 h-4 mr-2" /> Voir
+                        <Eye className="w-4 h-4 mr-2" /> {t("prof.classManagement.view")}
                       </Button>
                     )}
                   </Card>
@@ -646,14 +649,14 @@ export function ProfessorClassManagement() {
         {activeTab === "quizzes" && (
           <FadeIn>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold">Quiz</h3>
-              <Button onClick={() => setShowCreateQuiz(true)}><Plus className="w-4 h-4 mr-2" />Créer un quiz</Button>
+              <h3 className="text-xl font-bold">{t("prof.classManagement.tabQuizzes")}</h3>
+              <Button onClick={() => setShowCreateQuiz(true)}><Plus className="w-4 h-4 mr-2" />{t("prof.classManagement.createQuiz")}</Button>
             </div>
             {loadingQuizzes ? (
               <div className="space-y-3">{[1].map(i => <div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />)}</div>
             ) : quizzes.length === 0 ? (
-              <EmptyState icon={FileQuestion} title="Aucun quiz" description="Créez des quiz pour évaluer vos élèves."
-                action={<Button onClick={() => setShowCreateQuiz(true)}><Plus className="w-4 h-4 mr-2" />Créer un quiz</Button>} />
+              <EmptyState icon={FileQuestion} title={t("prof.classManagement.noQuizzes")} description={t("prof.classManagement.noQuizzesDesc")}
+                action={<Button onClick={() => setShowCreateQuiz(true)}><Plus className="w-4 h-4 mr-2" />{t("prof.classManagement.createQuiz")}</Button>} />
             ) : (
               <div className="space-y-4">
                 {quizzes.map((q: any) => (
@@ -665,11 +668,11 @@ export function ProfessorClassManagement() {
                       <div>
                         <h4 className="font-semibold">{q.title}</h4>
                         <p className="text-xs text-muted-foreground">
-                          {q.questions?.length ?? 0} questions{q.dueDate ? ` • Avant le ${fmt(q.dueDate)}` : ""}
+                          {q.questions?.length ?? 0} {t("prof.classManagement.questionsLabel")}{q.dueDate ? ` • ${t("prof.classManagement.before")} ${fmt(q.dueDate)}` : ""}
                         </p>
                       </div>
                     </div>
-                    <Badge variant={q.isPublished ? "success" : "secondary"}>{q.isPublished ? "Publié" : "Brouillon"}</Badge>
+                    <Badge variant={q.isPublished ? "success" : "secondary"}>{q.isPublished ? t("prof.classManagement.published") : t("prof.classManagement.draft")}</Badge>
                   </Card>
                 ))}
               </div>
@@ -681,30 +684,30 @@ export function ProfessorClassManagement() {
         {activeTab === "tests" && (
           <FadeIn>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold">Contrôles</h3>
-              <Button onClick={() => setShowCreateTest(true)}><Plus className="w-4 h-4 mr-2" />Créer un contrôle</Button>
+              <h3 className="text-xl font-bold">{t("prof.classManagement.tabTests")}</h3>
+              <Button onClick={() => setShowCreateTest(true)}><Plus className="w-4 h-4 mr-2" />{t("prof.classManagement.createTest")}</Button>
             </div>
             {loadingTests ? (
               <div className="space-y-3">{[1].map(i => <div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />)}</div>
             ) : tests.length === 0 ? (
-              <EmptyState icon={ClipboardList} title="Aucun contrôle" description="Créez des contrôles pour évaluer vos élèves."
-                action={<Button onClick={() => setShowCreateTest(true)}><Plus className="w-4 h-4 mr-2" />Créer un contrôle</Button>} />
+              <EmptyState icon={ClipboardList} title={t("prof.classManagement.noTests")} description={t("prof.classManagement.noTestsDesc")}
+                action={<Button onClick={() => setShowCreateTest(true)}><Plus className="w-4 h-4 mr-2" />{t("prof.classManagement.createTest")}</Button>} />
             ) : (
               <div className="space-y-4">
-                {tests.map((t: any) => (
-                  <Card key={t.id} className="p-5 flex items-center justify-between gap-4">
+                {tests.map((tst: any) => (
+                  <Card key={tst.id} className="p-5 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                       <div className="w-11 h-11 bg-orange-100 rounded-xl flex items-center justify-center">
                         <ClipboardList className="w-5 h-5 text-orange-600" />
                       </div>
                       <div>
-                        <h4 className="font-semibold">{t.title}</h4>
+                        <h4 className="font-semibold">{tst.title}</h4>
                         <p className="text-xs text-muted-foreground">
-                          {t.questions?.length ?? 0} questions{t.dueDate ? ` • Avant le ${fmt(t.dueDate)}` : ""}
+                          {tst.questions?.length ?? 0} {t("prof.classManagement.questionsLabel")}{tst.dueDate ? ` • ${t("prof.classManagement.before")} ${fmt(tst.dueDate)}` : ""}
                         </p>
                       </div>
                     </div>
-                    <Badge variant={t.isPublished ? "success" : "secondary"}>{t.isPublished ? "Publié" : "Brouillon"}</Badge>
+                    <Badge variant={tst.isPublished ? "success" : "secondary"}>{tst.isPublished ? t("prof.classManagement.published") : t("prof.classManagement.draft")}</Badge>
                   </Card>
                 ))}
               </div>
@@ -716,14 +719,14 @@ export function ProfessorClassManagement() {
         {activeTab === "assignments" && (
           <FadeIn>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold">Devoirs</h3>
-              <Button onClick={() => setShowCreateAssignment(true)}><Plus className="w-4 h-4 mr-2" />Créer un devoir</Button>
+              <h3 className="text-xl font-bold">{t("prof.classManagement.tabAssignments")}</h3>
+              <Button onClick={() => setShowCreateAssignment(true)}><Plus className="w-4 h-4 mr-2" />{t("prof.classManagement.createAssignment")}</Button>
             </div>
             {loadingAssignments ? (
               <div className="space-y-3">{[1].map(i => <div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />)}</div>
             ) : assignments.length === 0 ? (
-              <EmptyState icon={BookOpen} title="Aucun devoir" description="Créez des devoirs à remettre pour vos élèves."
-                action={<Button onClick={() => setShowCreateAssignment(true)}><Plus className="w-4 h-4 mr-2" />Créer un devoir</Button>} />
+              <EmptyState icon={BookOpen} title={t("prof.classManagement.noAssignments")} description={t("prof.classManagement.noAssignmentsDesc")}
+                action={<Button onClick={() => setShowCreateAssignment(true)}><Plus className="w-4 h-4 mr-2" />{t("prof.classManagement.createAssignment")}</Button>} />
             ) : (
               <div className="space-y-4">
                 {assignments.map((a: any) => (
@@ -735,7 +738,7 @@ export function ProfessorClassManagement() {
                       <div>
                         <h4 className="font-semibold">{a.title}</h4>
                         {a.instructions && <p className="text-xs text-muted-foreground line-clamp-1">{a.instructions}</p>}
-                        {a.dueDate && <p className="text-xs text-muted-foreground">Avant le {fmt(a.dueDate)}</p>}
+                        {a.dueDate && <p className="text-xs text-muted-foreground">{t("prof.classManagement.before")} {fmt(a.dueDate)}</p>}
                       </div>
                     </div>
                   </Card>
@@ -749,21 +752,21 @@ export function ProfessorClassManagement() {
         {activeTab === "students" && (
           <FadeIn>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold">Élèves inscrits</h3>
-              <Badge variant="secondary" className="text-base px-4 py-1">{enrollments.length} élève{enrollments.length !== 1 ? "s" : ""}</Badge>
+              <h3 className="text-xl font-bold">{t("prof.classManagement.enrolledStudents")}</h3>
+              <Badge variant="secondary" className="text-base px-4 py-1">{enrollments.length} {t("prof.classManagement.studentUnit")}{enrollments.length !== 1 ? "s" : ""}</Badge>
             </div>
             {loadingEnrollments ? (
               <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-14 bg-muted rounded-xl animate-pulse" />)}</div>
             ) : enrollments.length === 0 ? (
-              <EmptyState icon={Users} title="Aucun élève inscrit" description="Les élèves qui s'inscrivent à ce cours apparaîtront ici." />
+              <EmptyState icon={Users} title={t("prof.classManagement.noStudents")} description={t("prof.classManagement.noStudentsDesc")} />
             ) : (
               <Card className="overflow-hidden">
                 <table className="w-full text-sm text-left">
                   <thead className="bg-muted text-muted-foreground">
                     <tr>
-                      <th className="px-6 py-4 font-semibold">Élève</th>
-                      <th className="px-6 py-4 font-semibold hidden md:table-cell">Date d'inscription</th>
-                      <th className="px-6 py-4 font-semibold text-right">Statut</th>
+                      <th className="px-6 py-4 font-semibold">{t("prof.classManagement.colStudent")}</th>
+                      <th className="px-6 py-4 font-semibold hidden md:table-cell">{t("prof.classManagement.colEnrollDate")}</th>
+                      <th className="px-6 py-4 font-semibold text-right">{t("prof.classManagement.colStatus")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -774,13 +777,13 @@ export function ProfessorClassManagement() {
                             <div className="w-9 h-9 rounded-full bg-primary/10 text-primary text-sm font-bold flex items-center justify-center">
                               {e.student?.fullName?.charAt(0) ?? "?"}
                             </div>
-                            <p className="font-semibold">{e.student?.fullName ?? `Élève #${e.studentId}`}</p>
+                            <p className="font-semibold">{e.student?.fullName ?? `${t("prof.classManagement.studentUnit")} #${e.studentId}`}</p>
                           </div>
                         </td>
                         <td className="px-6 py-4 text-muted-foreground hidden md:table-cell">{e.createdAt ? fmt(e.createdAt) : "—"}</td>
                         <td className="px-6 py-4 text-right">
                           <Badge variant={(e.status === "active" || e.status === "paid") ? "success" : "secondary"}>
-                            {(e.status === "active" || e.status === "paid") ? "Actif" : e.status}
+                            {(e.status === "active" || e.status === "paid") ? t("prof.classManagement.statusActive") : e.status}
                           </Badge>
                         </td>
                       </tr>
@@ -796,7 +799,6 @@ export function ProfessorClassManagement() {
         {activeTab === "reviews" && (
           <FadeIn>
             <div className="max-w-2xl space-y-6">
-              {/* Summary */}
               {reviews.length > 0 && (() => {
                 const avg = reviews.reduce((s: number, r: any) => s + r.rating, 0) / reviews.length;
                 const ratingCounts = [5,4,3,2,1].map(star => ({
@@ -807,7 +809,7 @@ export function ProfessorClassManagement() {
                   <Card className="p-6">
                     <h3 className="font-bold text-lg mb-5 flex items-center gap-2">
                       <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
-                      Note globale de ce cours
+                      {t("prof.classManagement.globalRating")}
                     </h3>
                     <div className="flex gap-8 items-center">
                       <div className="text-center shrink-0">
@@ -817,7 +819,7 @@ export function ProfessorClassManagement() {
                             <Star key={n} className={`w-5 h-5 ${n <= Math.round(avg) ? "fill-amber-400 text-amber-400" : "text-gray-200"}`} />
                           ))}
                         </div>
-                        <p className="text-sm text-muted-foreground">{reviews.length} avis</p>
+                        <p className="text-sm text-muted-foreground">{reviews.length} {t("prof.classManagement.reviewsLabel")}</p>
                       </div>
                       <div className="flex-1 space-y-2">
                         {ratingCounts.map(({ star, count }) => (
@@ -835,12 +837,11 @@ export function ProfessorClassManagement() {
                 );
               })()}
 
-              {/* Review list */}
               {reviews.length === 0 ? (
                 <Card className="p-12 text-center">
                   <MessageSquare className="w-12 h-12 text-muted-foreground opacity-30 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold mb-2">Aucun avis pour l'instant</h3>
-                  <p className="text-muted-foreground">Les élèves inscrits peuvent laisser un avis après leurs sessions.</p>
+                  <h3 className="text-xl font-bold mb-2">{t("prof.classManagement.noReviews")}</h3>
+                  <p className="text-muted-foreground">{t("prof.classManagement.noReviewsDesc")}</p>
                 </Card>
               ) : (
                 <div className="space-y-4">
@@ -854,7 +855,7 @@ export function ProfessorClassManagement() {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center justify-between gap-2 mb-1">
-                            <p className="font-bold text-sm">{r.student?.fullName ?? "Élève"}</p>
+                            <p className="font-bold text-sm">{r.student?.fullName ?? t("prof.classManagement.studentUnit")}</p>
                             {r.createdAt && (
                               <p className="text-xs text-muted-foreground">
                                 {new Date(r.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
@@ -889,7 +890,6 @@ export function ProfessorClassManagement() {
 
         {/* ─── SETTINGS ─── */}
         {activeTab === "settings" && (() => {
-          // Initialize controlled state from class data on first render of this tab
           if (!settingsInitialized && cls) {
             setSettingsTitle(cls.title ?? "");
             setSettingsDescription(cls.description ?? "");
@@ -901,14 +901,14 @@ export function ProfessorClassManagement() {
             <FadeIn>
               <div className="max-w-2xl space-y-6">
                 <Card className="p-6">
-                  <h3 className="font-bold text-lg mb-5 border-b border-border pb-3">Informations du cours</h3>
+                  <h3 className="font-bold text-lg mb-5 border-b border-border pb-3">{t("prof.classManagement.courseInfo")}</h3>
                   <div className="space-y-4">
                     <div>
-                      <Label>Titre du cours</Label>
+                      <Label>{t("prof.classManagement.courseTitle")}</Label>
                       <Input value={settingsTitle} onChange={e => setSettingsTitle(e.target.value)} />
                     </div>
                     <div>
-                      <Label>Description</Label>
+                      <Label>{t("prof.classManagement.descriptionLabel")}</Label>
                       <textarea
                         className="flex min-h-[100px] w-full rounded-xl border-2 border-border bg-background px-4 py-3 text-sm focus-visible:outline-none focus-visible:border-primary resize-none"
                         value={settingsDescription}
@@ -917,11 +917,11 @@ export function ProfessorClassManagement() {
                     </div>
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div>
-                        <Label>Prix (TND)</Label>
+                        <Label>{t("prof.classManagement.priceTND")}</Label>
                         <Input type="number" value={settingsPrice} onChange={e => setSettingsPrice(e.target.value)} />
                       </div>
                       <div>
-                        <Label>Durée (heures)</Label>
+                        <Label>{t("prof.classManagement.durationHours")}</Label>
                         <Input type="number" value={settingsDurationHours} onChange={e => setSettingsDurationHours(e.target.value)} />
                       </div>
                     </div>
@@ -941,7 +941,7 @@ export function ProfessorClassManagement() {
                     }}
                   >
                     <Save className="w-5 h-5 mr-2" />
-                    {saveClassSettings.isPending ? "Sauvegarde..." : "Sauvegarder"}
+                    {saveClassSettings.isPending ? t("prof.classManagement.saving") : t("prof.classManagement.save")}
                   </Button>
                 </div>
               </div>
@@ -951,19 +951,19 @@ export function ProfessorClassManagement() {
 
         {/* ─── MODALS ─── */}
 
-        <Modal open={showCreateSession} onClose={() => setShowCreateSession(false)} title="Programmer une session live">
+        <Modal open={showCreateSession} onClose={() => setShowCreateSession(false)} title={t("prof.classManagement.scheduleSessionTitle")}>
           <div className="space-y-4">
-            <div><Label>Titre de la session</Label><Input placeholder="ex: Chapitre 4 – Intégrales" value={sessionForm.title} onChange={e => setSessionForm(f => ({ ...f, title: e.target.value }))} /></div>
-            <div><Label>Description</Label>
-              <textarea className="flex min-h-[80px] w-full rounded-xl border-2 border-border bg-background px-4 py-3 text-sm focus-visible:outline-none focus-visible:border-primary resize-none" placeholder="Ce que couvre cette session..." value={sessionForm.description} onChange={e => setSessionForm(f => ({ ...f, description: e.target.value }))} />
+            <div><Label>{t("prof.classManagement.sessionTitle")}</Label><Input placeholder={t("prof.classManagement.sessionTitlePlaceholder")} value={sessionForm.title} onChange={e => setSessionForm(f => ({ ...f, title: e.target.value }))} /></div>
+            <div><Label>{t("prof.classManagement.descriptionLabel")}</Label>
+              <textarea className="flex min-h-[80px] w-full rounded-xl border-2 border-border bg-background px-4 py-3 text-sm focus-visible:outline-none focus-visible:border-primary resize-none" placeholder={t("prof.classManagement.sessionDescPlaceholder")} value={sessionForm.description} onChange={e => setSessionForm(f => ({ ...f, description: e.target.value }))} />
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
-              <div><Label>Prix (TND)</Label><Input type="number" placeholder={String(cls.price)} value={sessionForm.price} onChange={e => setSessionForm(f => ({ ...f, price: e.target.value }))} /></div>
-              <div><Label>Durée (heures)</Label><Input type="number" placeholder="2" value={sessionForm.durationHours} onChange={e => setSessionForm(f => ({ ...f, durationHours: e.target.value }))} /></div>
+              <div><Label>{t("prof.classManagement.priceTND")}</Label><Input type="number" placeholder={String(cls.price)} value={sessionForm.price} onChange={e => setSessionForm(f => ({ ...f, price: e.target.value }))} /></div>
+              <div><Label>{t("prof.classManagement.durationHours")}</Label><Input type="number" placeholder="2" value={sessionForm.durationHours} onChange={e => setSessionForm(f => ({ ...f, durationHours: e.target.value }))} /></div>
             </div>
-            <div><Label>Date et heure</Label><Input type="datetime-local" value={sessionForm.scheduledAt} onChange={e => setSessionForm(f => ({ ...f, scheduledAt: e.target.value }))} /></div>
+            <div><Label>{t("prof.classManagement.dateTime")}</Label><Input type="datetime-local" value={sessionForm.scheduledAt} onChange={e => setSessionForm(f => ({ ...f, scheduledAt: e.target.value }))} /></div>
             <div className="flex gap-3 pt-2">
-              <Button variant="outline" className="flex-1" onClick={() => setShowCreateSession(false)}>Annuler</Button>
+              <Button variant="outline" className="flex-1" onClick={() => setShowCreateSession(false)}>{t("common.cancel")}</Button>
               <Button className="flex-1" disabled={createSession.isPending}
                 onClick={() => {
                   if (!sessionForm.title || !sessionForm.scheduledAt) return;
@@ -984,20 +984,20 @@ export function ProfessorClassManagement() {
                     }
                   });
                 }}>
-                {createSession.isPending ? "..." : "Programmer"}
+                {createSession.isPending ? "..." : t("prof.classManagement.schedule")}
               </Button>
             </div>
           </div>
         </Modal>
 
-        <Modal open={showAddMaterial} onClose={() => { setShowAddMaterial(false); setSelectedFile(null); setUploadProgress("idle"); }} title="Ajouter un support de cours">
+        <Modal open={showAddMaterial} onClose={() => { setShowAddMaterial(false); setSelectedFile(null); setUploadProgress("idle"); }} title={t("prof.classManagement.addMaterialTitle")}>
           <div className="space-y-4">
-            <div><Label>Titre</Label><Input placeholder="ex: Support PDF – Chapitre 4" value={matForm.title} onChange={e => setMatForm(f => ({ ...f, title: e.target.value }))} /></div>
-            <div><Label>Description (optionnel)</Label><Input placeholder="Brève description..." value={matForm.description} onChange={e => setMatForm(f => ({ ...f, description: e.target.value }))} /></div>
+            <div><Label>{t("prof.classManagement.titleLabel")}</Label><Input placeholder={t("prof.classManagement.materialTitlePlaceholder")} value={matForm.title} onChange={e => setMatForm(f => ({ ...f, title: e.target.value }))} /></div>
+            <div><Label>{t("prof.classManagement.descriptionOptional")}</Label><Input placeholder={t("prof.classManagement.briefDescription")} value={matForm.description} onChange={e => setMatForm(f => ({ ...f, description: e.target.value }))} /></div>
             <div className="border-2 border-dashed border-border rounded-xl p-8 text-center">
               <FileText className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground mb-2">
-                {selectedFile ? selectedFile.name : "Glissez votre fichier ici ou"}
+                {selectedFile ? selectedFile.name : t("prof.classManagement.dropOrBrowse")}
               </p>
               <input
                 type="file"
@@ -1007,14 +1007,14 @@ export function ProfessorClassManagement() {
                 onChange={e => setSelectedFile(e.target.files?.[0] ?? null)}
               />
               <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                {selectedFile ? "Changer le fichier" : "Choisir un fichier"}
+                {selectedFile ? t("prof.classManagement.changeFile") : t("prof.classManagement.chooseFile")}
               </Button>
               {uploadProgress === "uploading" && (
-                <p className="text-xs text-primary mt-2">Téléchargement en cours...</p>
+                <p className="text-xs text-primary mt-2">{t("prof.classManagement.uploading")}</p>
               )}
             </div>
             <div className="flex gap-3 pt-2">
-              <Button variant="outline" className="flex-1" onClick={() => { setShowAddMaterial(false); setSelectedFile(null); setUploadProgress("idle"); }}>Annuler</Button>
+              <Button variant="outline" className="flex-1" onClick={() => { setShowAddMaterial(false); setSelectedFile(null); setUploadProgress("idle"); }}>{t("common.cancel")}</Button>
               <Button className="flex-1" disabled={createMaterial.isPending || uploadProgress === "uploading"}
                 onClick={async () => {
                   if (!matForm.title) return;
@@ -1035,7 +1035,6 @@ export function ProfessorClassManagement() {
                       const reqData = await reqRes.json();
 
                       if (reqData.local) {
-                        // Read file as base64 data URL
                         const base64Content = await new Promise<string>((resolve, reject) => {
                           const reader = new FileReader();
                           reader.onload = () => resolve(reader.result as string);
@@ -1063,7 +1062,7 @@ export function ProfessorClassManagement() {
                       setUploadProgress("done");
                     } catch (err) {
                       setUploadProgress("idle");
-                      toast({ title: "Erreur", description: "Échec du téléchargement du fichier.", variant: "destructive" });
+                      toast({ title: t("common.error"), description: t("prof.classManagement.uploadFileFailed"), variant: "destructive" });
                       return;
                     }
                   }
@@ -1080,18 +1079,18 @@ export function ProfessorClassManagement() {
                       setUploadProgress("idle");
                     },
                     onError: (err: any) => {
-                      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+                      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
                     },
                   });
                 }}>
-                {createMaterial.isPending || uploadProgress === "uploading" ? "..." : "Ajouter"}
+                {createMaterial.isPending || uploadProgress === "uploading" ? "..." : t("prof.classManagement.addBtn")}
               </Button>
             </div>
           </div>
         </Modal>
 
         {/* ─── QUIZ BUILDER MODAL ─── */}
-        <Modal open={showCreateQuiz} onClose={() => setShowCreateQuiz(false)} title="Créer un quiz">
+        <Modal open={showCreateQuiz} onClose={() => setShowCreateQuiz(false)} title={t("prof.classManagement.createQuizTitle")}>
           <QuizTestBuilder
             mode="quiz"
             form={quizForm}
@@ -1099,6 +1098,7 @@ export function ProfessorClassManagement() {
             blankQ={blankQ}
             isPending={createQuiz.isPending}
             onCancel={() => setShowCreateQuiz(false)}
+            t={t}
             onSubmit={(publish) => {
               if (!quizForm.title) return;
               const questions = quizForm.questions.filter(q => q.text.trim()).map(q =>
@@ -1115,7 +1115,7 @@ export function ProfessorClassManagement() {
         </Modal>
 
         {/* ─── TEST BUILDER MODAL ─── */}
-        <Modal open={showCreateTest} onClose={() => setShowCreateTest(false)} title="Créer un contrôle">
+        <Modal open={showCreateTest} onClose={() => setShowCreateTest(false)} title={t("prof.classManagement.createTestTitle")}>
           <QuizTestBuilder
             mode="test"
             form={testForm}
@@ -1123,6 +1123,7 @@ export function ProfessorClassManagement() {
             blankQ={blankQ}
             isPending={createTest.isPending}
             onCancel={() => setShowCreateTest(false)}
+            t={t}
             onSubmit={(publish) => {
               if (!testForm.title) return;
               const questions = testForm.questions.filter(q => q.text.trim()).map(q =>
@@ -1138,15 +1139,15 @@ export function ProfessorClassManagement() {
           />
         </Modal>
 
-        <Modal open={showCreateAssignment} onClose={() => setShowCreateAssignment(false)} title="Créer un devoir">
+        <Modal open={showCreateAssignment} onClose={() => setShowCreateAssignment(false)} title={t("prof.classManagement.createAssignmentTitle")}>
           <div className="space-y-4">
-            <div><Label>Titre du devoir</Label><Input placeholder="ex: Devoir 3 – Intégrales" value={assignForm.title} onChange={e => setAssignForm(f => ({ ...f, title: e.target.value }))} /></div>
-            <div><Label>Instructions</Label>
-              <textarea className="flex min-h-[100px] w-full rounded-xl border-2 border-border bg-background px-4 py-3 text-sm focus-visible:outline-none focus-visible:border-primary resize-none" placeholder="Décrivez ce que les élèves doivent faire..." value={assignForm.instructions} onChange={e => setAssignForm(f => ({ ...f, instructions: e.target.value }))} />
+            <div><Label>{t("prof.classManagement.assignmentTitle")}</Label><Input placeholder={t("prof.classManagement.assignmentTitlePlaceholder")} value={assignForm.title} onChange={e => setAssignForm(f => ({ ...f, title: e.target.value }))} /></div>
+            <div><Label>{t("prof.classManagement.instructions")}</Label>
+              <textarea className="flex min-h-[100px] w-full rounded-xl border-2 border-border bg-background px-4 py-3 text-sm focus-visible:outline-none focus-visible:border-primary resize-none" placeholder={t("prof.classManagement.instructionsPlaceholder")} value={assignForm.instructions} onChange={e => setAssignForm(f => ({ ...f, instructions: e.target.value }))} />
             </div>
-            <div><Label>Date limite (optionnel)</Label><Input type="date" value={assignForm.dueDate} onChange={e => setAssignForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
+            <div><Label>{t("prof.classManagement.dueDateOptional")}</Label><Input type="date" value={assignForm.dueDate} onChange={e => setAssignForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
             <div className="flex gap-3 pt-2">
-              <Button variant="outline" className="flex-1" onClick={() => setShowCreateAssignment(false)}>Annuler</Button>
+              <Button variant="outline" className="flex-1" onClick={() => setShowCreateAssignment(false)}>{t("common.cancel")}</Button>
               <Button className="flex-1" disabled={createAssignment.isPending}
                 onClick={() => {
                   if (!assignForm.title) return;
@@ -1161,18 +1162,17 @@ export function ProfessorClassManagement() {
                     }
                   });
                 }}>
-                {createAssignment.isPending ? "..." : "Créer"}
+                {createAssignment.isPending ? "..." : t("prof.classManagement.create")}
               </Button>
             </div>
           </div>
         </Modal>
 
         {/* ─── RECORDING UPLOAD MODAL ─── */}
-        <Modal open={showAddRecording} onClose={() => { setShowAddRecording(false); setRecordingFile(null); setRecordingUploadProgress("idle"); }} title="Ajouter un enregistrement">
+        <Modal open={showAddRecording} onClose={() => { setShowAddRecording(false); setRecordingFile(null); setRecordingUploadProgress("idle"); }} title={t("prof.classManagement.addRecordingTitle")}>
           <div className="space-y-4">
-            {/* Type selector */}
             <div>
-              <Label>Type d'enregistrement</Label>
+              <Label>{t("prof.classManagement.recordingType")}</Label>
               <div className="grid grid-cols-2 gap-3 mt-2">
                 <button
                   type="button"
@@ -1180,8 +1180,8 @@ export function ProfessorClassManagement() {
                   className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${recordingType === "recorded_lecture" ? "border-purple-500 bg-purple-50 text-purple-700" : "border-border hover:border-muted-foreground"}`}
                 >
                   <PlayCircle className="w-6 h-6" />
-                  <span className="text-sm font-semibold">Cours enregistré</span>
-                  <span className="text-xs text-muted-foreground text-center">Cours ou leçon filmée</span>
+                  <span className="text-sm font-semibold">{t("prof.classManagement.recordedLecture")}</span>
+                  <span className="text-xs text-muted-foreground text-center">{t("prof.classManagement.recordedLectureDesc")}</span>
                 </button>
                 <button
                   type="button"
@@ -1189,16 +1189,15 @@ export function ProfessorClassManagement() {
                   className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${recordingType === "recorded_question" ? "border-orange-500 bg-orange-50 text-orange-700" : "border-border hover:border-muted-foreground"}`}
                 >
                   <FileQuestion className="w-6 h-6" />
-                  <span className="text-sm font-semibold">Question enregistrée</span>
-                  <span className="text-xs text-muted-foreground text-center">Explication d'une question</span>
+                  <span className="text-sm font-semibold">{t("prof.classManagement.recordedQuestion")}</span>
+                  <span className="text-xs text-muted-foreground text-center">{t("prof.classManagement.recordedQuestionDesc")}</span>
                 </button>
               </div>
             </div>
 
-            <div><Label>Titre</Label><Input placeholder={recordingType === "recorded_lecture" ? "ex: Cours – Chapitre 5 : Les intégrales" : "ex: Correction – Exercice 4 page 87"} value={recordingForm.title} onChange={e => setRecordingForm(f => ({ ...f, title: e.target.value }))} /></div>
-            <div><Label>Description (optionnel)</Label><Input placeholder="Brève description du contenu..." value={recordingForm.description} onChange={e => setRecordingForm(f => ({ ...f, description: e.target.value }))} /></div>
+            <div><Label>{t("prof.classManagement.titleLabel")}</Label><Input placeholder={recordingType === "recorded_lecture" ? t("prof.classManagement.recordedLecturePlaceholder") : t("prof.classManagement.recordedQuestionPlaceholder")} value={recordingForm.title} onChange={e => setRecordingForm(f => ({ ...f, title: e.target.value }))} /></div>
+            <div><Label>{t("prof.classManagement.descriptionOptional")}</Label><Input placeholder={t("prof.classManagement.briefDescription")} value={recordingForm.description} onChange={e => setRecordingForm(f => ({ ...f, description: e.target.value }))} /></div>
 
-            {/* Video upload zone */}
             <div
               className="border-2 border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
               onClick={() => recordingFileRef.current?.click()}
@@ -1210,7 +1209,7 @@ export function ProfessorClassManagement() {
                   <p className="text-xs text-muted-foreground mt-0.5">{(recordingFile.size / 1024 / 1024).toFixed(1)} Mo</p>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Cliquez pour choisir une vidéo (MP4, MOV, WEBM)</p>
+                <p className="text-sm text-muted-foreground">{t("prof.classManagement.clickToChooseVideo")}</p>
               )}
               <input
                 type="file"
@@ -1220,12 +1219,12 @@ export function ProfessorClassManagement() {
                 onChange={e => setRecordingFile(e.target.files?.[0] ?? null)}
               />
               {recordingUploadProgress === "uploading" && (
-                <p className="text-xs text-primary mt-3 font-medium animate-pulse">Téléchargement en cours...</p>
+                <p className="text-xs text-primary mt-3 font-medium animate-pulse">{t("prof.classManagement.uploading")}</p>
               )}
             </div>
 
             <div className="flex gap-3 pt-2">
-              <Button variant="outline" className="flex-1" onClick={() => { setShowAddRecording(false); setRecordingFile(null); setRecordingUploadProgress("idle"); }}>Annuler</Button>
+              <Button variant="outline" className="flex-1" onClick={() => { setShowAddRecording(false); setRecordingFile(null); setRecordingUploadProgress("idle"); }}>{t("common.cancel")}</Button>
               <Button
                 className={`flex-1 ${recordingType === "recorded_lecture" ? "bg-purple-600 hover:bg-purple-700" : "bg-orange-500 hover:bg-orange-600"}`}
                 disabled={createMaterial.isPending || recordingUploadProgress === "uploading" || !recordingForm.title}
@@ -1275,7 +1274,7 @@ export function ProfessorClassManagement() {
                       setRecordingUploadProgress("done");
                     } catch {
                       setRecordingUploadProgress("idle");
-                      toast({ title: "Erreur", description: "Échec du téléchargement de la vidéo.", variant: "destructive" });
+                      toast({ title: t("common.error"), description: t("prof.classManagement.uploadVideoFailed"), variant: "destructive" });
                       return;
                     }
                   }
@@ -1292,36 +1291,36 @@ export function ProfessorClassManagement() {
                       setRecordingUploadProgress("idle");
                     },
                     onError: (err: any) => {
-                      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+                      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
                     },
                   });
                 }}
               >
                 <PlayCircle className="w-4 h-4 mr-2" />
-                {createMaterial.isPending || recordingUploadProgress === "uploading" ? "Publication..." : "Publier l'enregistrement"}
+                {createMaterial.isPending || recordingUploadProgress === "uploading" ? t("prof.classManagement.publishing") : t("prof.classManagement.publishRecording")}
               </Button>
             </div>
           </div>
         </Modal>
 
         {/* ─── ANNOUNCEMENT MODAL ─── */}
-        <Modal open={showAnnouncement} onClose={() => setShowAnnouncement(false)} title="Annoncer aux élèves inscrits">
+        <Modal open={showAnnouncement} onClose={() => setShowAnnouncement(false)} title={t("prof.classManagement.announceModalTitle")}>
           <div className="space-y-4">
-            <div><Label>Titre de l'annonce</Label><Input placeholder="ex: Cours déplacé au vendredi" value={annForm.title} onChange={e => setAnnForm(f => ({ ...f, title: e.target.value }))} /></div>
+            <div><Label>{t("prof.classManagement.announceTitleLabel")}</Label><Input placeholder={t("prof.classManagement.announceTitlePlaceholder")} value={annForm.title} onChange={e => setAnnForm(f => ({ ...f, title: e.target.value }))} /></div>
             <div>
-              <Label>Message</Label>
+              <Label>{t("prof.classManagement.announceMessage")}</Label>
               <textarea
                 className="w-full mt-1 rounded-lg border border-border bg-background px-3 py-2 text-sm min-h-[120px] resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
-                placeholder="Décrivez les changements ou informations importantes..."
+                placeholder={t("prof.classManagement.announceMessagePlaceholder")}
                 value={annForm.body}
                 onChange={e => setAnnForm(f => ({ ...f, body: e.target.value }))}
               />
             </div>
             <div className="flex gap-3 pt-2">
-              <Button variant="outline" className="flex-1" onClick={() => setShowAnnouncement(false)}>Annuler</Button>
+              <Button variant="outline" className="flex-1" onClick={() => setShowAnnouncement(false)}>{t("common.cancel")}</Button>
               <Button className="flex-1" disabled={postAnnouncement.isPending || !annForm.title || !annForm.body}
                 onClick={() => postAnnouncement.mutate(annForm)}>
-                <Megaphone className="w-4 h-4 mr-2" /> {postAnnouncement.isPending ? "Publication..." : "Publier"}
+                <Megaphone className="w-4 h-4 mr-2" /> {postAnnouncement.isPending ? t("prof.classManagement.publishing") : t("prof.classManagement.publish")}
               </Button>
             </div>
           </div>

@@ -7,8 +7,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getToken } from "@workspace/api-client-react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 
 export function StudentCalendar() {
+  const { t } = useTranslation();
   const today = new Date();
   const [viewDate, setViewDate] = useState(today);
 
@@ -38,8 +40,8 @@ export function StudentCalendar() {
     <DashboardLayout>
       <FadeIn>
         <PageHeader
-          title="Mon Calendrier"
-          description="Gérez votre emploi du temps et vos sessions live."
+          title={t("student.calendar.title")}
+          description={t("student.calendar.description")}
         />
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -48,13 +50,21 @@ export function StudentCalendar() {
               <h3 className="font-bold text-lg capitalize">{format(viewDate, "MMMM yyyy", { locale: fr })}</h3>
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" onClick={prevMonth}><ChevronLeft className="w-4 h-4" /></Button>
-                <Button variant="ghost" size="sm" onClick={() => setViewDate(today)}>Aujourd'hui</Button>
+                <Button variant="ghost" size="sm" onClick={() => setViewDate(today)}>{t("student.calendar.today")}</Button>
                 <Button variant="ghost" size="sm" onClick={nextMonth}><ChevronRight className="w-4 h-4" /></Button>
               </div>
             </div>
 
             <div className="grid grid-cols-7 gap-px bg-border rounded-xl overflow-hidden border border-border">
-              {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map(day => (
+              {[
+                t("student.calendar.mon"),
+                t("student.calendar.tue"),
+                t("student.calendar.wed"),
+                t("student.calendar.thu"),
+                t("student.calendar.fri"),
+                t("student.calendar.sat"),
+                t("student.calendar.sun"),
+              ].map(day => (
                 <div key={day} className="bg-muted p-2 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   {day}
                 </div>
@@ -93,13 +103,13 @@ export function StudentCalendar() {
           <div className="space-y-6">
             <Card className="p-6">
               <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-primary" /> Prochaines sessions
+                <Clock className="w-5 h-5 text-primary" /> {t("student.calendar.upcomingSessions")}
               </h3>
               {upcomingSessions.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <CalendarIcon className="w-10 h-10 opacity-30 mx-auto mb-3" />
-                  <p className="text-sm">Aucune session à venir.</p>
-                  <p className="text-xs mt-1">Inscrivez-vous à un cours pour voir vos sessions ici.</p>
+                  <p className="text-sm">{t("student.calendar.noSessions")}</p>
+                  <p className="text-xs mt-1">{t("student.calendar.enrollToSee")}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -120,7 +130,7 @@ export function StudentCalendar() {
                           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                             <Video className="w-3 h-3" />
                             {format(new Date(s.scheduledAt), "HH:mm")}
-                            {s.status === "live" && <span className="ml-1 text-green-600 font-bold">• En direct</span>}
+                            {s.status === "live" && <span className="ml-1 text-green-600 font-bold">• {t("student.calendar.live")}</span>}
                           </p>
                         </div>
                       </div>

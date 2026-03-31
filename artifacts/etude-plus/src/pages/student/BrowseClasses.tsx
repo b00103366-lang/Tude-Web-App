@@ -8,10 +8,12 @@ import { formatTND } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { TUNISIA_CITIES } from "@/lib/constants";
 import { getLevelLabel, getClassLevelLabel, getSubjectsForLevel } from "@/lib/educationConfig";
+import { useTranslation } from "react-i18next";
 
 type SortOption = "recent" | "rating_prof" | "rating_course" | "price_asc" | "price_desc";
 
 export function BrowseClasses() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const studentGrade: string = (user as any)?.studentProfile?.gradeLevel ?? "";
   const levelSubjects = studentGrade ? getSubjectsForLevel(studentGrade) : [];
@@ -47,8 +49,8 @@ export function BrowseClasses() {
     <DashboardLayout>
       <FadeIn>
         <PageHeader
-          title="Explorer les cours"
-          description={studentGrade ? `Cours pour : ${getLevelLabel(studentGrade)}` : "Configurez votre niveau pour accéder aux cours."}
+          title={t("student.browse.title")}
+          description={studentGrade ? t("student.browse.forLevel", { level: getLevelLabel(studentGrade) }) : t("student.browse.configureLevel")}
         />
 
         {/* No level set — prompt */}
@@ -58,12 +60,12 @@ export function BrowseClasses() {
               <GraduationCap className="w-5 h-5 text-amber-600" />
             </div>
             <div>
-              <h4 className="font-bold text-amber-900 mb-1">Complète ton profil pour voir les cours adaptés</h4>
+              <h4 className="font-bold text-amber-900 mb-1">{t("student.browse.completeProfile")}</h4>
               <p className="text-sm text-amber-700 mb-3">
-                Tu n'as pas encore sélectionné ton niveau scolaire. Indique ton niveau pour accéder uniquement aux cours qui te correspondent.
+                {t("student.browse.completeProfileDesc")}
               </p>
               <a href="/student/settings" className="inline-flex items-center gap-2 text-sm font-semibold text-amber-800 underline">
-                Configurer mon niveau →
+                {t("student.browse.configureMyLevel")} →
               </a>
             </div>
           </div>
@@ -73,7 +75,7 @@ export function BrowseClasses() {
           <div className="flex items-center gap-2 mb-4 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-xl w-fit">
             <GraduationCap className="w-4 h-4 text-primary" />
             <span className="text-sm font-medium text-primary">
-              Niveau : <strong>{getLevelLabel(studentGrade)}</strong>
+              {t("student.browse.level")} <strong>{getLevelLabel(studentGrade)}</strong>
             </span>
           </div>
         )}
@@ -84,7 +86,7 @@ export function BrowseClasses() {
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder="Rechercher une matière, un niveau, un mot-clé..."
+                placeholder={t("student.browse.searchPlaceholder")}
                 className="pl-12 bg-card"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -96,11 +98,11 @@ export function BrowseClasses() {
               onClick={() => setShowFilters(f => !f)}
             >
               <ChevronDown className={`w-4 h-4 mr-2 transition-transform ${showFilters ? "rotate-180" : ""}`} />
-              Filtres {hasFilters && `(${[subject, city, sortBy !== "recent" ? sortBy : ""].filter(Boolean).length})`}
+              {t("student.browse.filters")} {hasFilters && `(${[subject, city, sortBy !== "recent" ? sortBy : ""].filter(Boolean).length})`}
             </Button>
             {hasFilters && (
               <Button variant="ghost" size="sm" onClick={clearFilters} className="shrink-0 text-muted-foreground">
-                <X className="w-4 h-4 mr-1" /> Effacer
+                <X className="w-4 h-4 mr-1" /> {t("student.browse.clear")}
               </Button>
             )}
           </div>
@@ -109,27 +111,27 @@ export function BrowseClasses() {
             <Card className="p-4">
               <div className="grid sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Matière</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">{t("student.browse.subject")}</label>
                   <select className="flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary" value={subject} onChange={e => setSubject(e.target.value)}>
-                    <option value="">Toutes les matières</option>
+                    <option value="">{t("student.browse.allSubjects")}</option>
                     {levelSubjects.map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Ville</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">{t("student.browse.city")}</label>
                   <select className="flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary" value={city} onChange={e => setCity(e.target.value)}>
-                    <option value="">Toutes les villes</option>
+                    <option value="">{t("student.browse.allCities")}</option>
                     {TUNISIA_CITIES.map(c => <option key={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Trier par</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">{t("student.browse.sortBy")}</label>
                   <select className="flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary" value={sortBy} onChange={e => setSortBy(e.target.value as SortOption)}>
-                    <option value="recent">Les plus récents</option>
-                    <option value="rating_prof">Meilleur professeur ★</option>
-                    <option value="rating_course">Meilleur cours ★</option>
-                    <option value="price_asc">Prix croissant</option>
-                    <option value="price_desc">Prix décroissant</option>
+                    <option value="recent">{t("student.browse.sortRecent")}</option>
+                    <option value="rating_prof">{t("student.browse.sortProfRating")}</option>
+                    <option value="rating_course">{t("student.browse.sortCourseRating")}</option>
+                    <option value="price_asc">{t("student.browse.sortPriceAsc")}</option>
+                    <option value="price_desc">{t("student.browse.sortPriceDesc")}</option>
                   </select>
                 </div>
               </div>
@@ -148,17 +150,17 @@ export function BrowseClasses() {
             <div className="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6">
               <BookOpen className="w-9 h-9 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-bold mb-2">Aucun cours disponible</h3>
+            <h3 className="text-xl font-bold mb-2">{t("student.browse.noClasses")}</h3>
             <p className="text-muted-foreground max-w-sm mx-auto">
-              {search || hasFilters ? "Aucun résultat pour ces critères." : "Les cours des professeurs vérifiés apparaîtront ici."}
+              {search || hasFilters ? t("student.browse.noResults") : t("student.browse.noClassesDesc")}
             </p>
             {hasFilters && (
-              <Button variant="outline" className="mt-4" onClick={clearFilters}>Effacer les filtres</Button>
+              <Button variant="outline" className="mt-4" onClick={clearFilters}>{t("student.browse.clearFilters")}</Button>
             )}
           </div>
         ) : (
           <>
-            <p className="text-sm text-muted-foreground mb-4">{classes.length} cours trouvé{classes.length > 1 ? "s" : ""}</p>
+            <p className="text-sm text-muted-foreground mb-4">{t("student.browse.resultsCount", { count: classes.length })}</p>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {classes.map((cls: any, i: number) => {
                 const profRating = cls.professor?.rating ? Number(cls.professor.rating) : null;
@@ -190,7 +192,7 @@ export function BrowseClasses() {
                               : cls.professor?.fullName?.charAt(0) ?? "?"}
                           </div>
                           <div className="min-w-0">
-                            <p className="font-semibold text-sm truncate">{cls.professor?.fullName ?? "Professeur"}</p>
+                            <p className="font-semibold text-sm truncate">{cls.professor?.fullName ?? t("student.browse.professor")}</p>
                             <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
                               {profRating !== null ? (
                                 <>
@@ -199,7 +201,7 @@ export function BrowseClasses() {
                                   ))}
                                   <span className="ml-0.5 font-medium">{profRating.toFixed(1)}</span>
                                 </>
-                              ) : <span>Nouveau</span>}
+                              ) : <span>{t("student.browse.new")}</span>}
                               <span className="mx-1">&bull;</span>
                               <MapPin className="w-3 h-3" /> {cls.city}
                             </div>
@@ -209,7 +211,7 @@ export function BrowseClasses() {
                         {/* Course rating row */}
                         {courseRating !== null && (
                           <div className="flex items-center gap-2 mb-3 px-1">
-                            <span className="text-xs text-muted-foreground">Cours :</span>
+                            <span className="text-xs text-muted-foreground">{t("student.browse.course")} :</span>
                             {[1,2,3,4,5].map(n => (
                               <Star key={n} className={`w-3 h-3 ${n <= Math.round(courseRating) ? "fill-primary text-primary" : "text-gray-300"}`} />
                             ))}
@@ -228,15 +230,15 @@ export function BrowseClasses() {
                               <Clock className="w-4 h-4" /> {cls.durationHours}h
                             </span>
                             {cls.nextSession && (
-                              <span className="text-xs text-green-600 font-semibold">• Session prévue</span>
+                              <span className="text-xs text-green-600 font-semibold">{t("student.browse.sessionPlanned")}</span>
                             )}
                           </div>
                           <div className="flex gap-2">
                             <Link href={`/student/browse/${cls.id}`}>
-                              <Button size="sm" variant="outline">Aperçu</Button>
+                              <Button size="sm" variant="outline">{t("student.browse.preview")}</Button>
                             </Link>
                             <Link href={`/checkout/${cls.id}`}>
-                              <Button size="sm">S'inscrire</Button>
+                              <Button size="sm">{t("student.browse.enroll")}</Button>
                             </Link>
                           </div>
                         </div>

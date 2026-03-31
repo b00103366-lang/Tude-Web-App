@@ -7,41 +7,43 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { cn, formatTND } from "@/lib/utils";
 import { Link } from "wouter";
 import { AnnouncementsWidget } from "@/components/shared/AnnouncementsWidget";
+import { useTranslation } from "react-i18next";
 
 function KYCStateBanner({ status }: { status: string }) {
+  const { t } = useTranslation();
   if (status === "approved") return null;
 
   const config = {
     pending: {
       icon: <ShieldCheck className="w-12 h-12 text-amber-500 mx-auto mb-4" />,
-      title: "Soumettez vos documents de vérification",
-      desc: "Pour accéder à toutes les fonctionnalités et commencer à enseigner, vous devez soumettre vos documents justificatifs (pièce d'identité, certificat d'enseignement).",
+      title: t("prof.dashboard.kycPendingTitle"),
+      desc: t("prof.dashboard.kycPendingDesc"),
       badge: "bg-amber-50 border-amber-200 text-amber-900",
-      cta: "Soumettre mes documents",
+      cta: t("prof.dashboard.kycPendingCta"),
       ctaVariant: "default" as const,
     },
     kyc_submitted: {
       icon: <Clock className="w-12 h-12 text-blue-500 mx-auto mb-4" />,
-      title: "Dossier en cours d'examen",
-      desc: "Vos documents ont été soumis et sont en cours d'examen par notre équipe de conformité. Délai habituel : 24 à 48 heures ouvrées.",
+      title: t("prof.dashboard.kycSubmittedTitle"),
+      desc: t("prof.dashboard.kycSubmittedDesc"),
       badge: "bg-blue-50 border-blue-200 text-blue-900",
-      cta: "Voir le statut de mon dossier",
+      cta: t("prof.dashboard.kycSubmittedCta"),
       ctaVariant: "outline" as const,
     },
     rejected: {
       icon: <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />,
-      title: "Dossier non retenu",
-      desc: "Votre dossier de vérification n'a pas été validé. Consultez les détails et soumettez de nouveau vos documents ou contactez notre équipe de support.",
+      title: t("prof.dashboard.kycRejectedTitle"),
+      desc: t("prof.dashboard.kycRejectedDesc"),
       badge: "bg-red-50 border-red-200 text-red-900",
-      cta: "Voir les détails et re-soumettre",
+      cta: t("prof.dashboard.kycRejectedCta"),
       ctaVariant: "default" as const,
     },
     needs_revision: {
       icon: <RefreshCw className="w-12 h-12 text-amber-500 mx-auto mb-4" />,
-      title: "Des corrections sont demandées",
-      desc: "L'équipe de vérification a identifié des points à corriger dans votre dossier. Consultez les détails, apportez les modifications nécessaires, puis re-soumettez.",
+      title: t("prof.dashboard.kycRevisionTitle"),
+      desc: t("prof.dashboard.kycRevisionDesc"),
       badge: "bg-amber-50 border-amber-200 text-amber-900",
-      cta: "Corriger et re-soumettre mon dossier",
+      cta: t("prof.dashboard.kycRevisionCta"),
       ctaVariant: "default" as const,
     },
   };
@@ -51,7 +53,7 @@ function KYCStateBanner({ status }: { status: string }) {
   return (
     <DashboardLayout>
       <FadeIn>
-        <PageHeader title="Tableau de Bord Professeur" description="Bienvenue sur Étude+" />
+        <PageHeader title={t("prof.dashboard.title")} description={t("prof.dashboard.welcomeDesc")} />
         <div className="max-w-2xl mx-auto">
           <Card className={cn("p-10 text-center border-2", cfg.badge)}>
             {cfg.icon}
@@ -65,13 +67,13 @@ function KYCStateBanner({ status }: { status: string }) {
           </Card>
 
           <Card className="p-6 mt-6">
-            <h3 className="font-bold mb-4">Étapes pour commencer à enseigner</h3>
+            <h3 className="font-bold mb-4">{t("prof.dashboard.stepsTitle")}</h3>
             <div className="space-y-3">
               {[
-                { done: true, label: "Créer un compte professeur" },
-                { done: status === "kyc_submitted" || status === "approved" || status === "needs_revision" || status === "rejected", active: status === "pending", label: "Soumettre vos documents (pièce d'identité, certificat)" },
-                { done: status === "approved", label: "Approbation par l'équipe Étude+ (24–48h)" },
-                { done: false, label: "Créer votre premier cours" },
+                { done: true, label: t("prof.dashboard.step1") },
+                { done: status === "kyc_submitted" || status === "approved" || status === "needs_revision" || status === "rejected", active: status === "pending", label: t("prof.dashboard.step2") },
+                { done: status === "approved", label: t("prof.dashboard.step3") },
+                { done: false, label: t("prof.dashboard.step4") },
               ].map((step, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <div className={cn("w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold",
@@ -91,6 +93,7 @@ function KYCStateBanner({ status }: { status: string }) {
 }
 
 export function ProfessorDashboard() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const profId = (user as any)?.professorProfile?.id;
   const profStatus = (user as any)?.professorProfile?.status ?? "pending";
@@ -113,11 +116,11 @@ export function ProfessorDashboard() {
     <DashboardLayout>
       <FadeIn>
         <PageHeader
-          title="Tableau de Bord Professeur"
-          description="Gérez vos cours et suivez vos revenus."
+          title={t("prof.dashboard.title")}
+          description={t("prof.dashboard.description")}
           action={
             <Link href="/professor/create-class">
-              <Button>Créer un cours</Button>
+              <Button>{t("prof.dashboard.createCourse")}</Button>
             </Link>
           }
         />
@@ -126,10 +129,10 @@ export function ProfessorDashboard() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[
-            { label: "Revenus Totals", value: formatTND(totalEarnings), icon: DollarSign, color: "text-green-600", bg: "bg-green-100" },
-            { label: "Étudiants Actifs", value: totalStudents, icon: Users, color: "text-blue-600", bg: "bg-blue-100" },
-            { label: "Cours Publiés", value: totalClasses, icon: BookOpen, color: "text-primary", bg: "bg-primary/20" },
-            { label: "Note Moyenne", value: averageRating > 0 ? `${averageRating}/5` : "—", icon: Star, color: "text-orange-500", bg: "bg-orange-100" },
+            { label: t("prof.dashboard.totalEarnings"), value: formatTND(totalEarnings), icon: DollarSign, color: "text-green-600", bg: "bg-green-100" },
+            { label: t("prof.dashboard.activeStudents"), value: totalStudents, icon: Users, color: "text-blue-600", bg: "bg-blue-100" },
+            { label: t("prof.dashboard.publishedCourses"), value: totalClasses, icon: BookOpen, color: "text-primary", bg: "bg-primary/20" },
+            { label: t("prof.dashboard.avgRating"), value: averageRating > 0 ? `${averageRating}/5` : "—", icon: Star, color: "text-orange-500", bg: "bg-orange-100" },
           ].map((s, i) => (
             <Card key={i} className="p-6 border-none shadow-md shadow-black/5">
               <div className="flex items-center gap-4">
@@ -150,10 +153,10 @@ export function ProfessorDashboard() {
         <div className="grid lg:grid-cols-3 gap-8">
           <Card className="lg:col-span-2 p-6">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-lg">Évolution des revenus</h3>
+              <h3 className="font-bold text-lg">{t("prof.dashboard.earningsEvolution")}</h3>
               <Link href="/professor/earnings">
                 <Button variant="ghost" size="sm" className="text-primary">
-                  Rapport complet <ArrowUpRight className="w-4 h-4 ml-1" />
+                  {t("prof.dashboard.fullReport")} <ArrowUpRight className="w-4 h-4 ml-1" />
                 </Button>
               </Link>
             </div>
@@ -172,7 +175,7 @@ export function ProfessorDashboard() {
                     <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} tickFormatter={(v) => `${v}TND`} />
                     <Tooltip
                       contentStyle={{ borderRadius: '12px', border: '1px solid hsl(var(--border))', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                      formatter={(value: number) => [formatTND(value), 'Revenus']}
+                      formatter={(value: number) => [formatTND(value), t("prof.dashboard.earnings")]}
                     />
                     <Area type="monotone" dataKey="amount" stroke="hsl(var(--primary))" strokeWidth={3} fillOpacity={1} fill="url(#colorAmount)" />
                   </AreaChart>
@@ -181,21 +184,21 @@ export function ProfessorDashboard() {
             ) : (
               <div className="h-[300px] flex flex-col items-center justify-center text-muted-foreground">
                 <DollarSign className="w-12 h-12 mb-3 opacity-20" />
-                <p className="font-medium">Aucun revenu pour l'instant</p>
-                <p className="text-sm mt-1">Les données apparaîtront après vos premières inscriptions.</p>
+                <p className="font-medium">{t("prof.dashboard.noEarnings")}</p>
+                <p className="text-sm mt-1">{t("prof.dashboard.noEarningsDesc")}</p>
               </div>
             )}
           </Card>
 
           <Card className="p-6 flex flex-col">
-            <h3 className="font-bold text-lg mb-4">Actions Rapides</h3>
+            <h3 className="font-bold text-lg mb-4">{t("prof.dashboard.quickActions")}</h3>
             <div className="space-y-3 flex-1">
               <Link href="/professor/classes" className="w-full">
                 <Button variant="outline" className="w-full justify-start h-14 text-left">
                   <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center mr-3">
                     <BookOpen className="w-4 h-4 text-primary" />
                   </div>
-                  Gérer mes cours
+                  {t("prof.dashboard.manageCourses")}
                 </Button>
               </Link>
               <Link href="/professor/create-class" className="w-full">
@@ -203,16 +206,16 @@ export function ProfessorDashboard() {
                   <div className="w-8 h-8 rounded bg-accent/10 flex items-center justify-center mr-3">
                     <Video className="w-4 h-4 text-accent" />
                   </div>
-                  Créer un nouveau cours
+                  {t("prof.dashboard.createNewCourse")}
                 </Button>
               </Link>
             </div>
 
             <div className="mt-8 pt-6 border-t border-border">
-              <h4 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider">Statut du compte</h4>
+              <h4 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider">{t("prof.dashboard.accountStatus")}</h4>
               <div className="flex items-center gap-3 bg-green-50 text-green-700 p-3 rounded-xl border border-green-100">
                 <ShieldCheck className="w-4 h-4 text-green-600" />
-                <span className="font-medium text-sm">Professeur Vérifié ✓</span>
+                <span className="font-medium text-sm">{t("prof.dashboard.verifiedProfessor")}</span>
               </div>
             </div>
           </Card>

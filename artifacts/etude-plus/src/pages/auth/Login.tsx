@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 const schema = z.object({
   email: z.string().email("Email invalide"),
@@ -14,6 +15,7 @@ const schema = z.object({
 });
 
 export function Login() {
+  const { t } = useTranslation();
   const { loginFn } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -31,8 +33,8 @@ export function Login() {
       const user = await loginFn({ ...data, rememberMe });
       setLocation(getDashboardPath(user.role));
     } catch (e: any) {
-      const msg = e?.data?.error ?? e?.message ?? "Identifiants invalides";
-      toast({ title: "Connexion échouée", description: msg, variant: "destructive" });
+      const msg = e?.data?.error ?? e?.message ?? t("login.invalidCredentials");
+      toast({ title: t("login.loginFailed"), description: msg, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -44,7 +46,7 @@ export function Login() {
 
       <FadeIn className="w-full max-w-md">
         <Link href="/" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary mb-6 transition-colors">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Retour à l'accueil
+          <ArrowLeft className="w-4 h-4 mr-2" /> {t("login.backHome")}
         </Link>
 
         <Card className="p-8 shadow-xl">
@@ -52,18 +54,18 @@ export function Login() {
             <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground mb-4 shadow-lg shadow-primary/20">
               <BookPlus className="w-7 h-7" />
             </div>
-            <h1 className="text-2xl font-serif font-bold text-center">Bon retour sur Étude+</h1>
-            <p className="text-muted-foreground mt-2 text-center">Connectez-vous à votre compte</p>
+            <h1 className="text-2xl font-serif font-bold text-center">{t("login.title")}</h1>
+            <p className="text-muted-foreground mt-2 text-center">{t("login.subtitle")}</p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div>
-              <Label>Email</Label>
-              <Input {...register("email")} placeholder="vous@exemple.com" type="email" autoComplete="email" />
+              <Label>{t("login.email")}</Label>
+              <Input {...register("email")} placeholder={t("login.emailPlaceholder")} type="email" autoComplete="email" />
               {errors.email && <p className="text-destructive text-sm mt-1">{errors.email.message}</p>}
             </div>
             <div>
-              <Label className="mb-1.5 block">Mot de passe</Label>
+              <Label className="mb-1.5 block">{t("login.password")}</Label>
               <Input type="password" {...register("password")} placeholder="••••••••" autoComplete="current-password" />
               {errors.password && <p className="text-destructive text-sm mt-1">{errors.password.message}</p>}
             </div>
@@ -80,20 +82,20 @@ export function Login() {
                 )}
               </div>
               <span className="text-sm text-muted-foreground" onClick={() => setRememberMe(v => !v)}>
-                Se souvenir de moi pendant 30 jours
+                {t("login.rememberMe")}
               </span>
             </label>
 
             <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>
-              Se connecter
+              {t("login.submit")}
             </Button>
           </form>
 
           <div className="mt-8 pt-6 border-t border-border text-center">
             <p className="text-muted-foreground text-sm">
-              Pas encore de compte ?{" "}
+              {t("login.noAccount")}{" "}
               <Link href="/select-role" className="text-primary font-semibold hover:underline">
-                S'inscrire
+                {t("login.register")}
               </Link>
             </p>
           </div>

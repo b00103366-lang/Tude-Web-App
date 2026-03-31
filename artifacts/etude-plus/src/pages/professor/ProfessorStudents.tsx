@@ -3,6 +3,7 @@ import { PageHeader, Card, FadeIn, Button, Badge, Input } from "@/components/ui/
 import { Search, Users, BookOpen, ChevronRight, GraduationCap } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 
 function useMyClasses() {
   const [classes, setClasses] = useState<any[]>([]);
@@ -19,6 +20,7 @@ function useMyClasses() {
 }
 
 export function ProfessorStudents() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const { classes, isLoading } = useMyClasses();
 
@@ -33,8 +35,8 @@ export function ProfessorStudents() {
     <DashboardLayout>
       <FadeIn>
         <PageHeader
-          title="Mes Élèves"
-          description="Vue d'ensemble des élèves inscrits à vos cours."
+          title={t("prof.students.title")}
+          description={t("prof.students.description")}
         />
 
         <div className="grid sm:grid-cols-3 gap-6 mb-8">
@@ -44,7 +46,7 @@ export function ProfessorStudents() {
             </div>
             <div>
               <p className="text-2xl font-bold">{totalStudents}</p>
-              <p className="text-sm text-muted-foreground">Élèves au total</p>
+              <p className="text-sm text-muted-foreground">{t("prof.students.totalStudents")}</p>
             </div>
           </Card>
           <Card className="p-6 flex items-center gap-4">
@@ -53,7 +55,7 @@ export function ProfessorStudents() {
             </div>
             <div>
               <p className="text-2xl font-bold">{classes.length}</p>
-              <p className="text-sm text-muted-foreground">Cours actifs</p>
+              <p className="text-sm text-muted-foreground">{t("prof.students.activeCourses")}</p>
             </div>
           </Card>
           <Card className="p-6 flex items-center gap-4">
@@ -64,7 +66,7 @@ export function ProfessorStudents() {
               <p className="text-2xl font-bold">
                 {classes.length > 0 ? Math.round(totalStudents / classes.length) : 0}
               </p>
-              <p className="text-sm text-muted-foreground">Moy. par cours</p>
+              <p className="text-sm text-muted-foreground">{t("prof.students.avgPerCourse")}</p>
             </div>
           </Card>
         </div>
@@ -73,7 +75,7 @@ export function ProfessorStudents() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
             className="pl-10"
-            placeholder="Filtrer par cours..."
+            placeholder={t("prof.students.filterPlaceholder")}
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -87,16 +89,16 @@ export function ProfessorStudents() {
           <Card className="p-12 text-center">
             <Users className="w-12 h-12 text-muted-foreground opacity-30 mx-auto mb-4" />
             <h3 className="text-xl font-bold mb-2">
-              {classes.length === 0 ? "Aucun cours créé" : "Aucun cours trouvé"}
+              {classes.length === 0 ? t("prof.students.noCourses") : t("prof.students.noCoursesFound")}
             </h3>
             <p className="text-muted-foreground mb-6">
               {classes.length === 0
-                ? "Créez votre premier cours pour commencer à accueillir des élèves."
-                : `Aucun résultat pour "${search}".`}
+                ? t("prof.students.noCoursesDesc")
+                : t("prof.students.noResultsFor", { search })}
             </p>
             {classes.length === 0 && (
               <Link href="/professor/create-class">
-                <Button>Créer un cours</Button>
+                <Button>{t("prof.students.createCourse")}</Button>
               </Link>
             )}
           </Card>
@@ -104,7 +106,7 @@ export function ProfessorStudents() {
           <Card className="overflow-hidden">
             <div className="p-4 bg-muted border-b border-border">
               <p className="text-sm font-semibold text-muted-foreground">
-                Cliquez sur un cours pour voir et gérer ses élèves
+                {t("prof.students.clickCourseHint")}
               </p>
             </div>
             <div className="divide-y divide-border">
@@ -123,10 +125,10 @@ export function ProfessorStudents() {
                     <div className="flex items-center gap-4">
                       <div className="text-right">
                         <p className="text-xl font-bold">{cls.enrolledCount}</p>
-                        <p className="text-xs text-muted-foreground">élève{cls.enrolledCount !== 1 ? "s" : ""}</p>
+                        <p className="text-xs text-muted-foreground">{t("prof.students.studentCount", { count: cls.enrolledCount })}</p>
                       </div>
                       <Badge variant={cls.isPublished ? "success" : "secondary"} className="hidden sm:flex">
-                        {cls.isPublished ? "Publié" : "Brouillon"}
+                        {cls.isPublished ? t("prof.students.published") : t("prof.students.draft")}
                       </Badge>
                       <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </div>
@@ -138,7 +140,7 @@ export function ProfessorStudents() {
         )}
 
         <p className="text-sm text-muted-foreground mt-4 text-center">
-          Pour voir la liste détaillée des élèves d'un cours, cliquez sur le cours puis allez dans l'onglet "Élèves".
+          {t("prof.students.manageHint")}
         </p>
       </FadeIn>
     </DashboardLayout>

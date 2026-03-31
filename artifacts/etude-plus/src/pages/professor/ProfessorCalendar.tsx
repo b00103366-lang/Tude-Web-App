@@ -8,8 +8,10 @@ import { useQuery } from "@tanstack/react-query";
 import { getToken } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { formatTND } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 export function ProfessorCalendar() {
+  const { t } = useTranslation();
   const today = new Date();
   const [viewDate, setViewDate] = useState(today);
 
@@ -35,12 +37,17 @@ export function ProfessorCalendar() {
     .sort((a: any, b: any) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
     .slice(0, 8);
 
+  const DAY_LABELS = [
+    t("prof.calendar.mon"), t("prof.calendar.tue"), t("prof.calendar.wed"),
+    t("prof.calendar.thu"), t("prof.calendar.fri"), t("prof.calendar.sat"), t("prof.calendar.sun"),
+  ];
+
   return (
     <DashboardLayout>
       <FadeIn>
         <PageHeader
-          title="Mon Calendrier"
-          description="Visualisez toutes vos sessions programmées."
+          title={t("prof.calendar.title")}
+          description={t("prof.calendar.description")}
         />
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -49,13 +56,13 @@ export function ProfessorCalendar() {
               <h3 className="font-bold text-lg capitalize">{format(viewDate, "MMMM yyyy", { locale: fr })}</h3>
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" onClick={prevMonth}><ChevronLeft className="w-4 h-4" /></Button>
-                <Button variant="ghost" size="sm" onClick={() => setViewDate(today)}>Aujourd'hui</Button>
+                <Button variant="ghost" size="sm" onClick={() => setViewDate(today)}>{t("prof.calendar.today")}</Button>
                 <Button variant="ghost" size="sm" onClick={nextMonth}><ChevronRight className="w-4 h-4" /></Button>
               </div>
             </div>
 
             <div className="grid grid-cols-7 gap-px bg-border rounded-xl overflow-hidden border border-border">
-              {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map(day => (
+              {DAY_LABELS.map(day => (
                 <div key={day} className="bg-muted p-2 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   {day}
                 </div>
@@ -92,13 +99,13 @@ export function ProfessorCalendar() {
           <div className="space-y-6">
             <Card className="p-6">
               <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-primary" /> Prochaines sessions
+                <Clock className="w-5 h-5 text-primary" /> {t("prof.calendar.upcomingSessions")}
               </h3>
               {upcomingSessions.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <CalendarIcon className="w-10 h-10 opacity-30 mx-auto mb-3" />
-                  <p className="text-sm">Aucune session programmée.</p>
-                  <p className="text-xs mt-1">Créez une session depuis un de vos cours.</p>
+                  <p className="text-sm">{t("prof.calendar.noSessions")}</p>
+                  <p className="text-xs mt-1">{t("prof.calendar.createFromCourse")}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -132,10 +139,10 @@ export function ProfessorCalendar() {
             </Card>
 
             <Card className="p-5">
-              <p className="text-sm font-semibold mb-3">Raccourcis</p>
+              <p className="text-sm font-semibold mb-3">{t("prof.calendar.shortcuts")}</p>
               <Link href="/professor/classes">
                 <Button variant="outline" className="w-full justify-start" size="sm">
-                  <Plus className="w-4 h-4 mr-2" /> Nouvelle session
+                  <Plus className="w-4 h-4 mr-2" /> {t("prof.calendar.newSession")}
                 </Button>
               </Link>
             </Card>

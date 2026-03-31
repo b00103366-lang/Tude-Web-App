@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Button, Badge } from "@/components/ui/Premium";
+import { useTranslation } from "react-i18next";
 import {
   PlayCircle, FileText, FileQuestion, Calendar, Download, Clock, Video,
   CheckCircle2, BookOpen, Upload, AlertCircle, ChevronLeft, ClipboardList,
@@ -352,6 +353,7 @@ function ReviewModal({
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function StudentClassDetail() {
+  const { t } = useTranslation();
   const [, params] = useRoute("/student/classes/:id");
   const [activeTab, setActiveTab] = useState("overview");
   const classId = params?.id ? parseInt(params.id) : 0;
@@ -396,16 +398,16 @@ export function StudentClassDetail() {
   });
 
   const tabs = [
-    { id: "overview", label: "Aperçu" },
-    { id: "live", label: "Session Live" },
-    { id: "recordings", label: `Enregistrements${recordings.length > 0 ? ` (${recordings.length})` : ""}` },
-    { id: "materials", label: `Supports${materials.length > 0 ? ` (${materials.length})` : ""}` },
-    { id: "quizzes", label: `Quiz${publishedQuizzes.length > 0 ? ` (${publishedQuizzes.length})` : ""}` },
-    { id: "tests", label: `Contrôles${publishedTests.length > 0 ? ` (${publishedTests.length})` : ""}` },
-    { id: "assignments", label: `Devoirs${publishedAssignments.length > 0 ? ` (${publishedAssignments.length})` : ""}` },
-    { id: "reviews", label: `Avis${reviews.length > 0 ? ` (${reviews.length})` : ""}` },
+    { id: "overview", label: t("student.classDetail.tabOverview") },
+    { id: "live", label: t("student.classDetail.tabLive") },
+    { id: "recordings", label: `${t("student.classDetail.tabRecordings")}${recordings.length > 0 ? ` (${recordings.length})` : ""}` },
+    { id: "materials", label: `${t("student.classDetail.tabMaterials")}${materials.length > 0 ? ` (${materials.length})` : ""}` },
+    { id: "quizzes", label: `${t("student.classDetail.tabQuizzes")}${publishedQuizzes.length > 0 ? ` (${publishedQuizzes.length})` : ""}` },
+    { id: "tests", label: `${t("student.classDetail.tabTests")}${publishedTests.length > 0 ? ` (${publishedTests.length})` : ""}` },
+    { id: "assignments", label: `${t("student.classDetail.tabAssignments")}${publishedAssignments.length > 0 ? ` (${publishedAssignments.length})` : ""}` },
+    { id: "reviews", label: `${t("student.classDetail.tabReviews")}${reviews.length > 0 ? ` (${reviews.length})` : ""}` },
     { id: "ai", label: "✨ IA" },
-    { id: "practice", label: "Questions d'entraînement" },
+    { id: "practice", label: t("student.classDetail.tabPractice") },
   ];
 
   if (isLoading) {
@@ -471,7 +473,7 @@ export function StudentClassDetail() {
 
       <FadeIn>
         <Link href="/student/classes" className="text-sm font-medium text-muted-foreground hover:text-primary mb-6 inline-flex items-center gap-1 transition-colors">
-          <ChevronLeft className="w-4 h-4" /> Retour à mes cours
+          <ChevronLeft className="w-4 h-4" /> {t("student.classDetail.backToClasses")}
         </Link>
 
         <PageHeader

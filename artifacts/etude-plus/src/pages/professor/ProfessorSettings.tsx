@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { ALL_SUBJECTS, LEVEL_TREE, getLevelLabel } from "@/lib/educationConfig";
+import { useTranslation } from "react-i18next";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -62,6 +63,7 @@ async function uploadFile(file: File): Promise<string> {
 // ── ChangePasswordCard ────────────────────────────────────────────────────────
 
 function ChangePasswordCard() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -70,8 +72,8 @@ function ChangePasswordCard() {
 
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (next !== confirm) { toast({ title: "Erreur", description: "Les mots de passe ne correspondent pas.", variant: "destructive" }); return; }
-    if (next.length < 8) { toast({ title: "Erreur", description: "Minimum 8 caractères.", variant: "destructive" }); return; }
+    if (next !== confirm) { toast({ title: t("common.error"), description: t("prof.settings.passwordMismatch"), variant: "destructive" }); return; }
+    if (next.length < 8) { toast({ title: t("common.error"), description: t("prof.settings.passwordMin"), variant: "destructive" }); return; }
     setSaving(true);
     try {
       const res = await apiFetch("/api/auth/change-password", {
@@ -79,11 +81,11 @@ function ChangePasswordCard() {
         body: JSON.stringify({ currentPassword: current, newPassword: next }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Erreur");
-      toast({ title: "Mot de passe mis à jour" });
+      if (!res.ok) throw new Error(data.error ?? t("common.error"));
+      toast({ title: t("prof.settings.passwordUpdated") });
       setCurrent(""); setNext(""); setConfirm("");
     } catch (err: any) {
-      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     } finally { setSaving(false); }
   };
 
@@ -93,14 +95,14 @@ function ChangePasswordCard() {
         <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
           <KeyRound className="w-4 h-4 text-primary" />
         </div>
-        <h3 className="font-bold text-lg">Changer le mot de passe</h3>
+        <h3 className="font-bold text-lg">{t("prof.settings.changePassword")}</h3>
       </div>
       <form onSubmit={handle} className="space-y-4 max-w-sm">
-        <div><Label>Mot de passe actuel</Label><Input type="password" value={current} onChange={e => setCurrent(e.target.value)} placeholder="••••••••" /></div>
-        <div><Label>Nouveau mot de passe</Label><Input type="password" value={next} onChange={e => setNext(e.target.value)} placeholder="Minimum 8 caractères" /></div>
-        <div><Label>Confirmer</Label><Input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Répéter le mot de passe" /></div>
+        <div><Label>{t("prof.settings.currentPassword")}</Label><Input type="password" value={current} onChange={e => setCurrent(e.target.value)} placeholder="••••••••" /></div>
+        <div><Label>{t("prof.settings.newPassword")}</Label><Input type="password" value={next} onChange={e => setNext(e.target.value)} placeholder={t("prof.settings.minCharsPlaceholder")} /></div>
+        <div><Label>{t("prof.settings.confirm")}</Label><Input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder={t("prof.settings.repeatPassword")} /></div>
         <Button type="submit" disabled={saving}>
-          {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Mise à jour…</> : "Changer le mot de passe"}
+          {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("prof.settings.updating")}</> : t("prof.settings.changePasswordBtn")}
         </Button>
       </form>
     </Card>
@@ -110,6 +112,7 @@ function ChangePasswordCard() {
 // ── ProfessionalCard ──────────────────────────────────────────────────────────
 
 function ProfessionalCard() {
+  const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
   const prof = (user as any)?.professorProfile;
@@ -127,11 +130,11 @@ function ProfessionalCard() {
         method: "PUT",
         body: JSON.stringify({ bio, qualifications }),
       });
-      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error((d as any).error ?? "Erreur"); }
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error((d as any).error ?? t("common.error")); }
       await refreshUser();
-      toast({ title: "Profil professionnel mis à jour" });
+      toast({ title: t("prof.settings.professionalProfileUpdated") });
     } catch (err: any) {
-      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     } finally { setSaving(false); }
   };
 
@@ -142,8 +145,8 @@ function ProfessionalCard() {
           <BookOpen className="w-4 h-4 text-primary" />
         </div>
         <div>
-          <h3 className="font-bold text-lg">Profil professionnel</h3>
-          <p className="text-xs text-muted-foreground">Visible par les élèves sur votre page publique</p>
+          <h3 className="font-bold text-lg">{t("prof.settings.professionalProfile")}</h3>
+          <p className="text-xs text-muted-foreground">{t("prof.settings.professionalProfileDesc")}</p>
         </div>
       </div>
 
@@ -152,7 +155,7 @@ function ProfessionalCard() {
         <div className="mb-5 p-4 bg-muted/50 rounded-xl space-y-3">
           {prof.subjects?.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Matières approuvées</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">{t("prof.settings.approvedSubjects")}</p>
               <div className="flex flex-wrap gap-1.5">
                 {prof.subjects.map((s: string) => (
                   <span key={s} className="px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">{s}</span>
@@ -162,7 +165,7 @@ function ProfessionalCard() {
           )}
           {prof.gradeLevels?.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Niveaux approuvés</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">{t("prof.settings.approvedLevels")}</p>
               <div className="flex flex-wrap gap-1.5">
                 {prof.gradeLevels.map((g: string) => (
                   <span key={g} className="px-2.5 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">{getLevelLabel(g)}</span>
@@ -175,21 +178,21 @@ function ProfessionalCard() {
 
       <form onSubmit={handle} className="space-y-5">
         <div>
-          <Label>Biographie</Label>
+          <Label>{t("prof.settings.biography")}</Label>
           <textarea
             value={bio}
             onChange={e => setBio(e.target.value)}
             rows={4}
-            placeholder="Décrivez votre expérience, votre méthode d'enseignement…"
+            placeholder={t("prof.settings.biographyPlaceholder")}
             className="flex w-full rounded-xl border-2 border-border bg-background px-4 py-3 text-sm focus-visible:outline-none focus-visible:border-primary resize-none"
           />
         </div>
         <div>
-          <Label>Qualifications</Label>
-          <Input value={qualifications} onChange={e => setQualifications(e.target.value)} placeholder="Ex: Master en Mathématiques, Agrégé…" />
+          <Label>{t("prof.settings.qualifications")}</Label>
+          <Input value={qualifications} onChange={e => setQualifications(e.target.value)} placeholder={t("prof.settings.qualificationsPlaceholder")} />
         </div>
         <Button type="submit" disabled={saving}>
-          {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sauvegarde…</> : <><Save className="w-4 h-4 mr-2" />Enregistrer</>}
+          {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("prof.settings.saving")}</> : <><Save className="w-4 h-4 mr-2" />{t("common.save")}</>}
         </Button>
       </form>
     </Card>
@@ -199,22 +202,23 @@ function ProfessionalCard() {
 // ── VerificationStatusCard ────────────────────────────────────────────────────
 
 function VerificationStatusCard() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const prof = (user as any)?.professorProfile;
   const status: string = prof?.status ?? "pending";
 
   const cfg = {
-    pending: { icon: <Clock className="w-5 h-5 text-amber-500" />, bg: "bg-amber-50 border-amber-200", label: "En attente de soumission", desc: "Soumettez vos documents pour activer votre compte professeur.", cta: "Soumettre mes documents" },
-    kyc_submitted: { icon: <ShieldCheck className="w-5 h-5 text-blue-500" />, bg: "bg-blue-50 border-blue-200", label: "Dossier en cours d'examen", desc: "Votre dossier est en cours de vérification par notre équipe (24–48h).", cta: "Voir le statut" },
-    approved: { icon: <CheckCircle2 className="w-5 h-5 text-green-500" />, bg: "bg-green-50 border-green-200", label: "Compte vérifié", desc: "Votre profil est validé. Vous pouvez créer et publier des cours.", cta: null },
-    rejected: { icon: <AlertCircle className="w-5 h-5 text-red-500" />, bg: "bg-red-50 border-red-200", label: "Dossier refusé", desc: "Votre dossier n'a pas été validé. Consultez les détails pour re-soumettre.", cta: "Voir les détails" },
-    needs_revision: { icon: <RefreshCw className="w-5 h-5 text-amber-500" />, bg: "bg-amber-50 border-amber-200", label: "Corrections demandées", desc: "Des éléments de votre dossier nécessitent des corrections.", cta: "Corriger mon dossier" },
+    pending: { icon: <Clock className="w-5 h-5 text-amber-500" />, bg: "bg-amber-50 border-amber-200", label: t("prof.settings.verif.pendingLabel"), desc: t("prof.settings.verif.pendingDesc"), cta: t("prof.settings.verif.pendingCta") },
+    kyc_submitted: { icon: <ShieldCheck className="w-5 h-5 text-blue-500" />, bg: "bg-blue-50 border-blue-200", label: t("prof.settings.verif.submittedLabel"), desc: t("prof.settings.verif.submittedDesc"), cta: t("prof.settings.verif.submittedCta") },
+    approved: { icon: <CheckCircle2 className="w-5 h-5 text-green-500" />, bg: "bg-green-50 border-green-200", label: t("prof.settings.verif.approvedLabel"), desc: t("prof.settings.verif.approvedDesc"), cta: null as string | null },
+    rejected: { icon: <AlertCircle className="w-5 h-5 text-red-500" />, bg: "bg-red-50 border-red-200", label: t("prof.settings.verif.rejectedLabel"), desc: t("prof.settings.verif.rejectedDesc"), cta: t("prof.settings.verif.rejectedCta") },
+    needs_revision: { icon: <RefreshCw className="w-5 h-5 text-amber-500" />, bg: "bg-amber-50 border-amber-200", label: t("prof.settings.verif.revisionLabel"), desc: t("prof.settings.verif.revisionDesc"), cta: t("prof.settings.verif.revisionCta") },
   };
   const c = cfg[status as keyof typeof cfg] ?? cfg.pending;
 
   return (
     <Card className={`p-6 border-2 ${c.bg}`}>
-      <div className="flex items-center gap-3 mb-1">{c.icon}<h3 className="font-bold">Vérification du compte</h3></div>
+      <div className="flex items-center gap-3 mb-1">{c.icon}<h3 className="font-bold">{t("prof.settings.verif.title")}</h3></div>
       <p className="text-sm text-muted-foreground mb-1 ml-8">{c.label}</p>
       <p className="text-sm text-muted-foreground ml-8">{c.desc}</p>
       {c.cta && (
@@ -229,6 +233,7 @@ function VerificationStatusCard() {
 // ── SubjectRequestCard ────────────────────────────────────────────────────────
 
 function SubjectRequestCard() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -264,15 +269,15 @@ function SubjectRequestCard() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newSubjects.length === 0) { toast({ title: "Erreur", description: "Sélectionnez au moins une matière.", variant: "destructive" }); return; }
-    if (!docFile) { toast({ title: "Erreur", description: "Un document justificatif est requis.", variant: "destructive" }); return; }
+    if (newSubjects.length === 0) { toast({ title: t("common.error"), description: t("prof.settings.subjectReq.errorSelectSubject"), variant: "destructive" }); return; }
+    if (!docFile) { toast({ title: t("common.error"), description: t("prof.settings.subjectReq.errorDocRequired"), variant: "destructive" }); return; }
 
     setUploading(true);
     let docUrl: string;
     try {
       docUrl = await uploadFile(docFile);
     } catch {
-      toast({ title: "Erreur", description: "Échec du téléversement du document.", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("prof.settings.subjectReq.errorUploadFailed"), variant: "destructive" });
       setUploading(false);
       return;
     }
@@ -284,12 +289,12 @@ function SubjectRequestCard() {
         body: JSON.stringify({ subjects: newSubjects, gradeLevels: newLevels, documentUrl: docUrl }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Erreur");
-      toast({ title: "Demande envoyée", description: "Un admin examinera votre demande sous 24–48h." });
+      if (!res.ok) throw new Error(data.error ?? t("common.error"));
+      toast({ title: t("prof.settings.subjectReq.requestSent"), description: t("prof.settings.subjectReq.requestSentDesc") });
       setNewSubjects([]); setNewLevels([]); setDocFile(null); setShowForm(false);
       refetch();
     } catch (err: any) {
-      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     } finally { setSubmitting(false); }
   };
 
@@ -307,13 +312,13 @@ function SubjectRequestCard() {
             <PlusCircle className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <h3 className="font-bold text-lg">Ajouter des matières / niveaux</h3>
-            <p className="text-xs text-muted-foreground">Demandez l'autorisation d'enseigner de nouvelles matières</p>
+            <h3 className="font-bold text-lg">{t("prof.settings.subjectReq.title")}</h3>
+            <p className="text-xs text-muted-foreground">{t("prof.settings.subjectReq.subtitle")}</p>
           </div>
         </div>
         {!showForm && !hasPending && (
           <Button variant="outline" size="sm" onClick={() => setShowForm(true)} className="gap-1.5">
-            <PlusCircle className="w-4 h-4" /> Nouvelle demande
+            <PlusCircle className="w-4 h-4" /> {t("prof.settings.subjectReq.newRequest")}
           </Button>
         )}
       </div>
@@ -321,7 +326,7 @@ function SubjectRequestCard() {
       {/* Past requests */}
       {requests.length > 0 && (
         <div className="space-y-2 mb-6">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Demandes précédentes</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t("prof.settings.subjectReq.pastRequests")}</p>
           {requests.map((r: any) => (
             <div key={r.id} className={`p-3 rounded-xl border text-sm flex items-start gap-3 ${
               r.status === "approved" ? "bg-green-50 border-green-200" :
@@ -333,19 +338,19 @@ function SubjectRequestCard() {
                <Clock className="w-4 h-4 text-amber-500 mt-0.5 shrink-0 animate-pulse" />}
               <div className="flex-1 min-w-0">
                 <p className="font-medium">
-                  {r.status === "approved" ? "Approuvée" : r.status === "rejected" ? "Refusée" : "En attente d'examen"}
+                  {r.status === "approved" ? t("prof.settings.subjectReq.statusApproved") : r.status === "rejected" ? t("prof.settings.subjectReq.statusRejected") : t("prof.settings.subjectReq.statusPending")}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Matières : {r.subjects.join(", ")}
-                  {r.gradeLevels?.length > 0 && ` • Niveaux : ${r.gradeLevels.map(getLevelLabel).join(", ")}`}
+                  {t("prof.settings.subjectReq.subjects")} : {r.subjects.join(", ")}
+                  {r.gradeLevels?.length > 0 && ` • ${t("prof.settings.subjectReq.levels")} : ${r.gradeLevels.map(getLevelLabel).join(", ")}`}
                 </p>
                 {r.adminNotes && (
-                  <p className="text-xs mt-1 italic">Note admin : {r.adminNotes}</p>
+                  <p className="text-xs mt-1 italic">{t("prof.settings.subjectReq.adminNote")} : {r.adminNotes}</p>
                 )}
                 {r.documentUrl && (
                   <a href={`/api/storage${r.documentUrl}`} target="_blank" rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1">
-                    <Eye className="w-3 h-3" /> Voir le document
+                    <Eye className="w-3 h-3" /> {t("prof.settings.subjectReq.viewDocument")}
                   </a>
                 )}
               </div>
@@ -358,7 +363,7 @@ function SubjectRequestCard() {
       {hasPending && !showForm && (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
           <Clock className="w-4 h-4 inline mr-1.5" />
-          Une demande est en cours d'examen. Vous pourrez en soumettre une nouvelle après la réponse de l'admin.
+          {t("prof.settings.subjectReq.pendingWarning")}
         </div>
       )}
 
@@ -367,12 +372,12 @@ function SubjectRequestCard() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* New subjects */}
           <div>
-            <Label>Matières à ajouter <span className="text-destructive">*</span></Label>
+            <Label>{t("prof.settings.subjectReq.subjectsToAdd")} <span className="text-destructive">*</span></Label>
             <p className="text-xs text-muted-foreground mt-0.5 mb-2">
-              Seules les matières que vous n'enseignez pas encore sont affichées.
+              {t("prof.settings.subjectReq.subjectsToAddHint")}
             </p>
             {availableSubjects.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Vous enseignez déjà toutes les matières disponibles.</p>
+              <p className="text-sm text-muted-foreground">{t("prof.settings.subjectReq.allSubjectsTaught")}</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {availableSubjects.map(s => (
@@ -389,8 +394,8 @@ function SubjectRequestCard() {
 
           {/* New levels (optional) */}
           <div>
-            <Label>Niveaux à ajouter (optionnel)</Label>
-            <p className="text-xs text-muted-foreground mt-0.5 mb-2">Si votre document justifie de nouveaux niveaux.</p>
+            <Label>{t("prof.settings.subjectReq.levelsToAdd")}</Label>
+            <p className="text-xs text-muted-foreground mt-0.5 mb-2">{t("prof.settings.subjectReq.levelsToAddHint")}</p>
             <div className="space-y-2">
               {LEVEL_TREE.map(group => {
                 const available = group.levels.filter(({ key }) => !approvedLevels.includes(key));
@@ -416,9 +421,9 @@ function SubjectRequestCard() {
 
           {/* Supporting document */}
           <div>
-            <Label>Document justificatif <span className="text-destructive">*</span></Label>
+            <Label>{t("prof.settings.subjectReq.supportingDoc")} <span className="text-destructive">*</span></Label>
             <p className="text-xs text-muted-foreground mt-0.5 mb-2">
-              Diplôme, attestation, ou tout document prouvant votre compétence. (PDF, JPG, PNG)
+              {t("prof.settings.subjectReq.supportingDocHint")}
             </p>
             <div
               className={`border-2 rounded-xl p-4 cursor-pointer transition-colors ${
@@ -433,7 +438,7 @@ function SubjectRequestCard() {
                   ? <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
                   : <Upload className="w-5 h-5 text-muted-foreground shrink-0" />}
                 <div>
-                  <p className="text-sm font-medium">{docFile ? docFile.name : "Cliquez pour choisir un fichier"}</p>
+                  <p className="text-sm font-medium">{docFile ? docFile.name : t("prof.settings.subjectReq.clickToChooseFile")}</p>
                   {docFile && <p className="text-xs text-green-600 mt-0.5">{(docFile.size / 1024).toFixed(0)} KB</p>}
                 </div>
                 {docFile && (
@@ -449,10 +454,10 @@ function SubjectRequestCard() {
           <div className="flex gap-3 pt-2">
             <Button type="submit" disabled={submitting || uploading || newSubjects.length === 0 || !docFile} className="gap-2">
               {(submitting || uploading) ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-              {uploading ? "Envoi du document…" : submitting ? "Soumission…" : "Soumettre la demande"}
+              {uploading ? t("prof.settings.subjectReq.uploadingDoc") : submitting ? t("prof.settings.subjectReq.submitting") : t("prof.settings.subjectReq.submitRequest")}
             </Button>
             <Button type="button" variant="ghost" onClick={() => { setShowForm(false); setNewSubjects([]); setNewLevels([]); setDocFile(null); }}>
-              Annuler
+              {t("common.cancel")}
             </Button>
           </div>
         </form>
@@ -460,13 +465,13 @@ function SubjectRequestCard() {
 
       {!showForm && !hasPending && requests.length === 0 && (
         <p className="text-sm text-muted-foreground">
-          Vous pouvez demander l'ajout de nouvelles matières ou niveaux à tout moment en soumettant un document justificatif.
+          {t("prof.settings.subjectReq.emptyDesc")}
         </p>
       )}
 
       {!showForm && !hasPending && requests.length > 0 && requests.every((r: any) => r.status !== "pending") && (
         <Button variant="outline" size="sm" onClick={() => setShowForm(true)} className="gap-1.5 mt-2">
-          <PlusCircle className="w-4 h-4" /> Nouvelle demande
+          <PlusCircle className="w-4 h-4" /> {t("prof.settings.subjectReq.newRequest")}
         </Button>
       )}
     </Card>
@@ -476,10 +481,11 @@ function SubjectRequestCard() {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function ProfessorSettings() {
+  const { t } = useTranslation();
   return (
     <DashboardLayout>
       <FadeIn>
-        <PageHeader title="Mon profil" description="Gérez votre profil public et vos informations personnelles." />
+        <PageHeader title={t("prof.settings.title")} description={t("prof.settings.description")} />
         <div className="max-w-3xl space-y-6">
           <VerificationStatusCard />
           <ProfileCard />

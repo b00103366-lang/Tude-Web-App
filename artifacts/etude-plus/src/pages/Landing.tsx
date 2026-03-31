@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button, FadeIn } from "@/components/ui/Premium";
 import { MathBackground } from "@/components/ui/MathBackground";
@@ -9,70 +10,72 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
-const STATS = [
-  { value: "2 500+", label: "Élèves inscrits" },
-  { value: "120+",   label: "Professeurs vérifiés" },
-  { value: "98%",    label: "Taux de réussite" },
-  { value: "4.9★",   label: "Note moyenne" },
-];
-
-const FEATURES = [
-  {
-    icon: Video,
-    title: "Classes en Direct",
-    desc: "Vidéoconférence HD, tableau blanc interactif, chat et partage d'écran intégrés.",
-    color: "#f59e0b",
-    bg: "bg-amber-50 border-amber-200/60",
-    iconBg: "bg-amber-500/10",
-  },
-  {
-    icon: BookOpen,
-    title: "Ressources Complètes",
-    desc: "Supports de cours, quiz, devoirs et examens blancs organisés par chapitre.",
-    color: "#fb923c",
-    bg: "bg-orange-50 border-orange-200/60",
-    iconBg: "bg-orange-500/10",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Professeurs Vérifiés",
-    desc: "Chaque enseignant passe par un processus KYC rigoureux avant d'être publié.",
-    color: "#10b981",
-    bg: "bg-emerald-50 border-emerald-200/60",
-    iconBg: "bg-emerald-500/10",
-  },
-  {
-    icon: GraduationCap,
-    title: "Suivi Personnalisé",
-    desc: "Tableau de bord élève, notes, progression par matière et rappels de sessions.",
-    color: "#3b82f6",
-    bg: "bg-blue-50 border-blue-200/60",
-    iconBg: "bg-blue-500/10",
-  },
-  {
-    icon: Globe,
-    title: "Accès Partout",
-    desc: "Application web responsive, accessible depuis n'importe quel appareil 24h/24.",
-    color: "#8b5cf6",
-    bg: "bg-violet-50 border-violet-200/60",
-    iconBg: "bg-violet-500/10",
-  },
-  {
-    icon: Zap,
-    title: "Paiement Sécurisé",
-    desc: "Réglez vos cours en Dinars Tunisiens (TND) via un système de paiement sécurisé.",
-    color: "#f59e0b",
-    bg: "bg-amber-50 border-amber-200/60",
-    iconBg: "bg-amber-500/10",
-  },
-];
-
 const SUBJECTS = [
   "Mathématiques", "Physique", "Chimie", "SVT", "Arabe",
   "Français", "Anglais", "Histoire-Géo", "Philosophie", "Informatique",
 ];
 
 export function Landing() {
+  const { t } = useTranslation();
+
+  const STATS = [
+    { value: "2 500+", label: t("landing.stats.students") },
+    { value: "120+",   label: t("landing.stats.professors") },
+    { value: "98%",    label: t("landing.stats.successRate") },
+    { value: "4.9★",   label: t("landing.stats.avgRating") },
+  ];
+
+  const FEATURES = [
+    {
+      icon: Video,
+      title: t("landing.features.liveClasses.title"),
+      desc: t("landing.features.liveClasses.desc"),
+      color: "#f59e0b",
+      bg: "bg-amber-50 border-amber-200/60",
+      iconBg: "bg-amber-500/10",
+    },
+    {
+      icon: BookOpen,
+      title: t("landing.features.resources.title"),
+      desc: t("landing.features.resources.desc"),
+      color: "#fb923c",
+      bg: "bg-orange-50 border-orange-200/60",
+      iconBg: "bg-orange-500/10",
+    },
+    {
+      icon: ShieldCheck,
+      title: t("landing.features.verifiedProfessors.title"),
+      desc: t("landing.features.verifiedProfessors.desc"),
+      color: "#10b981",
+      bg: "bg-emerald-50 border-emerald-200/60",
+      iconBg: "bg-emerald-500/10",
+    },
+    {
+      icon: GraduationCap,
+      title: t("landing.features.personalTracking.title"),
+      desc: t("landing.features.personalTracking.desc"),
+      color: "#3b82f6",
+      bg: "bg-blue-50 border-blue-200/60",
+      iconBg: "bg-blue-500/10",
+    },
+    {
+      icon: Globe,
+      title: t("landing.features.accessAnywhere.title"),
+      desc: t("landing.features.accessAnywhere.desc"),
+      color: "#8b5cf6",
+      bg: "bg-violet-50 border-violet-200/60",
+      iconBg: "bg-violet-500/10",
+    },
+    {
+      icon: Zap,
+      title: t("landing.features.securePayment.title"),
+      desc: t("landing.features.securePayment.desc"),
+      color: "#f59e0b",
+      bg: "bg-amber-50 border-amber-200/60",
+      iconBg: "bg-amber-500/10",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-[#FFFDF7] relative overflow-x-hidden">
       {/* Full-page animated math/Greek symbol background */}
@@ -100,13 +103,13 @@ export function Landing() {
             <FadeIn className="max-w-2xl">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-50 border border-amber-300/60 text-amber-700 font-semibold text-sm mb-8 shadow-sm">
                 <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                Plateforme #1 de soutien scolaire en Tunisie
+                {t("landing.badge")}
               </div>
 
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-serif font-bold text-[#1a1a2e] leading-[1.08] mb-6 tracking-tight">
-                L'excellence
+                {t("landing.hero.title1")}
                 <br />
-                académique,{" "}
+                {t("landing.hero.title2")}{" "}
                 <span
                   className="relative inline-block"
                   style={{
@@ -115,26 +118,24 @@ export function Landing() {
                     WebkitTextFillColor: "transparent",
                   }}
                 >
-                  à portée de clic.
+                  {t("landing.hero.title3")}
                 </span>
               </h1>
 
               <p className="text-xl text-gray-600 mb-10 leading-relaxed">
-                Connectez-vous avec les meilleurs professeurs tunisiens,
-                suivez des cours en direct interactifs, et atteignez vos
-                objectifs avec <strong className="text-gray-800">Étude+</strong>.
+                {t("landing.hero.subtitle")}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-12">
                 <Link href="/select-role">
                   <Button size="lg" className="w-full sm:w-auto text-lg font-bold px-8 group shadow-lg shadow-amber-400/25">
-                    Commencer gratuitement
+                    {t("landing.hero.cta")}
                     <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
                 <Link href="/about">
                   <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg bg-white/60 backdrop-blur border-gray-300">
-                    En savoir plus
+                    {t("landing.hero.learnMore")}
                   </Button>
                 </Link>
               </div>
@@ -142,15 +143,15 @@ export function Landing() {
               <div className="flex flex-wrap items-center gap-6 text-sm font-medium text-gray-500">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-emerald-500" />
-                  Sans engagement
+                  {t("landing.trust.noCommitment")}
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-emerald-500" />
-                  Professeurs certifiés KYC
+                  {t("landing.trust.kycCertified")}
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-emerald-500" />
-                  Paiement en TND
+                  {t("landing.trust.paymentTnd")}
                 </div>
               </div>
             </FadeIn>
@@ -176,14 +177,14 @@ export function Landing() {
                 >
                   <Trophy className="w-10 h-10 mb-2" style={{ color: "#f59e0b" }} />
                   <p className="text-4xl font-bold text-gray-900">98%</p>
-                  <p className="text-sm text-gray-500 font-medium">Taux de réussite</p>
+                  <p className="text-sm text-gray-500 font-medium">{t("landing.stats.successRate")}</p>
                 </motion.div>
 
                 {/* Orbiting stat cards */}
                 {[
-                  { label: "Élèves", value: "2 500+", angle: -60, icon: Users, color: "#f59e0b" },
-                  { label: "Profs vérifiés", value: "120+", angle: 60, icon: ShieldCheck, color: "#fb923c" },
-                  { label: "Note moyenne", value: "4.9 ★", angle: 180, icon: Star, color: "#f97316" },
+                  { label: t("landing.stats.studentsOrbit"), value: "2 500+", angle: -60, icon: Users, color: "#f59e0b" },
+                  { label: t("landing.stats.profsOrbit"), value: "120+", angle: 60, icon: ShieldCheck, color: "#fb923c" },
+                  { label: t("landing.stats.ratingOrbit"), value: "4.9 ★", angle: 180, icon: Star, color: "#f97316" },
                 ].map((item, i) => {
                   const rad = (item.angle * Math.PI) / 180;
                   const r = 210;
@@ -248,12 +249,12 @@ export function Landing() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <FadeIn>
               <div className="text-center max-w-2xl mx-auto mb-16">
-                <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-3">Pourquoi Étude+ ?</p>
+                <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-3">{t("landing.features.sectionLabel")}</p>
                 <h2 className="text-4xl font-serif font-bold text-gray-900 mb-4">
-                  Une expérience d'apprentissage complète
+                  {t("landing.features.sectionTitle")}
                 </h2>
                 <p className="text-lg text-gray-500">
-                  Tout ce dont vous avez besoin pour réussir, réuni sur une seule plateforme intuitive.
+                  {t("landing.features.sectionSubtitle")}
                 </p>
               </div>
             </FadeIn>
@@ -278,15 +279,15 @@ export function Landing() {
         <section className="max-w-5xl mx-auto px-4 sm:px-6 py-24">
           <FadeIn>
             <div className="text-center mb-16">
-              <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-3">Simple et rapide</p>
-              <h2 className="text-4xl font-serif font-bold text-gray-900">Comment ça marche ?</h2>
+              <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-3">{t("landing.howItWorks.sectionLabel")}</p>
+              <h2 className="text-4xl font-serif font-bold text-gray-900">{t("landing.howItWorks.sectionTitle")}</h2>
             </div>
           </FadeIn>
           <div className="grid md:grid-cols-3 gap-10 relative">
             {[
-              { step: "01", title: "Créez votre compte", desc: "Inscrivez-vous en tant qu'élève ou professeur en moins de 2 minutes." },
-              { step: "02", title: "Trouvez un cours", desc: "Parcourez le catalogue, filtrez par matière, niveau et disponibilité." },
-              { step: "03", title: "Apprenez en direct", desc: "Rejoignez la session vidéo, posez vos questions, progressez." },
+              { step: "01", title: t("landing.howItWorks.step1Title"), desc: t("landing.howItWorks.step1Desc") },
+              { step: "02", title: t("landing.howItWorks.step2Title"), desc: t("landing.howItWorks.step2Desc") },
+              { step: "03", title: t("landing.howItWorks.step3Title"), desc: t("landing.howItWorks.step3Desc") },
             ].map((step, i) => (
               <FadeIn key={i} delay={0.15 * i}>
                 <div className="text-center">
@@ -317,22 +318,22 @@ export function Landing() {
             ))}
           </div>
           <div className="relative z-10 px-10 py-16 text-center">
-            <p className="text-amber-400 font-bold text-sm uppercase tracking-widest mb-4">Rejoignez des milliers d'élèves</p>
+            <p className="text-amber-400 font-bold text-sm uppercase tracking-widest mb-4">{t("landing.cta.label")}</p>
             <h2 className="text-3xl sm:text-4xl font-serif font-bold text-white mb-5">
-              Prêt à booster vos résultats ?
+              {t("landing.cta.title")}
             </h2>
             <p className="text-gray-400 text-lg mb-8 max-w-xl mx-auto">
-              Inscrivez-vous gratuitement et accédez aux meilleurs professeurs de Tunisie.
+              {t("landing.cta.subtitle")}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/select-role">
                 <Button size="lg" className="font-bold px-8 shadow-lg shadow-amber-400/20">
-                  S'inscrire gratuitement <ChevronRight className="ml-1 w-5 h-5" />
+                  {t("landing.cta.register")} <ChevronRight className="ml-1 w-5 h-5" />
                 </Button>
               </Link>
               <Link href="/pricing">
                 <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 bg-transparent">
-                  Voir les tarifs
+                  {t("landing.cta.pricing")}
                 </Button>
               </Link>
             </div>
@@ -345,18 +346,18 @@ export function Landing() {
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="text-xl font-serif font-bold text-gray-900">Étude<span style={{ color: "#f59e0b" }}>+</span></span>
-            <span className="text-gray-400 text-sm">— La plateforme de soutien scolaire tunisienne.</span>
+            <span className="text-gray-400 text-sm">{t("landing.footer.tagline")}</span>
           </div>
           <div className="flex items-center gap-6 text-sm text-gray-500">
-            <Link href="/about" className="hover:text-amber-600 transition-colors">À propos</Link>
-            <Link href="/pricing" className="hover:text-amber-600 transition-colors">Tarifs</Link>
-            <Link href="/terms" className="hover:text-amber-600 transition-colors">Conditions d'utilisation</Link>
-            <Link href="/privacy" className="hover:text-amber-600 transition-colors">Confidentialité</Link>
-            <Link href="/cookies" className="hover:text-amber-600 transition-colors">Politique des cookies</Link>
-            <a href="mailto:support@etude-plus.tn" className="hover:text-amber-600 transition-colors">Contact</a>
-            <Link href="/login" className="hover:text-amber-600 transition-colors">Connexion</Link>
+            <Link href="/about" className="hover:text-amber-600 transition-colors">{t("landing.footer.about")}</Link>
+            <Link href="/pricing" className="hover:text-amber-600 transition-colors">{t("landing.footer.pricing")}</Link>
+            <Link href="/terms" className="hover:text-amber-600 transition-colors">{t("landing.footer.terms")}</Link>
+            <Link href="/privacy" className="hover:text-amber-600 transition-colors">{t("landing.footer.privacy")}</Link>
+            <Link href="/cookies" className="hover:text-amber-600 transition-colors">{t("landing.footer.cookies")}</Link>
+            <a href="mailto:support@etude-plus.tn" className="hover:text-amber-600 transition-colors">{t("landing.footer.contact")}</a>
+            <Link href="/login" className="hover:text-amber-600 transition-colors">{t("landing.footer.login")}</Link>
           </div>
-          <p className="text-xs text-gray-400">© 2025 Étude+. Tous droits réservés.</p>
+          <p className="text-xs text-gray-400">{t("landing.footer.copyright")}</p>
         </div>
       </footer>
     </div>

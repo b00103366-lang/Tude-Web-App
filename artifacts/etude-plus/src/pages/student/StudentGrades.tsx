@@ -2,6 +2,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Badge } from "@/components/ui/Premium";
 import { Trophy, Award, LineChart, FileQuestion } from "lucide-react";
 import { useGetMyGrades } from "@workspace/api-client-react";
+import { useTranslation } from "react-i18next";
 
 function pct(score: number, total: number) {
   return Math.round((score / total) * 100);
@@ -16,6 +17,7 @@ function getColor(score: number, total: number) {
 }
 
 export function StudentGrades() {
+  const { t } = useTranslation();
   const { data: grades = [], isLoading } = useGetMyGrades() as any;
 
   const avg = grades.length
@@ -26,8 +28,8 @@ export function StudentGrades() {
     <DashboardLayout>
       <FadeIn>
         <PageHeader
-          title="Mes Notes"
-          description="Suivez votre progression et vos résultats d'évaluation."
+          title={t("student.grades.title")}
+          description={t("student.grades.description")}
         />
 
         {/* Summary cards */}
@@ -38,7 +40,7 @@ export function StudentGrades() {
                 <Trophy className="w-6 h-6 text-white" />
               </div>
               <div>
-                <p className="text-primary-foreground/80 font-medium">Moyenne Générale</p>
+                <p className="text-primary-foreground/80 font-medium">{t("student.grades.average")}</p>
                 {avg !== null
                   ? <p className="text-3xl font-bold">{avg.toFixed(1)}<span className="text-lg font-normal opacity-70">/20</span></p>
                   : <p className="text-2xl font-semibold opacity-70">—</p>
@@ -52,7 +54,7 @@ export function StudentGrades() {
                 <LineChart className="w-6 h-6 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-muted-foreground font-medium">Évaluations passées</p>
+                <p className="text-muted-foreground font-medium">{t("student.grades.assessmentsDone")}</p>
                 <p className="text-3xl font-bold">{grades.length}</p>
               </div>
             </div>
@@ -63,7 +65,7 @@ export function StudentGrades() {
                 <Award className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <p className="text-muted-foreground font-medium">Meilleures notes</p>
+                <p className="text-muted-foreground font-medium">{t("student.grades.bestGrade")}</p>
                 <p className="text-3xl font-bold">
                   {grades.length ? `${Math.max(...grades.map((g: any) => pct(g.score, g.total)))}%` : "—"}
                 </p>
@@ -72,7 +74,7 @@ export function StudentGrades() {
           </Card>
         </div>
 
-        <h2 className="text-xl font-bold mb-6">Historique des évaluations</h2>
+        <h2 className="text-xl font-bold mb-6">{t("student.grades.history")}</h2>
 
         {isLoading ? (
           <div className="grid lg:grid-cols-2 gap-6">
@@ -81,8 +83,8 @@ export function StudentGrades() {
         ) : grades.length === 0 ? (
           <Card className="p-12 text-center">
             <FileQuestion className="w-12 h-12 text-muted-foreground opacity-30 mx-auto mb-4" />
-            <h3 className="text-xl font-bold mb-2">Aucune note disponible</h3>
-            <p className="text-muted-foreground">Vos notes apparaîtront ici après que vos professeurs les auront publiées.</p>
+            <h3 className="text-xl font-bold mb-2">{t("student.grades.noGrades")}</h3>
+            <p className="text-muted-foreground">{t("student.grades.noGradesDesc")}</p>
           </Card>
         ) : (
           <div className="grid lg:grid-cols-2 gap-6">
@@ -91,7 +93,7 @@ export function StudentGrades() {
                 <Card className="p-6">
                   <div className="flex justify-between items-start mb-4 pb-4 border-b border-border">
                     <div>
-                      <Badge variant="outline" className="mb-2">{g.type ?? "Évaluation"}</Badge>
+                      <Badge variant="outline" className="mb-2">{g.type ?? t("student.grades.assessment")}</Badge>
                       <h3 className="font-bold text-lg">{g.title}</h3>
                       <p className="text-sm text-muted-foreground">{g.class?.title ?? g.className ?? ""}</p>
                     </div>
@@ -108,7 +110,7 @@ export function StudentGrades() {
                     <div className="bg-secondary/50 rounded-xl p-4 flex gap-3">
                       <Award className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Commentaire</p>
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{t("student.grades.comment")}</p>
                         <p className="text-sm font-medium italic">"{g.comment}"</p>
                       </div>
                     </div>

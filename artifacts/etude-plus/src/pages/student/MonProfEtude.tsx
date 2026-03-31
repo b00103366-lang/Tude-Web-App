@@ -7,6 +7,7 @@ import {
   ChevronUp, ChevronDown, Volume2, VolumeX, Filter, GraduationCap,
 } from "lucide-react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -732,6 +733,7 @@ function ShortsTab() {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export function MonProfEtude() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("pratique");
   const [pageData, setPageData] = useState<QuestionsResponse | null>(null);
@@ -794,17 +796,17 @@ export function MonProfEtude() {
     : null;
 
   const tierLabel = usage?.tier === "gratuit"
-    ? "5 questions gratuites / jour"
+    ? t("student.monProf.tierFree")
     : usage?.tier === "standard"
-    ? "20 questions / jour"
+    ? t("student.monProf.tierStandard")
     : usage?.tier === "premium"
-    ? "Accès illimité"
+    ? t("student.monProf.tierPremium")
     : "";
 
   const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: "pratique", label: "Questions du Jour", icon: <Sparkles className="w-4 h-4" /> },
-    { id: "questions", label: "Banque de Questions", icon: <BookOpen className="w-4 h-4" /> },
-    { id: "shorts", label: "Shorts Étude", icon: <Play className="w-4 h-4" /> },
+    { id: "pratique", label: t("student.monProf.tabPractice"), icon: <Sparkles className="w-4 h-4" /> },
+    { id: "questions", label: t("student.monProf.tabQuestions"), icon: <BookOpen className="w-4 h-4" /> },
+    { id: "shorts", label: t("student.monProf.tabShorts"), icon: <Play className="w-4 h-4" /> },
   ];
 
   // Loading state
@@ -819,7 +821,7 @@ export function MonProfEtude() {
           <div>
             <div className="flex items-center gap-2">
               <Sparkles className="w-6 h-6 text-yellow-400" />
-              <h1 className="text-2xl font-bold">Mon Prof Étude</h1>
+              <h1 className="text-2xl font-bold">{t("student.monProf.title")}</h1>
               {isPremium && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 font-bold flex items-center gap-1">
                   <Crown className="w-3 h-3" /> Premium
@@ -834,7 +836,7 @@ export function MonProfEtude() {
             isPremium ? (
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-yellow-100 text-yellow-700 text-xs font-semibold">
                 <Crown className="w-3.5 h-3.5" />
-                Illimité
+                {t("student.monProf.unlimited")}
               </div>
             ) : (
               <div className="flex items-center gap-2">
@@ -863,13 +865,13 @@ export function MonProfEtude() {
 
         {loadError !== false && (
           <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center">
-            <p className="text-muted-foreground text-sm">Impossible de charger les questions.</p>
+            <p className="text-muted-foreground text-sm">{t("student.monProf.loadError")}</p>
             <p className="text-xs text-red-500 font-mono bg-red-50 px-3 py-1.5 rounded-lg max-w-sm break-all">{loadError}</p>
             <button
               onClick={() => { setLoadError(false); setPageData(null); window.location.reload(); }}
               className="text-sm px-4 py-2 rounded-xl border border-border hover:bg-muted transition-colors"
             >
-              Réessayer
+              {t("student.monProf.retry")}
             </button>
           </div>
         )}

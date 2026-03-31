@@ -9,8 +9,10 @@ import { Link } from "wouter";
 import { AnnouncementsWidget } from "@/components/shared/AnnouncementsWidget";
 import { useQuery } from "@tanstack/react-query";
 import { formatTND } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 export function StudentDashboard() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { data: enrollments = [], isLoading } = useGetMyEnrollments() as any;
 
@@ -38,11 +40,11 @@ export function StudentDashboard() {
     <DashboardLayout>
       <FadeIn>
         <PageHeader
-          title={`Bonjour, ${user?.fullName?.split(" ")[0] ?? "Étudiant"} 👋`}
-          description="Voici un résumé de votre apprentissage aujourd'hui."
+          title={t("student.dashboard.greeting", { name: user?.fullName?.split(" ")[0] ?? t("student.dashboard.defaultName") })}
+          description={t("student.dashboard.description")}
           action={
             <Link href="/student/browse">
-              <Button>Nouveau Cours</Button>
+              <Button>{t("student.dashboard.newCourse")}</Button>
             </Link>
           }
         />
@@ -57,7 +59,7 @@ export function StudentDashboard() {
                 <BookOpen className="w-6 h-6 text-white" />
               </div>
               <div>
-                <p className="text-primary-foreground/80 font-medium">Cours Actifs</p>
+                <p className="text-primary-foreground/80 font-medium">{t("student.dashboard.activeClasses")}</p>
                 <p className="text-3xl font-bold">{activeClasses.length}</p>
               </div>
             </div>
@@ -68,7 +70,7 @@ export function StudentDashboard() {
                 <Calendar className="w-6 h-6 text-accent" />
               </div>
               <div>
-                <p className="text-muted-foreground font-medium">Sessions à venir</p>
+                <p className="text-muted-foreground font-medium">{t("student.dashboard.upcomingSessions")}</p>
                 <p className="text-3xl font-bold text-foreground">{upcomingSessions.length}</p>
               </div>
             </div>
@@ -79,7 +81,7 @@ export function StudentDashboard() {
                 <GraduationCap className="w-6 h-6 text-green-500" />
               </div>
               <div>
-                <p className="text-muted-foreground font-medium">Inscriptions</p>
+                <p className="text-muted-foreground font-medium">{t("student.dashboard.enrollments")}</p>
                 <p className="text-3xl font-bold text-foreground">{enrollments.length}</p>
               </div>
             </div>
@@ -90,7 +92,7 @@ export function StudentDashboard() {
                 <Wallet className="w-6 h-6 text-amber-600" />
               </div>
               <div>
-                <p className="text-amber-700 font-medium text-sm">Crédit Étude+</p>
+                <p className="text-amber-700 font-medium text-sm">{t("student.dashboard.credit")}</p>
                 <p className="text-2xl font-bold text-amber-800">{formatTND(creditBalance)}</p>
               </div>
             </div>
@@ -100,7 +102,7 @@ export function StudentDashboard() {
         {/* Next session hero */}
         {upcomingSessions.length > 0 && (
           <div className="mb-10">
-            <h2 className="text-xl font-bold mb-4">Prochaine Session</h2>
+            <h2 className="text-xl font-bold mb-4">{t("student.dashboard.nextSession")}</h2>
             <Card className="p-1 border-primary/30 shadow-lg shadow-primary/5 bg-gradient-to-r from-card to-secondary">
               <div className="p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
                 <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
@@ -116,7 +118,7 @@ export function StudentDashboard() {
                 </div>
                 <Link href={`/classroom/${upcomingSessions[0].id}`}>
                   <Button size="lg" className="w-full sm:w-auto shadow-lg shadow-primary/20">
-                    Rejoindre la salle
+                    {t("student.dashboard.joinRoom")}
                   </Button>
                 </Link>
               </div>
@@ -127,8 +129,8 @@ export function StudentDashboard() {
         {/* Enrolled classes */}
         <div>
           <div className="flex justify-between items-end mb-4">
-            <h2 className="text-xl font-bold">Mes Cours Récents</h2>
-            <Link href="/student/classes" className="text-sm font-medium text-primary hover:underline">Voir tout</Link>
+            <h2 className="text-xl font-bold">{t("student.dashboard.recentClasses")}</h2>
+            <Link href="/student/classes" className="text-sm font-medium text-primary hover:underline">{t("common.viewAll")}</Link>
           </div>
 
           {isLoading ? (
@@ -138,10 +140,10 @@ export function StudentDashboard() {
           ) : activeClasses.length === 0 ? (
             <Card className="p-12 text-center">
               <BookOpen className="w-12 h-12 text-muted-foreground opacity-30 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Aucun cours actif</h3>
-              <p className="text-muted-foreground mb-6">Inscrivez-vous à votre premier cours pour commencer votre apprentissage.</p>
+              <h3 className="text-xl font-bold mb-2">{t("student.dashboard.noActiveClasses")}</h3>
+              <p className="text-muted-foreground mb-6">{t("student.dashboard.noActiveClassesDesc")}</p>
               <Link href="/student/browse">
-                <Button>Parcourir les cours</Button>
+                <Button>{t("student.dashboard.browseClasses")}</Button>
               </Link>
             </Card>
           ) : (
@@ -156,9 +158,9 @@ export function StudentDashboard() {
                       <span>{cls.subject}</span> &bull; <span>{cls.gradeLevel}</span>
                     </div>
                     <h3 className="font-bold text-lg leading-tight mb-2 group-hover:text-primary transition-colors">{cls.title}</h3>
-                    <p className="text-sm text-muted-foreground mb-4">Par {cls.professor?.fullName ?? "—"}</p>
+                    <p className="text-sm text-muted-foreground mb-4">{t("student.dashboard.by")} {cls.professor?.fullName ?? "—"}</p>
                     <Link href={`/student/classes/${cls.id}`}>
-                      <Button variant="outline" className="w-full">Ouvrir le cours</Button>
+                      <Button variant="outline" className="w-full">{t("student.dashboard.openCourse")}</Button>
                     </Link>
                   </div>
                 </Card>

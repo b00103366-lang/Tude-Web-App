@@ -8,8 +8,10 @@ import { useToast } from "@/hooks/use-toast";
 import { getToken } from "@workspace/api-client-react";
 import { KeyRound, Loader2, GraduationCap, Save } from "lucide-react";
 import { getLevelLabel } from "@/lib/educationConfig";
+import { useTranslation } from "react-i18next";
 
 function ChangePasswordCard() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -18,8 +20,8 @@ function ChangePasswordCard() {
 
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (next !== confirm) { toast({ title: "Erreur", description: "Les mots de passe ne correspondent pas.", variant: "destructive" }); return; }
-    if (next.length < 8) { toast({ title: "Erreur", description: "Minimum 8 caractères.", variant: "destructive" }); return; }
+    if (next !== confirm) { toast({ title: t("common.error"), description: t("register.errorPasswordMatch"), variant: "destructive" }); return; }
+    if (next.length < 8) { toast({ title: t("common.error"), description: t("student.settings.minChars"), variant: "destructive" }); return; }
     setSaving(true);
     try {
       const token = getToken();
@@ -29,11 +31,11 @@ function ChangePasswordCard() {
         body: JSON.stringify({ currentPassword: current, newPassword: next }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Erreur");
-      toast({ title: "Mot de passe mis à jour" });
+      if (!res.ok) throw new Error(data.error ?? t("common.error"));
+      toast({ title: t("student.settings.passwordUpdated") });
       setCurrent(""); setNext(""); setConfirm("");
     } catch (err: any) {
-      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     } finally { setSaving(false); }
   };
 
@@ -43,14 +45,14 @@ function ChangePasswordCard() {
         <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
           <KeyRound className="w-4 h-4 text-primary" />
         </div>
-        <h3 className="font-bold text-lg">Changer le mot de passe</h3>
+        <h3 className="font-bold text-lg">{t("student.settings.changePassword")}</h3>
       </div>
       <form onSubmit={handle} className="space-y-4 max-w-sm">
-        <div><Label>Mot de passe actuel</Label><Input type="password" value={current} onChange={e => setCurrent(e.target.value)} placeholder="••••••••" /></div>
-        <div><Label>Nouveau mot de passe</Label><Input type="password" value={next} onChange={e => setNext(e.target.value)} placeholder="Minimum 8 caractères" /></div>
-        <div><Label>Confirmer</Label><Input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Répéter le mot de passe" /></div>
+        <div><Label>{t("student.settings.currentPassword")}</Label><Input type="password" value={current} onChange={e => setCurrent(e.target.value)} placeholder="••••••••" /></div>
+        <div><Label>{t("student.settings.newPassword")}</Label><Input type="password" value={next} onChange={e => setNext(e.target.value)} placeholder={t("student.settings.minCharsPlaceholder")} /></div>
+        <div><Label>{t("student.settings.confirmPassword")}</Label><Input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder={t("student.settings.repeatPassword")} /></div>
         <Button type="submit" disabled={saving}>
-          {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Mise à jour…</> : "Changer le mot de passe"}
+          {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("student.settings.updating")}</> : t("student.settings.changePassword")}
         </Button>
       </form>
     </Card>
@@ -58,6 +60,7 @@ function ChangePasswordCard() {
 }
 
 function EducationLevelCard() {
+  const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
   const currentLevel: string = (user as any)?.studentProfile?.gradeLevel ?? "";
@@ -70,7 +73,7 @@ function EducationLevelCard() {
 
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!niveauKey) { toast({ title: "Erreur", description: "Sélectionnez un niveau.", variant: "destructive" }); return; }
+    if (!niveauKey) { toast({ title: t("common.error"), description: t("student.settings.selectLevel"), variant: "destructive" }); return; }
     setSaving(true);
     try {
       const token = getToken();
@@ -79,11 +82,11 @@ function EducationLevelCard() {
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ gradeLevel: niveauKey, educationSection: sectionKey }),
       });
-      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error((d as any).error ?? "Erreur"); }
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error((d as any).error ?? t("common.error")); }
       await refreshUser();
-      toast({ title: "Niveau mis à jour", description: `Vous êtes maintenant en ${getLevelLabel(niveauKey)}.` });
+      toast({ title: t("student.settings.levelUpdated"), description: t("student.settings.nowAt", { level: getLevelLabel(niveauKey) }) });
     } catch (err: any) {
-      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     } finally { setSaving(false); }
   };
 
@@ -94,19 +97,19 @@ function EducationLevelCard() {
           <GraduationCap className="w-4 h-4 text-primary" />
         </div>
         <div>
-          <h3 className="font-bold text-lg">Niveau scolaire</h3>
+          <h3 className="font-bold text-lg">{t("student.settings.gradeLevel")}</h3>
           {currentLevel && (
-            <p className="text-xs text-muted-foreground mt-0.5">Actuel : <strong>{getLevelLabel(currentLevel)}</strong></p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t("student.settings.current")} <strong>{getLevelLabel(currentLevel)}</strong></p>
           )}
         </div>
       </div>
       <p className="text-sm text-muted-foreground mb-4">
-        Votre niveau détermine quels cours vous sont affichés. Modifiez-le si vous avez fait une erreur ou si vous avez changé d'année.
+        {t("student.settings.gradeLevelDesc")}
       </p>
       <form onSubmit={handle} className="space-y-4">
         <LevelPicker niveauValue={niveauKey} sectionValue={sectionKey} onChange={(n, s) => { setNiveauKey(n); setSectionKey(s); }} />
         <Button type="submit" disabled={saving || !changed || !niveauKey}>
-          {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Mise à jour…</> : <><Save className="w-4 h-4 mr-2" />Enregistrer le niveau</>}
+          {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("student.settings.updating")}</> : <><Save className="w-4 h-4 mr-2" />{t("student.settings.saveLevel")}</>}
         </Button>
       </form>
     </Card>
@@ -114,10 +117,11 @@ function EducationLevelCard() {
 }
 
 export function StudentSettings() {
+  const { t } = useTranslation();
   return (
     <DashboardLayout>
       <FadeIn>
-        <PageHeader title="Mon profil" description="Gérez vos informations personnelles et votre niveau scolaire." />
+        <PageHeader title={t("student.settings.title")} description={t("student.settings.description")} />
         <div className="max-w-3xl space-y-6">
           <ProfileCard />
           <EducationLevelCard />
