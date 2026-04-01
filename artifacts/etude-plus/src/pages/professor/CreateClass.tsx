@@ -25,12 +25,14 @@ interface Qualification {
   subject: string;
 }
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function useMyQualifications() {
   return useQuery<Qualification[]>({
     queryKey: ["/api/qualifications/mine"],
     queryFn: async () => {
       const token = localStorage.getItem("etude_auth_token");
-      const res = await fetch("/api/qualifications/mine", {
+      const res = await fetch(`${API_URL}/api/qualifications/mine`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error("Error loading qualifications");

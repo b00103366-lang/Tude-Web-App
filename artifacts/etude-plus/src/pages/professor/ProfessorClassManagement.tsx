@@ -30,6 +30,8 @@ import { useToast } from "@/hooks/use-toast";
 import { formatTND } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function Modal({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
   if (!open) return null;
   return (
@@ -269,7 +271,7 @@ export function ProfessorClassManagement() {
     queryKey: ["class-reviews", classId],
     enabled: !!classId,
     queryFn: async () => {
-      const res = await fetch(`/api/reviews?classId=${classId}`);
+      const res = await fetch(`${API_URL}/api/reviews?classId=${classId}`);
       return res.ok ? res.json() : [];
     },
   });
@@ -283,7 +285,7 @@ export function ProfessorClassManagement() {
   const saveClassSettings = useMutation({
     mutationFn: async (data: { title: string; description: string; price: number; durationHours: number }) => {
       const token = getToken();
-      const res = await fetch(`/api/classes/${classId}`, {
+      const res = await fetch(`${API_URL}/api/classes/${classId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -309,7 +311,7 @@ export function ProfessorClassManagement() {
   const cancelSession = useMutation({
     mutationFn: async (sessionId: number) => {
       const token = getToken();
-      const res = await fetch(`/api/classes/${classId}/sessions/${sessionId}`, {
+      const res = await fetch(`${API_URL}/api/classes/${classId}/sessions/${sessionId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ status: "cancelled" }),
@@ -327,7 +329,7 @@ export function ProfessorClassManagement() {
   const postAnnouncement = useMutation({
     mutationFn: async (data: { title: string; body: string }) => {
       const token = getToken();
-      const res = await fetch(`/api/announcements/class/${classId}`, {
+      const res = await fetch(`${API_URL}/api/announcements/class/${classId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(data),
@@ -585,7 +587,7 @@ export function ProfessorClassManagement() {
                       variant="ghost"
                       size="sm"
                       disabled={!m.fileUrl}
-                      onClick={() => { if (m.fileUrl) window.open(`/api/storage${m.fileUrl}`, "_blank"); }}
+                      onClick={() => { if (m.fileUrl) window.open(`${API_URL}/api/storage${m.fileUrl}`, "_blank"); }}
                     >
                       <Download className="w-4 h-4" />
                     </Button>
@@ -634,7 +636,7 @@ export function ProfessorClassManagement() {
                       </div>
                     </div>
                     {m.fileUrl && (
-                      <Button variant="outline" size="sm" onClick={() => window.open(`/api/storage${m.fileUrl}`, "_blank")}>
+                      <Button variant="outline" size="sm" onClick={() => window.open(`${API_URL}/api/storage${m.fileUrl}`, "_blank")}>
                         <Eye className="w-4 h-4 mr-2" /> {t("prof.classManagement.view")}
                       </Button>
                     )}
@@ -850,7 +852,7 @@ export function ProfessorClassManagement() {
                       <div className="flex gap-4">
                         <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary shrink-0 overflow-hidden">
                           {r.student?.profilePhoto
-                            ? <img src={`/api/storage${r.student.profilePhoto}`} alt="" className="w-full h-full object-cover" />
+                            ? <img src={`${API_URL}/api/storage${r.student.profilePhoto}`} alt="" className="w-full h-full object-cover" />
                             : r.student?.fullName?.charAt(0) ?? "?"}
                         </div>
                         <div className="flex-1">
@@ -1024,7 +1026,7 @@ export function ProfessorClassManagement() {
                     try {
                       setUploadProgress("uploading");
                       const token = getToken();
-                      const reqRes = await fetch("/api/storage/uploads/request-url", {
+                      const reqRes = await fetch(`${API_URL}/api/storage/uploads/request-url`, {
                         method: "POST",
                         headers: {
                           "Content-Type": "application/json",
@@ -1041,7 +1043,7 @@ export function ProfessorClassManagement() {
                           reader.onerror = reject;
                           reader.readAsDataURL(selectedFile);
                         });
-                        const uploadRes = await fetch("/api/storage/uploads/direct", {
+                        const uploadRes = await fetch(`${API_URL}/api/storage/uploads/direct`, {
                           method: "POST",
                           headers: {
                             "Content-Type": "application/json",
@@ -1236,7 +1238,7 @@ export function ProfessorClassManagement() {
                     try {
                       setRecordingUploadProgress("uploading");
                       const token = getToken();
-                      const reqRes = await fetch("/api/storage/uploads/request-url", {
+                      const reqRes = await fetch(`${API_URL}/api/storage/uploads/request-url`, {
                         method: "POST",
                         headers: {
                           "Content-Type": "application/json",
@@ -1253,7 +1255,7 @@ export function ProfessorClassManagement() {
                           reader.onerror = reject;
                           reader.readAsDataURL(recordingFile);
                         });
-                        const uploadRes = await fetch("/api/storage/uploads/direct", {
+                        const uploadRes = await fetch(`${API_URL}/api/storage/uploads/direct`, {
                           method: "POST",
                           headers: {
                             "Content-Type": "application/json",

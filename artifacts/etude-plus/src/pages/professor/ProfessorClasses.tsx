@@ -5,13 +5,15 @@ import { Link } from "wouter";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function useMyClasses() {
   const [classes, setClasses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
     const token = localStorage.getItem("etude_auth_token");
     if (!token) { setIsLoading(false); return; }
-    fetch("/api/classes/my-classes", { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_URL}/api/classes/my-classes`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(d => { setClasses(d.classes ?? []); setIsLoading(false); })
       .catch(() => setIsLoading(false));

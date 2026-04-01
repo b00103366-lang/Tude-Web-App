@@ -6,6 +6,8 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useState } from "react";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 async function apiFetch(url: string) {
   const token = getToken();
   const res = await fetch(url, {
@@ -17,7 +19,7 @@ async function apiFetch(url: string) {
 export function AnnouncementsWidget() {
   const { data: announcements = [] } = useQuery<any[]>({
     queryKey: ["announcements"],
-    queryFn: () => apiFetch("/api/announcements"),
+    queryFn: () => apiFetch(`${API_URL}/api/announcements`),
     refetchInterval: 60_000,
   });
 

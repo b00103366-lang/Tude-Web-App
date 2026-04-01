@@ -9,6 +9,8 @@ import { getToken } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export function StudentCalendar() {
   const { t } = useTranslation();
   const today = new Date();
@@ -18,7 +20,7 @@ export function StudentCalendar() {
     queryKey: ["student-enrolled-sessions"],
     queryFn: async () => {
       const token = getToken();
-      const res = await fetch("/api/classes/enrolled-sessions", {
+      const res = await fetch(`${API_URL}/api/classes/enrolled-sessions`, {
         headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });
       if (!res.ok) return [];

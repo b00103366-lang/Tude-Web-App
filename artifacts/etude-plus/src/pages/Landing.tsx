@@ -9,6 +9,27 @@ import {
   GraduationCap, Users, Zap, Globe, CheckCircle, ChevronRight
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+
+const API_URL = import.meta.env.VITE_API_URL;
+
+function useCountUp(target: number, duration = 1500) {
+  const [value, setValue] = useState(0);
+  const raf = useRef<number | null>(null);
+  useEffect(() => {
+    if (target === 0) return;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.round(eased * target));
+      if (progress < 1) raf.current = requestAnimationFrame(tick);
+    };
+    raf.current = requestAnimationFrame(tick);
+    return () => { if (raf.current) cancelAnimationFrame(raf.current); };
+  }, [target, duration]);
+  return value;
+}
 
 const SUBJECTS = [
   "Mathématiques", "Physique", "Chimie", "SVT", "Arabe",
@@ -17,12 +38,23 @@ const SUBJECTS = [
 
 export function Landing() {
   const { t } = useTranslation();
+  const [liveStats, setLiveStats] = useState<{ totalStudents: number; totalProfessors: number } | null>(null);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/stats/public`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setLiveStats(data); })
+      .catch(() => {});
+  }, []);
+
+  const studentCount = useCountUp(liveStats?.totalStudents ?? 0);
+  const professorCount = useCountUp(liveStats?.totalProfessors ?? 0);
 
   const STATS = [
-    { value: "2 500+", label: t("landing.stats.students") },
-    { value: "120+",   label: t("landing.stats.professors") },
-    { value: "98%",    label: t("landing.stats.successRate") },
-    { value: "4.9★",   label: t("landing.stats.avgRating") },
+    { value: liveStats ? `${studentCount}` : "…", label: t("landing.stats.students") },
+    { value: liveStats ? `${professorCount}` : "…", label: t("landing.stats.professors") },
+    { value: "98%",  label: t("landing.stats.successRate") },
+    { value: "4.9★", label: t("landing.stats.avgRating") },
   ];
 
   const FEATURES = [
@@ -101,11 +133,6 @@ export function Landing() {
           <div className="relative grid lg:grid-cols-2 gap-16 items-center min-h-[80vh]" style={{ zIndex: 1 }}>
             {/* Left copy */}
             <FadeIn className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-50 border border-amber-300/60 text-amber-700 font-semibold text-sm mb-8 shadow-sm">
-                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                {t("landing.badge")}
-              </div>
-
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-serif font-bold text-[#1a1a2e] leading-[1.08] mb-6 tracking-tight">
                 {t("landing.hero.title1")}
                 <br />
@@ -182,8 +209,8 @@ export function Landing() {
 
                 {/* Orbiting stat cards */}
                 {[
-                  { label: t("landing.stats.studentsOrbit"), value: "2 500+", angle: -60, icon: Users, color: "#f59e0b" },
-                  { label: t("landing.stats.profsOrbit"), value: "120+", angle: 60, icon: ShieldCheck, color: "#fb923c" },
+                  { label: t("landing.stats.studentsOrbit"), value: liveStats ? `${studentCount}` : "…", angle: -60, icon: Users, color: "#f59e0b" },
+                  { label: t("landing.stats.profsOrbit"), value: liveStats ? `${professorCount}` : "…", angle: 60, icon: ShieldCheck, color: "#fb923c" },
                   { label: t("landing.stats.ratingOrbit"), value: "4.9 ★", angle: 180, icon: Star, color: "#f97316" },
                 ].map((item, i) => {
                   const rad = (item.angle * Math.PI) / 180;

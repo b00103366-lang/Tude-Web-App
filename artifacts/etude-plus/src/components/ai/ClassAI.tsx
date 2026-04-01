@@ -54,9 +54,11 @@ const DEFAULT_SYLLABUS = {
   topics: ["Programme officiel tunisien", "Théorie et applications", "Exercices et entraînement", "Révisions et examens"],
 };
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 async function callAI(endpoint: string, body: object): Promise<string> {
   const token = getToken();
-  const res = await fetch(`/api/ai/${endpoint}`, {
+  const res = await fetch(`${API_URL}/api/ai/${endpoint}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

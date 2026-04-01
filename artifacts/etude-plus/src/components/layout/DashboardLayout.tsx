@@ -1,4 +1,6 @@
 import React from "react";
+
+const API_URL = import.meta.env.VITE_API_URL;
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -97,7 +99,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className="px-6 py-4 flex items-center gap-3 border-y border-sidebar-border/50 bg-sidebar-accent/30 hover:bg-sidebar-accent/50 transition-colors cursor-pointer group">
             <div className="w-10 h-10 rounded-full overflow-hidden border border-sidebar-primary/30 flex-shrink-0 bg-sidebar-primary/20">
               {user.profilePhoto ? (
-                <img src={`/api/storage${user.profilePhoto}`} alt="Photo" className="w-full h-full object-cover" />
+                <img src={`${API_URL}/api/storage${user.profilePhoto}`} alt="Photo" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <span className="font-bold text-sidebar-primary">{user.fullName.charAt(0)}</span>

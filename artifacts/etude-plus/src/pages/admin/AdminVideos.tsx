@@ -17,6 +17,8 @@ interface StudyVideo {
   uploaderName: string | null;
 }
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 async function apiFetch(url: string, opts: RequestInit = {}) {
   const token = getToken();
   const res = await fetch(url, {
@@ -32,7 +34,7 @@ async function apiFetch(url: string, opts: RequestInit = {}) {
 async function uploadVideoFile(file: File): Promise<string> {
   const token = getToken();
   // Step 1: request upload slot
-  const slotRes = await fetch("/api/storage/uploads/request-url", {
+  const slotRes = await fetch(`${API_URL}/api/storage/uploads/request-url`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -51,7 +53,7 @@ async function uploadVideoFile(file: File): Promise<string> {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-    const directRes = await fetch("/api/storage/uploads/direct", {
+    const directRes = await fetch(`${API_URL}/api/storage/uploads/direct`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -86,7 +88,7 @@ export function AdminVideos() {
 
   function loadVideos() {
     setLoadingList(true);
-    apiFetch("/api/mon-prof/videos").then(async res => {
+    apiFetch(`${API_URL}/api/mon-prof/videos`).then(async res => {
       if (res.ok) setVideos(await res.json());
       setLoadingList(false);
     });
@@ -102,7 +104,7 @@ export function AdminVideos() {
     setUploading(true);
     try {
       const videoPath = await uploadVideoFile(selectedFile);
-      const createRes = await apiFetch("/api/mon-prof/videos", {
+      const createRes = await apiFetch(`${API_URL}/api/mon-prof/videos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -131,7 +133,7 @@ export function AdminVideos() {
 
   async function handleDelete(id: number) {
     setDeleting(id);
-    const res = await apiFetch(`/api/mon-prof/videos/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`${API_URL}/api/mon-prof/videos/${id}`, { method: "DELETE" });
     if (res.ok) {
       setVideos(v => v.filter(x => x.id !== id));
       toast({ title: "Vidéo supprimée" });
@@ -262,7 +264,7 @@ export function AdminVideos() {
                 {/* Thumbnail / icon */}
                 <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
                   {video.thumbnailPath ? (
-                    <img src={`/api/storage${video.thumbnailPath}`} alt="" className="w-full h-full object-cover" />
+                    <img src={`${API_URL}/api/storage${video.thumbnailPath}`} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <Play className="w-6 h-6 text-muted-foreground" />
                   )}

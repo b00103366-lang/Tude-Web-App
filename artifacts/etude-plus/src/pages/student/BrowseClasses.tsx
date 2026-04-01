@@ -1,4 +1,6 @@
 import { useState } from "react";
+
+const API_URL = import.meta.env.VITE_API_URL;
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Button, Badge, Input } from "@/components/ui/Premium";
 import { useListClasses } from "@workspace/api-client-react";
@@ -188,7 +190,7 @@ export function BrowseClasses() {
                         <div className="flex items-center gap-3 mb-3 p-3 bg-secondary/50 rounded-xl">
                           <div className="w-10 h-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center font-bold text-primary shrink-0">
                             {cls.professor?.profilePhoto
-                              ? <img src={`/api/storage${cls.professor.profilePhoto}`} alt="" className="w-full h-full object-cover" />
+                              ? <img src={`${API_URL}/api/storage${cls.professor.profilePhoto}`} alt="" className="w-full h-full object-cover" />
                               : cls.professor?.fullName?.charAt(0) ?? "?"}
                           </div>
                           <div className="min-w-0">

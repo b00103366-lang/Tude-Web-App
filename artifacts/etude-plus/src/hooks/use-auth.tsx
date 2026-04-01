@@ -1,4 +1,6 @@
 import React, { createContext, useContext } from "react";
+
+const API_URL = import.meta.env.VITE_API_URL;
 import { User, useGetMe, getGetMeQueryKey, login, register, LoginRequest, RegisterRequest, saveToken, clearToken, getToken } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { trackEvent } from "@/lib/analytics";
@@ -100,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     trackEvent("logout");
     // Clear server-side session cookie (fire-and-forget)
-    fetch("/api/auth/logout", { method: "POST", credentials: "include" }).catch(() => {});
+    fetch(`${API_URL}/api/auth/logout`, { method: "POST", credentials: "include" }).catch(() => {});
     clearToken();
     queryClient.setQueryData([`/api/auth/me`], null);
     queryClient.clear();
@@ -119,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let adminToken = getToken();
     if (!adminToken) {
       try {
-        const res = await fetch("/api/auth/restore-session", {
+        const res = await fetch(`${API_URL}/api/auth/restore-session`, {
           method: "POST",
           credentials: "include",
         });
@@ -150,7 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem(IMPERSONATION_KEY);
     saveToken(imp.adminToken);
     // Restore the admin's session cookie by calling restore-session with the admin bearer token
-    await fetch("/api/auth/restore-session", {
+    await fetch(`${API_URL}/api/auth/restore-session`, {
       method: "POST",
       credentials: "include",
       headers: { Authorization: `Bearer ${imp.adminToken}` },

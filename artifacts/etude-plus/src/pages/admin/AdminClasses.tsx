@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { formatTND } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 async function adminFetch(path: string, method = "GET", body?: unknown) {
   const token = getToken();
   const res = await fetch(path, {
@@ -29,7 +31,7 @@ async function adminFetch(path: string, method = "GET", body?: unknown) {
 function useAdminClasses(search: string) {
   return useQuery({
     queryKey: ["/api/admin/classes", search],
-    queryFn: () => adminFetch(`/api/admin/classes${search ? `?search=${encodeURIComponent(search)}` : ""}`),
+    queryFn: () => adminFetch(`${API_URL}/api/admin/classes${search ? `?search=${encodeURIComponent(search)}` : ""}`),
   });
 }
 
@@ -40,8 +42,8 @@ function useClassAction(action: "archive" | "unarchive" | "delete") {
   return useMutation({
     mutationFn: (classId: number) =>
       action === "delete"
-        ? adminFetch(`/api/admin/classes/${classId}`, "DELETE")
-        : adminFetch(`/api/admin/classes/${classId}/${action}`, "POST"),
+        ? adminFetch(`${API_URL}/api/admin/classes/${classId}`, "DELETE")
+        : adminFetch(`${API_URL}/api/admin/classes/${classId}/${action}`, "POST"),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/admin/classes"] });
       const labelKeys: Record<string, string> = {

@@ -13,13 +13,15 @@ import { fr } from "date-fns/locale";
 const STATUS_OPTIONS = ["pending", "completed", "failed", "refunded"] as const;
 type TxStatus = typeof STATUS_OPTIONS[number];
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function useOverrideStatus() {
   const qc = useQueryClient();
   const { toast } = useToast();
   return useMutation({
     mutationFn: async ({ id, status }: { id: number; status: TxStatus }) => {
       const token = getToken();
-      const res = await fetch(`/api/admin/transactions/${id}/status`, {
+      const res = await fetch(`${API_URL}/api/admin/transactions/${id}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

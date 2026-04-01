@@ -13,6 +13,8 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 async function adminFetch(url: string, opts: RequestInit = {}) {
   const token = getToken();
   const res = await fetch(url, {
@@ -51,13 +53,13 @@ export function AdminSettings() {
 
   const { data: announcements = [] } = useQuery<any[]>({
     queryKey: ["admin-announcements"],
-    queryFn: () => adminFetch("/api/announcements/all"),
+    queryFn: () => adminFetch(`${API_URL}/api/announcements/all`),
     refetchInterval: 30_000,
   });
 
   const { data: allUsers = [] } = useQuery<any[]>({
     queryKey: ["admin-all-users"],
-    queryFn: () => adminFetch("/api/users"),
+    queryFn: () => adminFetch(`${API_URL}/api/users`),
   });
 
   const filteredUsers = userSearch.trim().length > 1
@@ -70,7 +72,7 @@ export function AdminSettings() {
 
   const postAnn = useMutation({
     mutationFn: (data: { title: string; body: string; targetAudience: string; targetUserIds: number[] }) =>
-      adminFetch("/api/announcements", { method: "POST", body: JSON.stringify(data) }),
+      adminFetch(`${API_URL}/api/announcements`, { method: "POST", body: JSON.stringify(data) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-announcements"] });
       qc.invalidateQueries({ queryKey: ["announcements"] });
@@ -81,7 +83,7 @@ export function AdminSettings() {
   });
 
   const deleteAnn = useMutation({
-    mutationFn: (id: number) => adminFetch(`/api/announcements/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) => adminFetch(`${API_URL}/api/announcements/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-announcements"] });
       qc.invalidateQueries({ queryKey: ["announcements"] });
@@ -98,11 +100,11 @@ export function AdminSettings() {
 
   const { data: discountCodes = [] } = useQuery<any[]>({
     queryKey: ["admin-discount-codes"],
-    queryFn: () => adminFetch("/api/admin/discount-codes"),
+    queryFn: () => adminFetch(`${API_URL}/api/admin/discount-codes`),
   });
 
   const createDc = useMutation({
-    mutationFn: (data: any) => adminFetch("/api/admin/discount-codes", { method: "POST", body: JSON.stringify(data) }),
+    mutationFn: (data: any) => adminFetch(`${API_URL}/api/admin/discount-codes`, { method: "POST", body: JSON.stringify(data) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-discount-codes"] });
       setDcCode(""); setDcPct(""); setDcMaxUses(""); setDcExpiry("");
@@ -112,13 +114,13 @@ export function AdminSettings() {
   });
 
   const patchDc = useMutation({
-    mutationFn: ({ id, ...data }: any) => adminFetch(`/api/admin/discount-codes/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    mutationFn: ({ id, ...data }: any) => adminFetch(`${API_URL}/api/admin/discount-codes/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-discount-codes"] }),
     onError: (err: any) => toast({ title: t("common.error"), description: err.message, variant: "destructive" }),
   });
 
   const deleteDc = useMutation({
-    mutationFn: (id: number) => adminFetch(`/api/admin/discount-codes/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) => adminFetch(`${API_URL}/api/admin/discount-codes/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-discount-codes"] });
       setConfirmDeleteDc(null);
@@ -141,7 +143,7 @@ export function AdminSettings() {
   // Load real settings on mount
   const { data: platformSettings } = useQuery<any>({
     queryKey: ["admin-platform-settings"],
-    queryFn: () => adminFetch("/api/admin/settings"),
+    queryFn: () => adminFetch(`${API_URL}/api/admin/settings`),
   });
 
   // Sync state when settings load
@@ -171,7 +173,7 @@ export function AdminSettings() {
     }
     setSavingPlatform(true);
     try {
-      await adminFetch("/api/admin/settings", {
+      await adminFetch(`${API_URL}/api/admin/settings`, {
         method: "PUT",
         body: JSON.stringify({ commissionRate: c, maxCoursePrice: p, maintenanceMode: maintenance }),
       });
@@ -206,7 +208,7 @@ export function AdminSettings() {
     setSavingAccount(true);
     try {
       if (newPassword) {
-        await adminFetch("/api/auth/change-password", {
+        await adminFetch(`${API_URL}/api/auth/change-password`, {
           method: "POST",
           body: JSON.stringify({ currentPassword, newPassword }),
         });

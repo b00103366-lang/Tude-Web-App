@@ -11,6 +11,8 @@ import { useQuery } from "@tanstack/react-query";
 import { formatTND } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export function StudentDashboard() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -20,7 +22,7 @@ export function StudentDashboard() {
     queryKey: ["credits-balance"],
     queryFn: async () => {
       const token = getToken();
-      const res = await fetch("/api/credits/balance", {
+      const res = await fetch(`${API_URL}/api/credits/balance`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       return res.ok ? res.json() : { balance: 0 };

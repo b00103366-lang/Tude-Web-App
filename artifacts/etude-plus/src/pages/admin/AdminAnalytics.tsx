@@ -13,11 +13,11 @@ import {
 } from "recharts";
 import { formatTND } from "@/lib/utils";
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL ?? "";
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 async function apiFetch(path: string) {
   const token = getToken();
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(path, {
     credentials: "include",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
@@ -82,10 +82,10 @@ export function AdminAnalytics() {
   const fetchAll = useCallback(async () => {
     try {
       const [s, c, ck, l] = await Promise.all([
-        apiFetch("/api/admin/analytics/summary"),
-        apiFetch("/api/admin/analytics/charts?days=30"),
-        apiFetch("/api/admin/analytics/cookie-consent"),
-        apiFetch("/api/admin/analytics/live"),
+        apiFetch(`${API_URL}/api/admin/analytics/summary`),
+        apiFetch(`${API_URL}/api/admin/analytics/charts?days=30`),
+        apiFetch(`${API_URL}/api/admin/analytics/cookie-consent`),
+        apiFetch(`${API_URL}/api/admin/analytics/live`),
       ]);
       setSummary(s);
       setCharts(c);
@@ -104,7 +104,7 @@ export function AdminAnalytics() {
 
   const handleExport = () => {
     const token = getToken();
-    const url = `${API_BASE}/api/admin/analytics/export?days=30`;
+    const url = `${API_URL}/api/admin/analytics/export?days=30`;
     const a = document.createElement("a");
     a.href = url;
     a.download = "etude-analytics-30days.csv";

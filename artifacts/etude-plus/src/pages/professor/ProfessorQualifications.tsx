@@ -23,6 +23,8 @@ interface QualRequest {
   status: "pending" | "approved" | "rejected"; adminNotes: string | null; createdAt: string;
 }
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const apiHeaders = () => {
   const token = localStorage.getItem("etude_auth_token");
   return { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) };
@@ -62,7 +64,7 @@ function DocUploadSlot({ file, onUpload, onClear, isUploading, uploadingLabel, c
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           {file && (
-            <button type="button" onClick={() => window.open(`/api/storage${file.objectPath}`, "_blank")} className="p-1.5 rounded-lg hover:bg-green-100 text-green-700">
+            <button type="button" onClick={() => window.open(`${API_URL}/api/storage${file.objectPath}`, "_blank")} className="p-1.5 rounded-lg hover:bg-green-100 text-green-700">
               <Eye className="w-4 h-4" />
             </button>
           )}
@@ -124,7 +126,7 @@ function AddRequestForm({ onDone }: { onDone: () => void }) {
     try {
       const token = localStorage.getItem("etude_auth_token");
       const headers: Record<string, string> = { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) };
-      const urlRes = await fetch("/api/storage/uploads/request-url", {
+      const urlRes = await fetch(`${API_URL}/api/storage/uploads/request-url`, {
         method: "POST", headers,
         body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
       });
@@ -132,7 +134,7 @@ function AddRequestForm({ onDone }: { onDone: () => void }) {
       const { uploadURL, objectPath, local } = await urlRes.json();
       if (local) {
         const base64 = await readFileAsBase64(file);
-        const up = await fetch("/api/storage/uploads/direct", { method: "POST", headers, body: JSON.stringify({ objectPath, content: base64, contentType: file.type }) });
+        const up = await fetch(`${API_URL}/api/storage/uploads/direct`, { method: "POST", headers, body: JSON.stringify({ objectPath, content: base64, contentType: file.type }) });
         if (!up.ok) throw new Error(t("prof.qualifications.uploadFailed"));
       } else {
         const up = await fetch(uploadURL, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
@@ -155,7 +157,7 @@ function AddRequestForm({ onDone }: { onDone: () => void }) {
     setError(null);
     setSaving(true);
     try {
-      const res = await fetch("/api/qualifications/requests", {
+      const res = await fetch(`${API_URL}/api/qualifications/requests`, {
         method: "POST",
         headers: apiHeaders(),
         body: JSON.stringify({ niveauKey, sectionKey, subjects: selectedSubjects, documentUrl: docFile.objectPath }),
@@ -273,7 +275,7 @@ export function ProfessorQualifications() {
   const { data: quals = [] } = useQuery<Qualification[]>({
     queryKey: ["/api/qualifications/mine"],
     queryFn: async () => {
-      const res = await fetch("/api/qualifications/mine", { headers: apiHeaders() });
+      const res = await fetch(`${API_URL}/api/qualifications/mine`, { headers: apiHeaders() });
       return res.json();
     },
   });
@@ -281,7 +283,7 @@ export function ProfessorQualifications() {
   const { data: requests = [], isLoading } = useQuery<QualRequest[]>({
     queryKey: ["/api/qualifications/requests/mine"],
     queryFn: async () => {
-      const res = await fetch("/api/qualifications/requests/mine", { headers: apiHeaders() });
+      const res = await fetch(`${API_URL}/api/qualifications/requests/mine`, { headers: apiHeaders() });
       return res.json();
     },
   });
@@ -350,7 +352,7 @@ export function ProfessorQualifications() {
                       </div>
                       <div className="mt-3 flex items-center gap-2">
                         <button
-                          onClick={() => window.open(`/api/storage${r.documentUrl}`, "_blank")}
+                          onClick={() => window.open(`${API_URL}/api/storage${r.documentUrl}`, "_blank")}
                           className="flex items-center gap-1.5 text-xs text-primary hover:underline"
                         >
                           <Eye className="w-3.5 h-3.5" /> {t("prof.qualifications.viewDocument")}

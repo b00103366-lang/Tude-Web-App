@@ -274,11 +274,11 @@ async function parseSuccessBody(
 export const TOKEN_KEY = "etude_auth_token";
 
 // Base URL for all API requests.
-// In production set VITE_API_BASE_URL=https://your-api.up.railway.app
+// Set VITE_API_URL=https://your-api.up.railway.app in production.
 // In development leave it unset — relative paths are proxied by Vite.
 const API_BASE =
   (typeof import.meta !== "undefined" &&
-    (import.meta as any).env?.VITE_API_BASE_URL) ??
+    ((import.meta as any).env?.VITE_API_URL || (import.meta as any).env?.VITE_API_BASE_URL)) ??
   "";
 
 export function saveToken(token: string) {

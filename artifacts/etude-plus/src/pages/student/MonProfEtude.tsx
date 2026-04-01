@@ -64,12 +64,11 @@ type Tab = "pratique" | "questions" | "shorts";
 
 // ── API helper ────────────────────────────────────────────────────────────────
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL ?? "";
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 async function apiFetch(url: string, opts: RequestInit = {}) {
   const token = getToken();
-  const fullUrl = API_BASE && url.startsWith("/") ? `${API_BASE}${url}` : url;
-  const res = await fetch(fullUrl, {
+  const res = await fetch(url, {
     ...opts,
     credentials: "include",
     headers: {
@@ -127,7 +126,7 @@ function AdModal({
   async function handleClose() {
     if (!done || completing) return;
     setCompleting(true);
-    const data = await apiFetch("/api/mon-prof/watch-ad", { method: "POST" });
+    const data = await apiFetch(`${API_URL}/api/mon-prof/watch-ad`, { method: "POST" });
     onComplete({ unlockedThisAd: data.unlockedThisAd ?? false, adsUntilNextBonus: data.adsUntilNextBonus ?? 2 });
     onClose();
   }
@@ -213,7 +212,7 @@ function PracticeTab({
     if (consuming) return;
     setConsuming(true);
 
-    const data = await apiFetch("/api/mon-prof/use-question", { method: "POST" });
+    const data = await apiFetch(`${API_URL}/api/mon-prof/use-question`, { method: "POST" });
 
     if (data.error === "limit_reached") {
       onShowAd();
@@ -445,7 +444,7 @@ function QuestionsTab({ userId }: { userId?: number }) {
   useEffect(() => {
     setLoading(true);
     const params = difficulty !== "all" ? `?difficulty=${difficulty}` : "";
-    fetch(`/api/mon-prof/question-bank${params}`, {
+    fetch(`${API_URL}/api/mon-prof/question-bank${params}`, {
       headers: { Authorization: `Bearer ${getToken() ?? ""}` },
     })
       .then(r => r.json())
@@ -578,7 +577,7 @@ function ShortsTab() {
     const params = new URLSearchParams();
     if (gradeFilter) params.set("gradeLevel", gradeFilter);
     if (subjectFilter) params.set("subject", subjectFilter);
-    apiFetch(`/api/mon-prof/videos?${params}`).then(data => {
+    apiFetch(`${API_URL}/api/mon-prof/videos?${params}`).then(data => {
       if (Array.isArray(data)) { setVideos(data); setCurrentIndex(0); }
       setLoading(false);
     });
@@ -589,7 +588,7 @@ function ShortsTab() {
   useEffect(() => {
     if (!current || viewedRef.current.has(current.id)) return;
     viewedRef.current.add(current.id);
-    apiFetch(`/api/mon-prof/videos/${current.id}/view`, { method: "POST" });
+    apiFetch(`${API_URL}/api/mon-prof/videos/${current.id}/view`, { method: "POST" });
   }, [current]);
 
   useEffect(() => {
@@ -678,7 +677,7 @@ function ShortsTab() {
           <video
             ref={videoRef}
             key={current.id}
-            src={`/api/storage${current.videoPath}`}
+            src={`${API_URL}/api/storage${current.videoPath}`}
             muted={muted}
             loop
             playsInline
@@ -742,7 +741,7 @@ export function MonProfEtude() {
 
   // Single fetch on mount — gets both questions AND usage in one round-trip
   useEffect(() => {
-    apiFetch("/api/mon-prof/questions")
+    apiFetch(`${API_URL}/api/mon-prof/questions`)
       .then((data: any) => {
         if (!data) { setLoadError("Réponse vide du serveur"); return; }
         if (data.error) { setLoadError(data.message ?? data.error); return; }
@@ -762,7 +761,7 @@ export function MonProfEtude() {
   }, []);
 
   async function refreshUsage() {
-    const data = await apiFetch("/api/mon-prof/usage").catch(() => null);
+    const data = await apiFetch(`${API_URL}/api/mon-prof/usage`).catch(() => null);
     if (data && !data.error) {
       setPageData(prev => prev ? { ...prev, ...data } : prev);
     }

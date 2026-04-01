@@ -10,6 +10,8 @@ import { KeyRound, Loader2, GraduationCap, Save } from "lucide-react";
 import { getLevelLabel } from "@/lib/educationConfig";
 import { useTranslation } from "react-i18next";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function ChangePasswordCard() {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -25,7 +27,7 @@ function ChangePasswordCard() {
     setSaving(true);
     try {
       const token = getToken();
-      const res = await fetch("/api/auth/change-password", {
+      const res = await fetch(`${API_URL}/api/auth/change-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ currentPassword: current, newPassword: next }),
@@ -77,7 +79,7 @@ function EducationLevelCard() {
     setSaving(true);
     try {
       const token = getToken();
-      const res = await fetch(`/api/users/${(user as any).id}`, {
+      const res = await fetch(`${API_URL}/api/users/${(user as any).id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ gradeLevel: niveauKey, educationSection: sectionKey }),

@@ -5,6 +5,17 @@ import { requireAuth, requireAdmin } from "../lib/auth";
 
 const router = Router();
 
+// Public: landing page stats (no auth required)
+router.get("/public", async (_req, res) => {
+  const [users, professors] = await Promise.all([
+    db.select().from(usersTable),
+    db.select().from(professorsTable),
+  ]);
+  const totalStudents = users.filter(u => u.role === "student").length;
+  const totalProfessors = professors.filter(p => p.status === "approved").length;
+  res.json({ totalStudents, totalProfessors });
+});
+
 // Admin-only: platform-wide overview
 router.get("/overview", requireAuth, requireAdmin, async (req, res) => {
   const users = await db.select().from(usersTable);

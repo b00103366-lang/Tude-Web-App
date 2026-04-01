@@ -6,6 +6,8 @@ import { ShieldCheck, CreditCard, AlertCircle, Loader2, Tag, CheckCircle2, Chevr
 import { formatTND } from "@/lib/utils";
 import { useGetClass, useCheckout, useConfirmPayment, getToken } from "@workspace/api-client-react";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export function Checkout() {
   const [, params] = useRoute("/checkout/:id");
   const classId = Number(params?.id);
@@ -40,7 +42,7 @@ export function Checkout() {
     setPromoError("");
     try {
       const token = getToken();
-      const res = await fetch("/api/discount-codes/validate", {
+      const res = await fetch(`${API_URL}/api/discount-codes/validate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

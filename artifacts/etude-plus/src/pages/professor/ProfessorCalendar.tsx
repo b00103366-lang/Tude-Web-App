@@ -10,6 +10,8 @@ import { Link } from "wouter";
 import { formatTND } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export function ProfessorCalendar() {
   const { t } = useTranslation();
   const today = new Date();
@@ -19,7 +21,7 @@ export function ProfessorCalendar() {
     queryKey: ["professor-my-sessions"],
     queryFn: async () => {
       const token = getToken();
-      const res = await fetch("/api/classes/my-sessions", {
+      const res = await fetch(`${API_URL}/api/classes/my-sessions`, {
         headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });
       if (!res.ok) return [];

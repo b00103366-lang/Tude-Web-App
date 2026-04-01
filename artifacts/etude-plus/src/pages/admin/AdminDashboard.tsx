@@ -15,6 +15,8 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function useRejectProfessor() {
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -22,7 +24,7 @@ function useRejectProfessor() {
   return useMutation({
     mutationFn: async ({ id, notes }: { id: number; notes: string }) => {
       const token = getToken();
-      const res = await fetch(`/api/professors/${id}/reject`, {
+      const res = await fetch(`${API_URL}/api/professors/${id}/reject`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ notes }),

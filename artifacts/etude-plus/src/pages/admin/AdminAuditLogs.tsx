@@ -39,9 +39,11 @@ const EVENT_META: Record<string, { labelKey: string; icon: any; color: string; b
   kyc_document_submitted:   { labelKey: "admin.auditLogs.eventKycSubmitted",      icon: FileText,     color: "text-blue-700",   bg: "bg-blue-100",   category: "kyc" },
 };
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 async function fetchAuditLogs(page: number, limit: number) {
   const token = getToken();
-  const res = await fetch(`/api/admin/audit-logs?page=${page}&limit=${limit}`, {
+  const res = await fetch(`${API_URL}/api/admin/audit-logs?page=${page}&limit=${limit}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!res.ok) throw new Error("Load error");

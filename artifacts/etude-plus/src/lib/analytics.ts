@@ -1,3 +1,5 @@
+const API_URL = import.meta.env.VITE_API_URL;
+
 const ESSENTIAL_EVENTS = new Set([
   "page_view", "login", "logout", "signup_completed", "class_enrolled",
 ]);
@@ -19,7 +21,7 @@ export function trackEvent(eventType: string, eventData?: Record<string, any>) {
       sessionStorage.setItem("etude_session_id", sessionId);
     }
 
-    fetch("/api/analytics/event", {
+    fetch(`${API_URL}/api/analytics/event`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },

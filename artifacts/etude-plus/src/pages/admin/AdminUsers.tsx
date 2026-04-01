@@ -36,12 +36,11 @@ const KYC_CONFIG = {
 
 // ── API Helper ────────────────────────────────────────────────────────────────
 
-const ADMIN_API_BASE = (import.meta as any).env?.VITE_API_BASE_URL ?? "";
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 async function adminFetch(url: string, opts: RequestInit = {}) {
   const token = getToken();
-  const fullUrl = ADMIN_API_BASE && url.startsWith("/") ? `${ADMIN_API_BASE}${url}` : url;
-  const res = await fetch(fullUrl, {
+  const res = await fetch(url, {
     ...opts,
     credentials: "include",
     headers: {
@@ -61,7 +60,7 @@ function useUserAction(action: "suspend" | "unsuspend") {
   const qc = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: (userId: number) => adminFetch(`/api/admin/users/${userId}/${action}`, { method: "POST" }),
+    mutationFn: (userId: number) => adminFetch(`${API_URL}/api/admin/users/${userId}/${action}`, { method: "POST" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/users"] });
       toast({ title: action === "suspend" ? "Compte suspendu" : "Compte réactivé" });
@@ -75,7 +74,7 @@ function useChangeRole() {
   const { toast } = useToast();
   return useMutation({
     mutationFn: ({ userId, role }: { userId: number; role: string }) =>
-      adminFetch(`/api/admin/users/${userId}/change-role`, { method: "POST", body: JSON.stringify({ role }) }),
+      adminFetch(`${API_URL}/api/admin/users/${userId}/change-role`, { method: "POST", body: JSON.stringify({ role }) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/users"] });
       toast({ title: "Rôle modifié", description: "Prend effet immédiatement (prochaine requête API)." });
@@ -88,7 +87,7 @@ function useDeleteUser() {
   const qc = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: (userId: number) => adminFetch(`/api/admin/users/${userId}`, { method: "DELETE" }),
+    mutationFn: (userId: number) => adminFetch(`${API_URL}/api/admin/users/${userId}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/users"] });
       toast({ title: "Compte supprimé" });
@@ -102,7 +101,7 @@ function useRejectProfessor() {
   const { toast } = useToast();
   return useMutation({
     mutationFn: ({ id, notes }: { id: number; notes: string }) =>
-      adminFetch(`/api/professors/${id}/reject`, { method: "POST", body: JSON.stringify({ notes }) }),
+      adminFetch(`${API_URL}/api/professors/${id}/reject`, { method: "POST", body: JSON.stringify({ notes }) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/professors"] });
       toast({ title: "Professeur refusé" });
@@ -120,7 +119,7 @@ function DocLink({ label, objectPath }: { label: string; objectPath?: string | n
       <div><p className="text-sm font-medium text-muted-foreground">{label}</p><p className="text-xs text-muted-foreground">Non soumis</p></div>
     </div>
   );
-  const url = `/api/storage${objectPath}`;
+  const url = `${API_URL}/api/storage${objectPath}`;
   return (
     <div className="flex items-center gap-3 p-3 rounded-xl bg-green-50 border border-green-200">
       <FileText className="w-4 h-4 text-green-600 flex-shrink-0" />
@@ -274,7 +273,7 @@ function UserDetailModal({ userId, onClose }: { userId: number; onClose: () => v
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin-user-details", userId],
-    queryFn: () => adminFetch(`/api/admin/users/${userId}/details`),
+    queryFn: () => adminFetch(`${API_URL}/api/admin/users/${userId}/details`),
     retry: false,
   });
 
@@ -282,7 +281,7 @@ function UserDetailModal({ userId, onClose }: { userId: number; onClose: () => v
     if (newPassword.length < 8) { toast({ title: "Erreur", description: "Minimum 8 caractères.", variant: "destructive" }); return; }
     setResetting(true);
     try {
-      await adminFetch(`/api/admin/users/${userId}/reset-password`, { method: "POST", body: JSON.stringify({ newPassword }) });
+      await adminFetch(`${API_URL}/api/admin/users/${userId}/reset-password`, { method: "POST", body: JSON.stringify({ newPassword }) });
       toast({ title: "Mot de passe réinitialisé", description: `Nouveau mot de passe : ${newPassword}` });
       setNewPassword("");
     } catch (e: any) {
@@ -620,7 +619,7 @@ function CreateUserModal({ open, onClose }: { open: boolean; onClose: () => void
     if (!fullName.trim() || !email.trim() || !password) { toast({ title: "Erreur", description: "Tous les champs requis.", variant: "destructive" }); return; }
     setCreating(true);
     try {
-      const data = await adminFetch("/api/admin/create-user", { method: "POST", body: JSON.stringify({ fullName, email, password, role }) });
+      const data = await adminFetch(`${API_URL}/api/admin/create-user`, { method: "POST", body: JSON.stringify({ fullName, email, password, role }) });
       toast({ title: "Compte créé", description: data.email });
       qc.invalidateQueries({ queryKey: ["/api/users"] });
       setFullName(""); setEmail(""); setPassword(""); setRole("student");
@@ -672,7 +671,7 @@ export function AdminUsers() {
 
   const handleImpersonate = async (targetUser: any) => {
     try {
-      const data = await adminFetch(`/api/admin/users/${targetUser.id}/impersonate`, { method: "POST" });
+      const data = await adminFetch(`${API_URL}/api/admin/users/${targetUser.id}/impersonate`, { method: "POST" });
       await startImpersonation(data.token, data.user);
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });

@@ -1,4 +1,6 @@
 import { useState } from "react";
+
+const API_URL = import.meta.env.VITE_API_URL;
 import { Link, useLocation } from "wouter";
 import { useAuth, getDashboardPath } from "@/hooks/use-auth";
 import { Button, Card, Input, Label, FadeIn } from "@/components/ui/Premium";
@@ -124,7 +126,7 @@ export function Register() {
 
     setSendingCode(true);
     try {
-      const res = await fetch("/api/auth/send-code", {
+      const res = await fetch(`${API_URL}/api/auth/send-code`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.toLowerCase().trim() }),
@@ -148,7 +150,7 @@ export function Register() {
     setOtpLoading(true);
     try {
       // Verify code
-      const verifyRes = await fetch("/api/auth/verify-code", {
+      const verifyRes = await fetch(`${API_URL}/api/auth/verify-code`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: registeredEmail, code: otpCode }),
@@ -251,7 +253,7 @@ export function Register() {
           onClick={async () => {
             setSendingCode(true);
             try {
-              const res = await fetch("/api/auth/send-code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: registeredEmail }) });
+              const res = await fetch(`${API_URL}/api/auth/send-code`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: registeredEmail }) });
               const resendData = await res.json();
               if (resendData.devCode) setDevCode(resendData.devCode);
               toast({ title: t("register.codeSent"), description: t("register.checkInbox") });

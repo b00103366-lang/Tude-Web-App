@@ -1,4 +1,6 @@
 import { useState } from "react";
+
+const API_URL = import.meta.env.VITE_API_URL;
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Button, Badge } from "@/components/ui/Premium";
 import {
@@ -28,7 +30,7 @@ function DocViewer({ label, objectPath, feedback, onFeedbackChange }: {
   feedback: { status: "approved" | "rejected" | "pending"; reason: string };
   onFeedbackChange: (f: { status: "approved" | "rejected" | "pending"; reason: string }) => void;
 }) {
-  const url = objectPath ? `/api/storage${objectPath}` : null;
+  const url = objectPath ? `${API_URL}/api/storage${objectPath}` : null;
   return (
     <div className={`rounded-xl border-2 p-4 transition-all ${
       !objectPath ? "border-border bg-muted/30" :
@@ -192,7 +194,7 @@ function QualificationRequestsPanel({
   }
 
   const QualCard = ({ req }: { req: any }) => {
-    const docUrl = req.documentUrl ? `/api/storage${req.documentUrl}` : null;
+    const docUrl = req.documentUrl ? `${API_URL}/api/storage${req.documentUrl}` : null;
     const isReviewed = req.status !== "pending";
     const niveauLabel = getNiveauLabel(req.niveauKey);
     const sectionLabel = req.sectionKey ? getSectionLabel(req.niveauKey, req.sectionKey) : null;
@@ -381,7 +383,7 @@ function SubjectRequestsPanel({
   }
 
   const RequestCard = ({ req }: { req: any }) => {
-    const docUrl = req.documentUrl ? `/api/storage${req.documentUrl}` : null;
+    const docUrl = req.documentUrl ? `${API_URL}/api/storage${req.documentUrl}` : null;
     const isReviewed = req.status !== "pending";
 
     return (
@@ -651,7 +653,7 @@ export function AdminProfessors() {
         name, status: fb.status === "pending" ? "approved" : fb.status, reason: fb.reason,
       }));
 
-      return apiFetch(`/api/professors/${id}/review`, {
+      return apiFetch(`${API_URL}/api/professors/${id}/review`, {
         method: "POST",
         body: JSON.stringify({ docFeedback, subjectFeedback, gradeFeedback, decision }),
       });
@@ -683,17 +685,17 @@ export function AdminProfessors() {
   // Subject requests
   const { data: subjectRequests = [], isLoading: srLoading } = useQuery<any[]>({
     queryKey: ["/api/professors/subject-requests/all"],
-    queryFn: () => apiFetch("/api/professors/subject-requests/all"),
+    queryFn: () => apiFetch(`${API_URL}/api/professors/subject-requests/all`),
   });
 
   // Qualification requests
   const { data: qualRequests = [], isLoading: qualLoading } = useQuery<any[]>({
     queryKey: ["/api/qualifications/requests/all"],
-    queryFn: () => apiFetch("/api/qualifications/requests/all"),
+    queryFn: () => apiFetch(`${API_URL}/api/qualifications/requests/all`),
   });
 
   const approveQualMutation = useMutation({
-    mutationFn: (reqId: number) => apiFetch(`/api/qualifications/requests/${reqId}/approve`, { method: "POST" }),
+    mutationFn: (reqId: number) => apiFetch(`${API_URL}/api/qualifications/requests/${reqId}/approve`, { method: "POST" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/qualifications/requests/all"] });
       toast({ title: "Qualification approuvée — matières ajoutées au profil" });
@@ -703,7 +705,7 @@ export function AdminProfessors() {
 
   const rejectQualMutation = useMutation({
     mutationFn: ({ reqId, notes }: { reqId: number; notes: string }) =>
-      apiFetch(`/api/qualifications/requests/${reqId}/reject`, { method: "POST", body: JSON.stringify({ notes }) }),
+      apiFetch(`${API_URL}/api/qualifications/requests/${reqId}/reject`, { method: "POST", body: JSON.stringify({ notes }) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/qualifications/requests/all"] });
       toast({ title: "Demande de qualification refusée" });
@@ -712,7 +714,7 @@ export function AdminProfessors() {
   });
 
   const approveSubjectReqMutation = useMutation({
-    mutationFn: (reqId: number) => apiFetch(`/api/professors/subject-requests/${reqId}/approve`, { method: "POST" }),
+    mutationFn: (reqId: number) => apiFetch(`${API_URL}/api/professors/subject-requests/${reqId}/approve`, { method: "POST" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/professors/subject-requests/all"] });
       toast({ title: "Demande approuvée — matières ajoutées au profil" });
@@ -722,7 +724,7 @@ export function AdminProfessors() {
 
   const rejectSubjectReqMutation = useMutation({
     mutationFn: ({ reqId, notes }: { reqId: number; notes: string }) =>
-      apiFetch(`/api/professors/subject-requests/${reqId}/reject`, { method: "POST", body: JSON.stringify({ notes }) }),
+      apiFetch(`${API_URL}/api/professors/subject-requests/${reqId}/reject`, { method: "POST", body: JSON.stringify({ notes }) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/professors/subject-requests/all"] });
       toast({ title: "Demande refusée" });
@@ -732,7 +734,7 @@ export function AdminProfessors() {
 
   const kycReviewMutation = useMutation({
     mutationFn: ({ id, decision, payload }: { id: number; decision: string; payload: any }) =>
-      apiFetch(`/api/professors/${id}/review-kyc`, { method: "POST", body: JSON.stringify({ decision, ...payload }) }),
+      apiFetch(`${API_URL}/api/professors/${id}/review-kyc`, { method: "POST", body: JSON.stringify({ decision, ...payload }) }),
     onSuccess: (data, vars) => {
       qc.invalidateQueries({ queryKey: ["/api/professors"] });
       if (vars.decision === "approved") {
@@ -956,11 +958,11 @@ export function AdminProfessors() {
                               <p className="text-xs font-semibold mb-2">{label}</p>
                               {path ? (
                                 <div className="flex gap-1">
-                                  <a href={`/api/storage${path}`} target="_blank" rel="noopener noreferrer"
+                                  <a href={`${API_URL}/api/storage${path}`} target="_blank" rel="noopener noreferrer"
                                     className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-muted text-sm font-medium hover:bg-muted/80">
                                     <Eye className="w-4 h-4" /> Voir
                                   </a>
-                                  <a href={`/api/storage${path}`} download
+                                  <a href={`${API_URL}/api/storage${path}`} download
                                     className="p-2 rounded-lg bg-muted hover:bg-muted/80">
                                     <Download className="w-4 h-4" />
                                   </a>
@@ -990,7 +992,7 @@ export function AdminProfessors() {
                         {!selectedProf.cinFrontUrl && selectedProf.idDocumentUrl && (
                           <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm">
                             <p className="text-xs font-semibold text-amber-700 mb-2">Document d'identité (ancien format)</p>
-                            <a href={`/api/storage${selectedProf.idDocumentUrl}`} target="_blank" rel="noopener noreferrer"
+                            <a href={`${API_URL}/api/storage${selectedProf.idDocumentUrl}`} target="_blank" rel="noopener noreferrer"
                               className="flex items-center gap-2 text-amber-700 hover:underline">
                               <Eye className="w-4 h-4" /> Voir le document
                             </a>
@@ -1019,8 +1021,8 @@ export function AdminProfessors() {
                               </div>
                               {path && (
                                 <div className="flex gap-1">
-                                  <a href={`/api/storage${path}`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><Eye className="w-4 h-4" /></a>
-                                  <a href={`/api/storage${path}`} download className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><Download className="w-4 h-4" /></a>
+                                  <a href={`${API_URL}/api/storage${path}`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><Eye className="w-4 h-4" /></a>
+                                  <a href={`${API_URL}/api/storage${path}`} download className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><Download className="w-4 h-4" /></a>
                                 </div>
                               )}
                             </div>
@@ -1077,12 +1079,12 @@ export function AdminProfessors() {
                         {selectedProf.pitchVideoUrl ? (
                           <>
                             <video
-                              src={`/api/storage${selectedProf.pitchVideoUrl}`}
+                              src={`${API_URL}/api/storage${selectedProf.pitchVideoUrl}`}
                               controls
                               className="w-full rounded-xl border border-border"
                               style={{ maxHeight: "360px" }}
                             />
-                            <a href={`/api/storage${selectedProf.pitchVideoUrl}`} target="_blank" rel="noopener noreferrer"
+                            <a href={`${API_URL}/api/storage${selectedProf.pitchVideoUrl}`} target="_blank" rel="noopener noreferrer"
                               className="flex items-center gap-2 text-sm text-primary hover:underline">
                               <Eye className="w-4 h-4" /> Ouvrir dans un nouvel onglet
                             </a>
@@ -1276,8 +1278,8 @@ export function AdminProfessors() {
                                   </div>
                                 </div>
                                 <div className="flex gap-1 flex-shrink-0">
-                                  <a href={`/api/storage${d.path}`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><Eye className="w-4 h-4" /></a>
-                                  <a href={`/api/storage${d.path}`} download className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><Download className="w-4 h-4" /></a>
+                                  <a href={`${API_URL}/api/storage${d.path}`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><Eye className="w-4 h-4" /></a>
+                                  <a href={`${API_URL}/api/storage${d.path}`} download className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><Download className="w-4 h-4" /></a>
                                 </div>
                               </div>
                             ))}
