@@ -3,7 +3,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { MathBackground } from "@/components/ui/MathBackground";
 import { FadeIn, Button } from "@/components/ui/Premium";
 import {
-  Target, Heart, Shield, Users, BookOpen, Zap,
+  Target, Heart, Shield, BookOpen, Zap,
   GraduationCap, Award, Globe, ArrowRight
 } from "lucide-react";
 
@@ -11,7 +11,7 @@ const VALUES = [
   {
     icon: Target,
     title: "Excellence",
-    desc: "Nous exigeons un niveau élevé de chaque professeur. Chaque enseignant est soigneusement vérifié avant d'accéder à la plateforme.",
+    desc: "Nous aspirons à l'excellence dans chaque cours. Chaque fonctionnalité est conçue pour donner aux élèves les meilleurs outils pour réussir leurs examens et progresser à leur rythme.",
     color: "#f59e0b",
     bg: "bg-amber-50 border-amber-200/60",
   },
@@ -39,16 +39,16 @@ const VALUES = [
 ];
 
 const TEAM_HIGHLIGHTS = [
-  { icon: GraduationCap, label: "Fondée par des étudiants tunisiens" },
-  { icon: Award,         label: "Professeurs certifiés et évalués" },
-  { icon: Users,         label: "Communauté de 2 500+ élèves" },
-  { icon: Zap,           label: "Technologie 100% faite en Tunisie" },
+  { icon: GraduationCap, label: "Fondée par un Tunisien passionné d'éducation et de technologie" },
+  { icon: Award,         label: "Plateforme ouverte à tous les professeurs tunisiens" },
+  { icon: BookOpen,      label: "Classes virtuelles complètes pour chaque matière du programme" },
+  { icon: Zap,           label: "Technologie conçue pour la Tunisie" },
 ];
 
 const TIMELINE = [
-  { year: "2024", title: "Naissance de l'idée", desc: "Constatant le manque de plateformes locales de qualité, l'équipe fondatrice lance Étude+ avec l'ambition de démocratiser le soutien scolaire en Tunisie." },
-  { year: "2025", title: "Lancement officiel", desc: "La plateforme ouvre ses portes avec plus de 120 professeurs vérifiés couvrant toutes les matières du programme tunisien." },
-  { year: "Demain", title: "Ambition nationale", desc: "Atteindre chaque élève tunisien, de Tunis à Sfax, de Sousse à Djerba — et au-delà." },
+  { year: "Mars 2026", short: "26", title: "Naissance d'Étude+", desc: "Fondée le 2 mars 2026 par un Tunisien vivant à l'étranger, Étude+ naît de la conviction que chaque élève tunisien mérite un accès à une éducation de qualité, peu importe où il vit." },
+  { year: "Bientôt", short: "◎", title: "Lancement officiel", desc: "La plateforme ouvrira ses portes aux professeurs et élèves tunisiens de toutes les régions, avec une ambition simple : rendre l'excellence scolaire accessible à tous." },
+  { year: "Demain", short: "→", title: "Une ambition sans frontières", desc: "Devenir la référence de l'éducation en ligne en Tunisie et au-delà — pour que chaque élève, de Tunis à Djerba, atteigne son plein potentiel." },
 ];
 
 export function About() {
@@ -151,7 +151,7 @@ export function About() {
                       className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-white font-bold text-xs text-center relative z-10 shadow-md"
                       style={{ background: "linear-gradient(135deg, #f59e0b, #f97316)" }}
                     >
-                      {t.year === "Demain" ? "→" : t.year.slice(2)}
+                      {t.short}
                     </div>
                     <div className="pt-2">
                       <div className="flex items-center gap-3 mb-2">
@@ -179,8 +179,8 @@ export function About() {
               <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-3">L'équipe</p>
               <h2 className="text-4xl font-serif font-bold text-gray-900">Qui sommes-nous ?</h2>
               <p className="text-gray-500 mt-4 max-w-xl mx-auto">
-                Une équipe tunisienne passionnée d'éducation et de technologie, avec
-                pour seul objectif : que chaque élève atteigne son potentiel.
+                Un Tunisien vivant à l'étranger, animé par une seule ambition : que
+                chaque élève en Tunisie ait accès à une éducation de qualité, où qu'il soit.
               </p>
             </div>
           </FadeIn>
