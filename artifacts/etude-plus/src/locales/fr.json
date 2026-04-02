@@ -1,11 +1,11 @@
 {
   "nav": {
-    "exploreCourses": "Explorer les Cours",
+    "features": "Fonctionnalités",
+    "howItWorks": "Comment ça marche",
     "pricing": "Tarifs",
-    "about": "À Propos",
     "mySpace": "Mon Espace",
-    "login": "Connexion",
-    "register": "S'inscrire"
+    "login": "Se connecter",
+    "register": "Commencer"
   },
   "sidebar": {
     "controlPanel": "Panneau de contrôle",

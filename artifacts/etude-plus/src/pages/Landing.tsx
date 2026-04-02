@@ -6,7 +6,7 @@ import { MathBackground } from "@/components/ui/MathBackground";
 import { FloatingSymbols } from "@/components/ui/FloatingSymbols";
 import {
   ArrowRight, Star, BookOpen, Video, ShieldCheck, Trophy,
-  GraduationCap, Users, Zap, Globe, CheckCircle, ChevronRight
+  GraduationCap, Users, CheckCircle, ChevronRight
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
@@ -31,6 +31,45 @@ function useCountUp(target: number, duration = 1500) {
   return value;
 }
 
+const TABS = [
+  {
+    id: "live",
+    label: "Classes en Direct",
+    icon: Video,
+    color: "#f59e0b",
+    title: "Apprenez en temps réel",
+    subtitle: "Participez à des cours interactifs avec tous les outils essentiels réunis au même endroit.",
+    points: ["Visioconférence HD intégrée", "Tableau blanc interactif", "Chat et partage d'écran en direct"],
+  },
+  {
+    id: "resources",
+    label: "Ressources",
+    icon: BookOpen,
+    color: "#fb923c",
+    title: "Tout votre contenu, bien organisé",
+    subtitle: "Retrouvez facilement vos supports de cours et révisez plus efficacement.",
+    points: ["Cours classés par matière et chapitre", "Fichiers et supports téléchargeables", "Accès rapide aux contenus importants"],
+  },
+  {
+    id: "assessments",
+    label: "Évaluations",
+    icon: Trophy,
+    color: "#10b981",
+    title: "Entraînez-vous avec méthode",
+    subtitle: "Préparez-vous avec des quiz, devoirs et examens blancs dans un espace structuré.",
+    points: ["Quiz interactifs", "Devoirs et suivi", "Examens blancs par chapitre"],
+  },
+  {
+    id: "dashboard",
+    label: "Tableau de Bord",
+    icon: GraduationCap,
+    color: "#3b82f6",
+    title: "Suivez votre progression",
+    subtitle: "Gardez une vue claire sur vos cours, vos résultats et vos prochaines étapes.",
+    points: ["Vue d'ensemble personnalisée", "Progression par matière", "Rappels et prochaines sessions"],
+  },
+];
+
 const SUBJECTS = [
   "Mathématiques", "Physique", "Chimie", "SVT", "Arabe",
   "Français", "Anglais", "Histoire-Géo", "Philosophie", "Informatique",
@@ -39,6 +78,7 @@ const SUBJECTS = [
 export function Landing() {
   const { t } = useTranslation();
   const [liveStats, setLiveStats] = useState<{ totalStudents: number; totalProfessors: number } | null>(null);
+  const [activeTab, setActiveTab] = useState("live");
 
   useEffect(() => {
     fetch(`${API_URL}/api/stats/public`)
@@ -57,56 +97,6 @@ export function Landing() {
     { value: "4.9★", label: t("landing.stats.avgRating") },
   ];
 
-  const FEATURES = [
-    {
-      icon: Video,
-      title: t("landing.features.liveClasses.title"),
-      desc: t("landing.features.liveClasses.desc"),
-      color: "#f59e0b",
-      bg: "bg-amber-50 border-amber-200/60",
-      iconBg: "bg-amber-500/10",
-    },
-    {
-      icon: BookOpen,
-      title: t("landing.features.resources.title"),
-      desc: t("landing.features.resources.desc"),
-      color: "#fb923c",
-      bg: "bg-orange-50 border-orange-200/60",
-      iconBg: "bg-orange-500/10",
-    },
-    {
-      icon: ShieldCheck,
-      title: t("landing.features.verifiedProfessors.title"),
-      desc: t("landing.features.verifiedProfessors.desc"),
-      color: "#10b981",
-      bg: "bg-emerald-50 border-emerald-200/60",
-      iconBg: "bg-emerald-500/10",
-    },
-    {
-      icon: GraduationCap,
-      title: t("landing.features.personalTracking.title"),
-      desc: t("landing.features.personalTracking.desc"),
-      color: "#3b82f6",
-      bg: "bg-blue-50 border-blue-200/60",
-      iconBg: "bg-blue-500/10",
-    },
-    {
-      icon: Globe,
-      title: t("landing.features.accessAnywhere.title"),
-      desc: t("landing.features.accessAnywhere.desc"),
-      color: "#8b5cf6",
-      bg: "bg-violet-50 border-violet-200/60",
-      iconBg: "bg-violet-500/10",
-    },
-    {
-      icon: Zap,
-      title: t("landing.features.securePayment.title"),
-      desc: t("landing.features.securePayment.desc"),
-      color: "#f59e0b",
-      bg: "bg-amber-50 border-amber-200/60",
-      iconBg: "bg-amber-500/10",
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-[#FFFDF7] relative overflow-x-hidden">
@@ -271,39 +261,72 @@ export function Landing() {
           </div>
         </section>
 
-        {/* ── FEATURES GRID ─────────────────────────────────── */}
-        <section className="bg-white/70 backdrop-blur-sm py-24 border-y border-gray-100">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* ── FEATURES TABS ─────────────────────────────────── */}
+        <section id="features" className="bg-white/70 backdrop-blur-sm py-24 border-y border-gray-100">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <FadeIn>
-              <div className="text-center max-w-2xl mx-auto mb-16">
-                <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-3">{t("landing.features.sectionLabel")}</p>
-                <h2 className="text-4xl font-serif font-bold text-gray-900 mb-4">
-                  {t("landing.features.sectionTitle")}
-                </h2>
-                <p className="text-lg text-gray-500">
-                  {t("landing.features.sectionSubtitle")}
-                </p>
+              <div className="text-center max-w-2xl mx-auto mb-12">
+                <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-3">Pourquoi Étude+ ?</p>
+                <h2 className="text-4xl font-serif font-bold text-gray-900">Une expérience d'apprentissage complète</h2>
               </div>
             </FadeIn>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {FEATURES.map((f, i) => (
-                <FadeIn key={i} delay={0.08 * i}>
-                  <div className={`rounded-2xl p-7 border ${f.bg} hover:shadow-lg hover:-translate-y-1 transition-all duration-300`}>
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-5 ${f.iconBg}`}>
-                      <f.icon className="w-6 h-6" style={{ color: f.color }} />
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">{f.title}</h3>
-                    <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
-                  </div>
-                </FadeIn>
+            {/* Tab buttons */}
+            <div className="flex flex-wrap justify-center gap-2 mb-10">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
+                    activeTab === tab.id
+                      ? "bg-amber-500 text-white shadow-md shadow-amber-400/30"
+                      : "bg-white border border-gray-200 text-gray-600 hover:border-amber-300 hover:text-amber-700"
+                  }`}
+                >
+                  {tab.label}
+                </button>
               ))}
             </div>
+
+            {/* Tab content */}
+            {TABS.filter((tab) => tab.id === activeTab).map((tab) => (
+              <motion.div
+                key={tab.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+                className="grid md:grid-cols-2 gap-12 items-center bg-white rounded-3xl border border-gray-100 shadow-sm p-10 sm:p-14"
+              >
+                <div className="flex items-center justify-center order-2 md:order-1">
+                  <div
+                    className="w-48 h-48 rounded-3xl flex items-center justify-center shadow-inner"
+                    style={{
+                      background: `linear-gradient(135deg, ${tab.color}18, ${tab.color}35)`,
+                      border: `1.5px solid ${tab.color}30`,
+                    }}
+                  >
+                    <tab.icon className="w-24 h-24" style={{ color: tab.color }} strokeWidth={1.5} />
+                  </div>
+                </div>
+                <div className="order-1 md:order-2">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-3">{tab.title}</h3>
+                  <p className="text-gray-500 mb-7 leading-relaxed">{tab.subtitle}</p>
+                  <ul className="space-y-3">
+                    {tab.points.map((pt, i) => (
+                      <li key={i} className="flex items-center gap-3 text-gray-700 font-medium">
+                        <CheckCircle className="w-5 h-5 shrink-0" style={{ color: tab.color }} />
+                        {pt}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </section>
 
         {/* ── HOW IT WORKS ──────────────────────────────────── */}
-        <section className="max-w-5xl mx-auto px-4 sm:px-6 py-24">
+        <section id="how-it-works" className="max-w-5xl mx-auto px-4 sm:px-6 py-24">
           <FadeIn>
             <div className="text-center mb-16">
               <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-3">{t("landing.howItWorks.sectionLabel")}</p>

@@ -41,9 +41,9 @@ export function Navbar() {
 
         {!user && (
           <nav className="hidden md:flex items-center gap-8 font-medium text-sm">
-            <Link href="/courses" className="text-foreground/80 hover:text-primary transition-colors">{t("nav.exploreCourses")}</Link>
+            <a href="/#features" className="text-foreground/80 hover:text-primary transition-colors">{t("nav.features")}</a>
+            <a href="/#how-it-works" className="text-foreground/80 hover:text-primary transition-colors">{t("nav.howItWorks")}</a>
             <Link href="/pricing" className="text-foreground/80 hover:text-primary transition-colors">{t("nav.pricing")}</Link>
-            <Link href="/about" className="text-foreground/80 hover:text-primary transition-colors">{t("nav.about")}</Link>
           </nav>
         )}
 
