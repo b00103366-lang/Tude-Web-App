@@ -31,16 +31,20 @@ app.use(
       if (!IS_PROD) {
         return callback(null, true);
       }
-      // In production: no-origin requests (server-to-server) are blocked
+      // In production: no-origin requests (server-to-server) are blocked.
+      // Return false (not an Error) so the browser gets a proper CORS rejection,
+      // not a 500 from the global error handler.
       if (!origin) {
-        return callback(new Error("No origin header"), false);
+        return callback(null, false);
       }
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      return callback(new Error(`Origin ${origin} not allowed by CORS`), false);
+      return callback(null, false);
     },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 

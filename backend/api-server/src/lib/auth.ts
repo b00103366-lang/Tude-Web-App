@@ -52,10 +52,13 @@ export function generateToken(userId: number): string {
 }
 
 const SESSION_COOKIE = "etude_session";
+const _IS_PROD = process.env["NODE_ENV"] === "production";
+// Cross-origin deployments (Vercel frontend → Railway backend) require SameSite=None; Secure.
+// SameSite=Lax only works when frontend and backend share the same registrable domain.
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  sameSite: "lax" as const,
-  secure: process.env["NODE_ENV"] === "production",
+  sameSite: (_IS_PROD ? "none" : "lax") as "none" | "lax",
+  secure: _IS_PROD,
   path: "/",
 };
 // Refresh the cookie if it was issued more than 23 days ago (for 30-day cookies)
