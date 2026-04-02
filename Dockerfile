@@ -15,14 +15,15 @@ COPY pnpm-workspace.yaml pnpm-lock.yaml package.json .npmrc tsconfig.base.json t
 RUN echo "=== Root ===" && ls -1 && echo "=== pnpm-lock present ===" && test -f pnpm-lock.yaml && echo YES || echo NO
 
 # Copy workspace packages needed by the API server
-COPY lib/ ./lib/
-COPY artifacts/api-server/ ./artifacts/api-server/
+COPY backend/db/ ./backend/db/
+COPY backend/api-zod/ ./backend/api-zod/
+COPY backend/api-server/ ./backend/api-server/
 
 # Install all workspace dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # Build only the API server
 RUN pnpm --filter @workspace/api-server run build
 
 EXPOSE 3001
-CMD ["node", "artifacts/api-server/dist/index.cjs"]
+CMD ["node", "backend/api-server/dist/index.cjs"]

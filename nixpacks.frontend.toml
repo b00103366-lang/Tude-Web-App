@@ -11,4 +11,4 @@ cmds = [
 cmds = ["pnpm --filter @workspace/etude-plus run build"]
 
 [start]
-cmd = "npx serve artifacts/etude-plus/dist -s -l $PORT"
+cmd = "npx serve frontend/etude-plus/dist -s -l $PORT"
