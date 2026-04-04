@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 import { Link, useLocation } from "wouter";
@@ -8,7 +8,7 @@ import {
   CreditCard, Bell, Settings, LogOut, Users, CheckSquare,
   DollarSign, ScrollText, Crown,
   TrendingUp, UserCog, ArrowLeftRight, BadgeCheck, AlertCircle, Clock, XCircle,
-  Sparkles, Play, BarChart2,
+  Sparkles, Play, BarChart2, Menu, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -18,6 +18,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logoutFn, impersonating, exitImpersonation } = useAuth();
   const [location] = useLocation();
   const { t } = useTranslation();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   if (!user) return null;
 
@@ -181,9 +182,93 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         )}
-        <header className="h-16 border-b border-border bg-card/50 backdrop-blur sticky top-0 z-30 flex items-center px-6 lg:hidden">
-          <span className="text-xl font-serif font-bold">Étude+</span>
+        {/* Mobile header */}
+        <header className="h-16 border-b border-border bg-card/50 backdrop-blur sticky top-0 z-30 flex items-center justify-between px-6 lg:hidden">
+          <span className="text-xl font-serif font-bold">Étude<span className="text-primary">+</span></span>
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="p-2 rounded-xl hover:bg-accent transition-colors"
+            aria-label="Menu"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
         </header>
+
+        {/* Mobile drawer overlay */}
+        {mobileOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
+            {/* Drawer */}
+            <aside className="absolute left-0 top-0 bottom-0 w-72 bg-sidebar text-sidebar-foreground flex flex-col shadow-2xl">
+              {/* Header */}
+              <div className="p-6 flex items-center justify-between border-b border-sidebar-border/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground">
+                    <span className="font-serif font-bold text-xl">É</span>
+                  </div>
+                  <span className="text-xl font-serif font-bold">Étude<span className="text-sidebar-primary">+</span></span>
+                </div>
+                <button onClick={() => setMobileOpen(false)} className="p-2 rounded-xl hover:bg-sidebar-accent transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              {/* User */}
+              <div className="px-6 py-4 flex items-center gap-3 border-b border-sidebar-border/50 bg-sidebar-accent/30">
+                <div className="w-10 h-10 rounded-full overflow-hidden border border-sidebar-primary/30 flex-shrink-0 bg-sidebar-primary/20">
+                  {user.profilePhoto ? (
+                    <img src={`${API_URL}/api/storage${user.profilePhoto}`} alt="Photo" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <span className="font-bold text-sidebar-primary">{user.fullName.charAt(0)}</span>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">{user.fullName}</p>
+                  <p className="text-xs text-sidebar-foreground/60">{roleLabel}</p>
+                </div>
+              </div>
+              {/* Nav */}
+              <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+                {items.map((item) => {
+                  const active = location === item.href || location.startsWith(item.href + "/");
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
+                        active
+                          ? item.special
+                            ? "bg-yellow-400/20 text-yellow-300"
+                            : "bg-sidebar-primary text-sidebar-primary-foreground"
+                          : item.special
+                            ? "text-yellow-400/80 hover:bg-yellow-400/10 hover:text-yellow-300"
+                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      )}
+                    >
+                      <item.icon className={cn("w-5 h-5 shrink-0", item.special && "text-yellow-400")} />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+              {/* Footer */}
+              <div className="p-4 border-t border-sidebar-border space-y-2">
+                <LanguageSwitcher className="w-full justify-center" />
+                <button
+                  onClick={() => { setMobileOpen(false); logoutFn(); }}
+                  className="flex w-full items-center gap-3 px-4 py-3 rounded-xl text-sidebar-foreground/70 hover:bg-destructive/10 hover:text-destructive transition-colors font-medium"
+                >
+                  <LogOut className="w-5 h-5" />
+                  {t("sidebar.logout")}
+                </button>
+              </div>
+            </aside>
+          </div>
+        )}
 
         {/* KYC Status Banner — professor only */}
         {user.role === "professor" && (() => {

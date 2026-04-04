@@ -235,9 +235,13 @@ export function Classroom() {
       {/* Top Bar */}
       <header className="h-16 bg-[#111] border-b border-zinc-800 flex items-center justify-between px-6 shrink-0 z-10 shadow-md">
         <div className="flex items-center gap-4">
-          <Link href="/" className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30 hover:bg-primary/30 transition-colors">
+          <button
+            onClick={handleExit}
+            className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30 hover:bg-primary/30 transition-colors"
+            title="Retourner au tableau de bord"
+          >
             <span className="font-serif font-bold text-primary text-lg">É</span>
-          </Link>
+          </button>
           <div>
             <div className="flex items-center gap-3">
               <BadgeEl className="bg-red-500/10 text-red-500 border border-red-500/20 px-2.5 py-0.5 animate-pulse flex items-center gap-1.5">
