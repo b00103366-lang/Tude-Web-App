@@ -3,7 +3,7 @@ import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wo
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { trackEvent } from "@/lib/analytics";
-import { AuthProvider, useAuth, getDashboardPath } from "@/hooks/use-auth";
+import { AuthProvider, useAuth, getDashboardPath, getImpersonationState } from "@/hooks/use-auth";
 import { getToken } from "@workspace/api-client-react";
 import NotFound from "@/pages/not-found";
 
@@ -88,8 +88,13 @@ function ProtectedRoute({ component: Component, allowedRoles }: { component: any
     return <Redirect to="/login" />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Redirect to={getDashboardPath(user.role)} />;
+  // During impersonation the server cookie may still resolve to the admin, so use
+  // the target's role (stored in localStorage) for routing decisions instead.
+  const imp = getImpersonationState();
+  const effectiveRole = imp ? imp.targetUser.role : user.role;
+
+  if (allowedRoles && !allowedRoles.includes(effectiveRole)) {
+    return <Redirect to={getDashboardPath(effectiveRole)} />;
   }
 
   return <Component />;
