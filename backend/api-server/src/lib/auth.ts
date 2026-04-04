@@ -110,14 +110,16 @@ function verifyToken(token: string): { userId: number; issuedAt: number } | null
   }
 }
 
-/** Middleware: require a valid signed auth token. Reads cookie first, then Authorization header. */
+/** Middleware: require a valid signed auth token. Reads Authorization header first, then cookie.
+ *  Bearer takes priority so that impersonation (localStorage token) overrides the admin cookie. */
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
-  // Prefer session cookie, fall back to Authorization header
   const cookieToken: string | undefined = (req as any).cookies?.[SESSION_COOKIE];
   const rawHeader = req.headers.authorization;
   const headerToken = rawHeader?.startsWith("Bearer ") ? rawHeader.slice(7).trim() : null;
 
-  const token = cookieToken || headerToken;
+  // Bearer wins when present — this makes impersonation reliable regardless of which
+  // cookie the browser has cached.  Cookie is the fallback for cookie-only sessions.
+  const token = headerToken || cookieToken;
   if (!token) {
     res.status(401).json({ error: "Unauthorized" });
     return;
@@ -158,7 +160,7 @@ export async function optionalAuth(req: Request, _res: Response, next: NextFunct
   const cookieToken: string | undefined = (req as any).cookies?.[SESSION_COOKIE];
   const rawHeader = req.headers.authorization;
   const headerToken = rawHeader?.startsWith("Bearer ") ? rawHeader.slice(7).trim() : null;
-  const token = cookieToken || headerToken;
+  const token = headerToken || cookieToken;
 
   if (token) {
     try {
