@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export function Navbar() {
-  const { user, logoutFn } = useAuth();
+  const { user, logoutFn, isLoading } = useAuth();
   const [location] = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const { t } = useTranslation();
@@ -39,7 +39,7 @@ export function Navbar() {
           </span>
         </Link>
 
-        {!user && (
+        {(!user || isLoading) && (
           <nav className="hidden md:flex items-center gap-8 font-medium text-sm">
             <a href="/#features" className="text-foreground/80 hover:text-primary transition-colors">{t("nav.features")}</a>
             <a href="/#how-it-works" className="text-foreground/80 hover:text-primary transition-colors">{t("nav.howItWorks")}</a>
