@@ -21,7 +21,7 @@ const pool = new Pool({ connectionString: DATABASE_URL, ssl: DATABASE_URL.includ
 const db = drizzle(pool);
 
 // Inline schema refs to avoid workspace import issues in standalone script
-import { usersTable } from "../lib/db/src/schema/index.js";
+import { usersTable } from "../db/src/schema/index.js";
 
 async function main() {
   const email = "rayan@etude.com";
