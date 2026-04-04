@@ -33,7 +33,7 @@ const SESSION_COOKIE = "etude_session";
 const IS_PROD = process.env["NODE_ENV"] === "production";
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  sameSite: "lax" as const,
+  sameSite: (IS_PROD ? "none" : "lax") as "none" | "lax",
   secure: IS_PROD,
   path: "/",
   maxAge: 30 * 24 * 60 * 60 * 1000,
