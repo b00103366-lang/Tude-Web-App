@@ -7,6 +7,13 @@ import router from "./routes";
 const app: Express = express();
 const IS_PROD = process.env["NODE_ENV"] === "production";
 
+// Trust exactly one proxy hop (Railway's edge load balancer).
+// This makes req.ip the real client IP from X-Forwarded-For and
+// suppresses Railway's "trust proxy is false" warning.
+// '1' is safer than 'true': it ignores any client-supplied hops beyond
+// the one Railway itself appends, preventing IP spoofing.
+app.set("trust proxy", 1);
+
 // ── Security headers ────────────────────────────────────────────────────────
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }, // allow image/file CDN serving
