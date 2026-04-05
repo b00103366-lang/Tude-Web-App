@@ -29,6 +29,7 @@ import { StudentNotifications } from "@/pages/student/StudentNotifications";
 import { StudentSettings } from "@/pages/student/StudentSettings";
 import { CoursePreview } from "@/pages/student/CoursePreview";
 import { MonProfEtude } from "@/pages/student/MonProfEtude";
+import { ProfessorProfile } from "@/pages/student/ProfessorProfile";
 import { BanqueDeQuestions } from "@/pages/revision/BanqueDeQuestions";
 import { BanqueDeQuestionsSubject } from "@/pages/revision/BanqueDeQuestionsSubject";
 import { BanqueDeQuestionsTopic } from "@/pages/revision/BanqueDeQuestionsTopic";
@@ -141,6 +142,9 @@ function Router() {
       </Route>
       <Route path="/student/browse/:id">
         {() => <ProtectedRoute component={CoursePreview} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/student/professor/:id">
+        {() => <ProtectedRoute component={ProfessorProfile} allowedRoles={["student"]} />}
       </Route>
       <Route path="/student/classes">
         {() => <ProtectedRoute component={StudentClasses} allowedRoles={["student"]} />}

@@ -1,83 +1,284 @@
-import { useState } from "react";
-
+import { useState, useMemo } from "react";
 const API_URL = import.meta.env.VITE_API_URL;
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Button, Badge, Input } from "@/components/ui/Premium";
-import { useListClasses } from "@workspace/api-client-react";
-import { Search, Star, Clock, MapPin, BookOpen, ChevronDown, X, GraduationCap } from "lucide-react";
+import { useListProfessors } from "@workspace/api-client-react";
+import {
+  Search, Star, BookOpen, GraduationCap, X, BadgeCheck,
+  Users, ChevronRight, MapPin, Filter, SlidersHorizontal,
+} from "lucide-react";
 import { Link } from "wouter";
-import { formatTND } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
-import { TUNISIA_CITIES } from "@/lib/constants";
-import { getLevelLabel, getClassLevelLabel, getSubjectsForLevel } from "@/lib/educationConfig";
-import { useTranslation } from "react-i18next";
+import { getNiveauLabel, getSubjectsForNiveauSection, isSimpleLevel, isSectionLevel } from "@/lib/educationConfig";
+import { cn } from "@/lib/utils";
 
-type SortOption = "recent" | "rating_prof" | "rating_course" | "price_asc" | "price_desc";
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type SortOption = "rating" | "recent" | "reviews";
+
+interface Professor {
+  id: number;
+  userId: number;
+  fullName: string;
+  profilePhoto?: string | null;
+  city?: string | null;
+  bio?: string | null;
+  subjects: string[];
+  gradeLevels: string[];
+  rating?: number | null;
+  totalReviews?: number | null;
+  isVerified?: boolean | null;
+  yearsOfExperience?: number | null;
+  status: string;
+  createdAt?: string;
+}
+
+// ── Star display ──────────────────────────────────────────────────────────────
+
+function Stars({ rating, size = "sm" }: { rating: number; size?: "sm" | "md" }) {
+  const sz = size === "md" ? "w-4 h-4" : "w-3.5 h-3.5";
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map(n => (
+        <Star
+          key={n}
+          className={cn(sz, n <= Math.round(rating) ? "fill-amber-400 text-amber-400" : "text-gray-200")}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ── Professor Card ────────────────────────────────────────────────────────────
+
+function ProfessorCard({ prof }: { prof: Professor }) {
+  const rating = prof.rating ? Number(prof.rating) : null;
+  const visibleSubjects = prof.subjects?.slice(0, 3) ?? [];
+  const extraSubjects = (prof.subjects?.length ?? 0) - 3;
+
+  return (
+    <Card className="flex flex-col h-full hover:shadow-lg hover:border-primary/40 transition-all duration-300 group">
+      {/* Header */}
+      <div className="p-6 flex flex-col items-center text-center border-b border-border">
+        {/* Avatar */}
+        <div className="relative mb-4">
+          <div className="w-20 h-20 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center font-bold text-2xl text-primary border-4 border-background shadow-lg">
+            {prof.profilePhoto ? (
+              <img
+                src={`${API_URL}/api/storage${prof.profilePhoto}`}
+                alt={prof.fullName}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span>{prof.fullName?.charAt(0) ?? "?"}</span>
+            )}
+          </div>
+          {prof.isVerified && (
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center border-2 border-background shadow-sm">
+              <BadgeCheck className="w-4 h-4 text-white" />
+            </div>
+          )}
+        </div>
+
+        {/* Name + verified */}
+        <div className="flex items-center gap-1.5 justify-center flex-wrap">
+          <h3 className="font-bold text-base text-gray-900">{prof.fullName}</h3>
+          {prof.isVerified && (
+            <BadgeCheck className="w-4 h-4 text-blue-500 shrink-0" />
+          )}
+        </div>
+
+        {/* City */}
+        {prof.city && (
+          <p className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+            <MapPin className="w-3 h-3" />
+            {prof.city}
+          </p>
+        )}
+
+        {/* Rating */}
+        <div className="flex items-center gap-2 mt-3">
+          {rating !== null ? (
+            <>
+              <Stars rating={rating} />
+              <span className="font-bold text-sm text-gray-900">{rating.toFixed(1)}</span>
+              <span className="text-xs text-muted-foreground">
+                ({prof.totalReviews ?? 0} avis)
+              </span>
+            </>
+          ) : (
+            <span className="text-xs text-muted-foreground italic">Nouveau professeur</span>
+          )}
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="p-5 flex-1 flex flex-col gap-4">
+        {/* Subjects */}
+        {visibleSubjects.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {visibleSubjects.map(s => (
+              <span
+                key={s}
+                className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/8 text-primary border border-primary/20"
+              >
+                {s}
+              </span>
+            ))}
+            {extraSubjects > 0 && (
+              <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-muted text-muted-foreground border border-border">
+                +{extraSubjects}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Bio preview */}
+        {prof.bio && (
+          <p className="text-sm text-gray-700 line-clamp-2 flex-1">{prof.bio}</p>
+        )}
+
+        {/* Grade levels */}
+        {(prof.gradeLevels?.length ?? 0) > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <GraduationCap className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            <span className="text-xs text-muted-foreground">
+              {prof.gradeLevels
+                .slice(0, 4)
+                .map(k => getNiveauLabel(k))
+                .join(", ")}
+              {prof.gradeLevels.length > 4 && ` +${prof.gradeLevels.length - 4}`}
+            </span>
+          </div>
+        )}
+
+        {/* Experience */}
+        {prof.yearsOfExperience != null && prof.yearsOfExperience > 0 && (
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <Users className="w-3.5 h-3.5" />
+            {prof.yearsOfExperience} an{prof.yearsOfExperience > 1 ? "s" : ""} d'expérience
+          </p>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="px-5 pb-5">
+        <Link href={`/student/professor/${prof.id}`}>
+          <Button className="w-full gap-2 group-hover:gap-3 transition-all" size="sm">
+            Voir le profil
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </Link>
+      </div>
+    </Card>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
 
 export function BrowseClasses() {
-  const { t } = useTranslation();
   const { user } = useAuth();
   const studentGrade: string = (user as any)?.studentProfile?.gradeLevel ?? "";
-  const levelSubjects = studentGrade ? getSubjectsForLevel(studentGrade) : [];
+  const studentSection: string | null = (user as any)?.studentProfile?.educationSection ?? null;
 
-  const [search, setSearch] = useState("");
-  const [subject, setSubject] = useState("");
-  const [city, setCity] = useState("");
-  const [sortBy, setSortBy] = useState<SortOption>("recent");
+  const levelSubjects: readonly string[] = studentGrade
+    ? getSubjectsForNiveauSection(
+        studentGrade,
+        isSectionLevel(studentGrade) ? studentSection : null,
+      )
+    : [];
+
+  const [search, setSearch]       = useState("");
+  const [subject, setSubject]     = useState("");
+  const [minRating, setMinRating] = useState<number | null>(null);
+  const [sortBy, setSortBy]       = useState<SortOption>("rating");
   const [showFilters, setShowFilters] = useState(false);
 
-  const { data, isLoading } = useListClasses({
-    search: search || undefined,
-    subject: subject || undefined,
-    city: city || undefined,
-    gradeLevel: studentGrade || undefined,
-  } as any);
+  // Fetch all approved professors
+  const { data, isLoading } = useListProfessors({ status: "approved" } as any);
+  const allProfs: Professor[] = (data as any)?.professors ?? [];
 
-  const rawClasses: any[] = data?.classes ?? [];
+  // Filter & sort
+  const filtered = useMemo(() => {
+    let list = [...allProfs];
 
-  // Client-side sort
-  const classes = [...rawClasses].sort((a, b) => {
-    if (sortBy === "rating_prof") return (b.professor?.rating ?? 0) - (a.professor?.rating ?? 0);
-    if (sortBy === "rating_course") return (b.courseRating ?? 0) - (a.courseRating ?? 0);
-    if (sortBy === "price_asc") return a.price - b.price;
-    if (sortBy === "price_desc") return b.price - a.price;
-    return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
-  });
+    // Restrict to student's grade level (if set)
+    if (studentGrade) {
+      list = list.filter(p =>
+        p.gradeLevels?.some(gl => gl === studentGrade)
+      );
+    }
 
-  const hasFilters = subject || city || sortBy !== "recent";
-  const clearFilters = () => { setSubject(""); setCity(""); setSortBy("recent"); };
+    // Subject filter
+    if (subject) {
+      list = list.filter(p =>
+        p.subjects?.some(s => s.toLowerCase() === subject.toLowerCase())
+      );
+    }
+
+    // Search (name or subject)
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(p =>
+        p.fullName?.toLowerCase().includes(q) ||
+        p.subjects?.some(s => s.toLowerCase().includes(q)) ||
+        p.bio?.toLowerCase().includes(q)
+      );
+    }
+
+    // Min rating filter
+    if (minRating !== null) {
+      list = list.filter(p => p.rating != null && Number(p.rating) >= minRating);
+    }
+
+    // Sort
+    list.sort((a, b) => {
+      if (sortBy === "rating")  return Number(b.rating ?? 0) - Number(a.rating ?? 0);
+      if (sortBy === "reviews") return Number(b.totalReviews ?? 0) - Number(a.totalReviews ?? 0);
+      // recent
+      return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
+    });
+
+    return list;
+  }, [allProfs, studentGrade, subject, search, minRating, sortBy]);
+
+  const hasFilters = !!subject || minRating !== null || sortBy !== "rating";
+  const clearFilters = () => { setSubject(""); setMinRating(null); setSortBy("rating"); };
+
+  const gradeLabel = studentGrade ? getNiveauLabel(studentGrade) : null;
 
   return (
     <DashboardLayout>
       <FadeIn>
         <PageHeader
-          title={t("student.browse.title")}
-          description={studentGrade ? t("student.browse.forLevel", { level: getLevelLabel(studentGrade) }) : t("student.browse.configureLevel")}
+          title="Parcourir les Professeurs"
+          description="Découvrez les professeurs disponibles pour votre niveau scolaire."
         />
 
-        {/* No level set — prompt */}
+        {/* No grade set — prompt */}
         {!studentGrade && (
           <div className="mb-6 p-6 bg-amber-50 border-2 border-amber-200 rounded-2xl flex items-start gap-4">
             <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
               <GraduationCap className="w-5 h-5 text-amber-600" />
             </div>
             <div>
-              <h4 className="font-bold text-amber-900 mb-1">{t("student.browse.completeProfile")}</h4>
+              <h4 className="font-bold text-amber-900 mb-1">Définissez votre niveau scolaire</h4>
               <p className="text-sm text-amber-700 mb-3">
-                {t("student.browse.completeProfileDesc")}
+                En renseignant votre niveau, nous affichons uniquement les professeurs qui enseignent à votre classe.
               </p>
-              <a href="/student/settings" className="inline-flex items-center gap-2 text-sm font-semibold text-amber-800 underline">
-                {t("student.browse.configureMyLevel")} →
+              <a href="/student/settings" className="inline-flex items-center gap-1 text-sm font-semibold text-amber-800 underline">
+                Configurer mon niveau →
               </a>
             </div>
           </div>
         )}
 
-        {studentGrade && (
-          <div className="flex items-center gap-2 mb-4 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-xl w-fit">
+        {/* Grade banner */}
+        {gradeLabel && (
+          <div className="flex items-center gap-2 mb-5 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-xl w-fit">
             <GraduationCap className="w-4 h-4 text-primary" />
             <span className="text-sm font-medium text-primary">
-              {t("student.browse.level")} <strong>{getLevelLabel(studentGrade)}</strong>
+              Professeurs enseignant en <strong>{gradeLabel}</strong>
             </span>
           </div>
         )}
@@ -88,23 +289,28 @@ export function BrowseClasses() {
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder={t("student.browse.searchPlaceholder")}
+                placeholder="Rechercher un professeur, une matière…"
                 className="pl-12 bg-card"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={e => setSearch(e.target.value)}
               />
             </div>
             <Button
               variant="outline"
-              className={`shrink-0 bg-card ${hasFilters ? "border-primary text-primary" : ""}`}
+              className={cn("shrink-0 bg-card gap-2", hasFilters && "border-primary text-primary")}
               onClick={() => setShowFilters(f => !f)}
             >
-              <ChevronDown className={`w-4 h-4 mr-2 transition-transform ${showFilters ? "rotate-180" : ""}`} />
-              {t("student.browse.filters")} {hasFilters && `(${[subject, city, sortBy !== "recent" ? sortBy : ""].filter(Boolean).length})`}
+              <SlidersHorizontal className="w-4 h-4" />
+              Filtres
+              {hasFilters && (
+                <span className="ml-0.5 text-xs font-bold bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">
+                  {[subject, minRating, sortBy !== "rating" ? sortBy : ""].filter(Boolean).length}
+                </span>
+              )}
             </Button>
             {hasFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters} className="shrink-0 text-muted-foreground">
-                <X className="w-4 h-4 mr-1" /> {t("student.browse.clear")}
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="shrink-0 text-muted-foreground gap-1">
+                <X className="w-4 h-4" /> Réinitialiser
               </Button>
             )}
           </div>
@@ -112,28 +318,57 @@ export function BrowseClasses() {
           {showFilters && (
             <Card className="p-4">
               <div className="grid sm:grid-cols-3 gap-4">
+                {/* Subject */}
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">{t("student.browse.subject")}</label>
-                  <select className="flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary" value={subject} onChange={e => setSubject(e.target.value)}>
-                    <option value="">{t("student.browse.allSubjects")}</option>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
+                    Matière
+                  </label>
+                  <select
+                    className="flex h-10 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:border-primary transition-all"
+                    value={subject}
+                    onChange={e => setSubject(e.target.value)}
+                  >
+                    <option value="">Toutes les matières</option>
                     {levelSubjects.map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
+
+                {/* Min rating */}
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">{t("student.browse.city")}</label>
-                  <select className="flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary" value={city} onChange={e => setCity(e.target.value)}>
-                    <option value="">{t("student.browse.allCities")}</option>
-                    {TUNISIA_CITIES.map(c => <option key={c}>{c}</option>)}
-                  </select>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
+                    Note minimale
+                  </label>
+                  <div className="flex gap-2">
+                    {[null, 3, 4, 4.5].map(r => (
+                      <button
+                        key={String(r)}
+                        onClick={() => setMinRating(r)}
+                        className={cn(
+                          "flex-1 h-10 rounded-lg border text-xs font-semibold transition-all",
+                          minRating === r
+                            ? "bg-amber-400 text-white border-amber-400"
+                            : "bg-background border-border text-muted-foreground hover:border-amber-300"
+                        )}
+                      >
+                        {r === null ? "Tous" : `★ ${r}+`}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {/* Sort */}
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">{t("student.browse.sortBy")}</label>
-                  <select className="flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary" value={sortBy} onChange={e => setSortBy(e.target.value as SortOption)}>
-                    <option value="recent">{t("student.browse.sortRecent")}</option>
-                    <option value="rating_prof">{t("student.browse.sortProfRating")}</option>
-                    <option value="rating_course">{t("student.browse.sortCourseRating")}</option>
-                    <option value="price_asc">{t("student.browse.sortPriceAsc")}</option>
-                    <option value="price_desc">{t("student.browse.sortPriceDesc")}</option>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
+                    Trier par
+                  </label>
+                  <select
+                    className="flex h-10 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:border-primary transition-all"
+                    value={sortBy}
+                    onChange={e => setSortBy(e.target.value as SortOption)}
+                  >
+                    <option value="rating">Mieux notés</option>
+                    <option value="reviews">Plus d'avis</option>
+                    <option value="recent">Plus récents</option>
                   </select>
                 </div>
               </div>
@@ -141,114 +376,41 @@ export function BrowseClasses() {
           )}
         </div>
 
+        {/* Results */}
         {isLoading ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-72 bg-muted rounded-2xl animate-pulse" />
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="h-80 bg-muted rounded-2xl animate-pulse" />
             ))}
           </div>
-        ) : classes.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="text-center py-24 bg-card rounded-2xl border border-dashed border-border">
             <div className="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6">
               <BookOpen className="w-9 h-9 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-bold mb-2">{t("student.browse.noClasses")}</h3>
+            <h3 className="text-xl font-bold mb-2">Aucun professeur trouvé</h3>
             <p className="text-muted-foreground max-w-sm mx-auto">
-              {search || hasFilters ? t("student.browse.noResults") : t("student.browse.noClassesDesc")}
+              {allProfs.length === 0
+                ? "Les professeurs rejoignant Étude+ apparaîtront ici."
+                : "Modifiez vos filtres pour voir plus de résultats."}
             </p>
             {hasFilters && (
-              <Button variant="outline" className="mt-4" onClick={clearFilters}>{t("student.browse.clearFilters")}</Button>
+              <Button variant="outline" className="mt-4" onClick={clearFilters}>
+                Réinitialiser les filtres
+              </Button>
             )}
           </div>
         ) : (
           <>
-            <p className="text-sm text-muted-foreground mb-4">{t("student.browse.resultsCount", { count: classes.length })}</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              {filtered.length} professeur{filtered.length > 1 ? "s" : ""} disponible{filtered.length > 1 ? "s" : ""}
+            </p>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {classes.map((cls: any, i: number) => {
-                const profRating = cls.professor?.rating ? Number(cls.professor.rating) : null;
-                const courseRating = cls.courseRating ? Number(cls.courseRating) : null;
-                return (
-                  <FadeIn key={cls.id} delay={i * 0.05}>
-                    <Card className="flex flex-col h-full hover:shadow-lg hover:border-primary/50 transition-all duration-300">
-                      {/* Header */}
-                      <div className="h-40 bg-gradient-to-br from-secondary to-muted p-4 flex flex-col justify-between border-b border-border relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4">
-                          <Badge variant="secondary" className="bg-background/80 backdrop-blur font-bold text-primary">
-                            {formatTND(cls.price)}
-                          </Badge>
-                        </div>
-                        <Badge className="w-fit">{cls.subject}</Badge>
-                        <div>
-                          <h3 className="font-serif font-bold text-lg leading-tight text-foreground z-10">{cls.title}</h3>
-                          <p className="text-xs text-muted-foreground mt-0.5">{getClassLevelLabel(cls.gradeLevel, cls.sectionKey)}</p>
-                        </div>
-                      </div>
-
-                      {/* Body */}
-                      <div className="p-5 flex-1 flex flex-col">
-                        {/* Professor info */}
-                        <div className="flex items-center gap-3 mb-3 p-3 bg-secondary/50 rounded-xl">
-                          <div className="w-10 h-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center font-bold text-primary shrink-0">
-                            {cls.professor?.profilePhoto
-                              ? <img src={`${API_URL}/api/storage${cls.professor.profilePhoto}`} alt="" className="w-full h-full object-cover" />
-                              : cls.professor?.fullName?.charAt(0) ?? "?"}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-semibold text-sm truncate">{cls.professor?.fullName ?? t("student.browse.professor")}</p>
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                              {profRating !== null ? (
-                                <>
-                                  {[1,2,3,4,5].map(n => (
-                                    <Star key={n} className={`w-3 h-3 ${n <= Math.round(profRating) ? "fill-amber-400 text-amber-400" : "text-gray-300"}`} />
-                                  ))}
-                                  <span className="ml-0.5 font-medium">{profRating.toFixed(1)}</span>
-                                </>
-                              ) : <span>{t("student.browse.new")}</span>}
-                              <span className="mx-1">&bull;</span>
-                              <MapPin className="w-3 h-3" /> {cls.city}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Course rating row */}
-                        {courseRating !== null && (
-                          <div className="flex items-center gap-2 mb-3 px-1">
-                            <span className="text-xs text-muted-foreground">{t("student.browse.course")} :</span>
-                            {[1,2,3,4,5].map(n => (
-                              <Star key={n} className={`w-3 h-3 ${n <= Math.round(courseRating) ? "fill-primary text-primary" : "text-gray-300"}`} />
-                            ))}
-                            <span className="text-xs font-medium">{courseRating.toFixed(1)}</span>
-                            <span className="text-xs text-muted-foreground">({cls.totalCourseReviews})</span>
-                          </div>
-                        )}
-
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-5 flex-1">
-                          {cls.description}
-                        </p>
-
-                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/50 gap-2">
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" /> {cls.durationHours}h
-                            </span>
-                            {cls.nextSession && (
-                              <span className="text-xs text-green-600 font-semibold">{t("student.browse.sessionPlanned")}</span>
-                            )}
-                          </div>
-                          <div className="flex gap-2">
-                            <Link href={`/student/browse/${cls.id}`}>
-                              <Button size="sm" variant="outline">{t("student.browse.preview")}</Button>
-                            </Link>
-                            <Link href={`/checkout/${cls.id}`}>
-                              <Button size="sm">{t("student.browse.enroll")}</Button>
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  </FadeIn>
-                );
-              })}
+              {filtered.map((prof, i) => (
+                <FadeIn key={prof.id} delay={i * 0.04}>
+                  <ProfessorCard prof={prof} />
+                </FadeIn>
+              ))}
             </div>
           </>
         )}
