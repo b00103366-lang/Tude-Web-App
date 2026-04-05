@@ -27,16 +27,17 @@ if (IS_PROD && allowedOrigins.length === 0) {
 app.use(
   cors({
     origin: (origin, callback) => {
-      // In development, allow all origins (including no-origin requests from curl/server-to-server)
+      // No Origin header means the request is from curl, a health checker, Railway's own
+      // health probes, or server-to-server calls — none of which are subject to CORS
+      // (CORS is a browser-only mechanism). Always allow these.
+      if (!origin) {
+        return callback(null, true);
+      }
+      // In development, allow all browser origins too.
       if (!IS_PROD) {
         return callback(null, true);
       }
-      // In production: no-origin requests (server-to-server) are blocked.
-      // Return false (not an Error) so the browser gets a proper CORS rejection,
-      // not a 500 from the global error handler.
-      if (!origin) {
-        return callback(null, false);
-      }
+      // In production: only allow browsers from the declared allowlist.
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
@@ -55,6 +56,11 @@ app.use("/api/storage/uploads/direct", express.json({ limit: "20mb" }));
 app.use(cookieParser());
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true, limit: "2mb" }));
+
+// Root health/landing — responds to Railway health probes and direct browser visits
+app.get("/", (_req, res) => {
+  res.json({ status: "ok", service: "Étude+ API" });
+});
 
 app.use("/api", router);
 
