@@ -22,3 +22,4 @@ export * from "./teacherQualificationRequests";
 export * from "./aiUsage";
 export * from "./studyVideos";
 export * from "./userEvents";
+export * from "./questions";

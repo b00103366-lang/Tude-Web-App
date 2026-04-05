@@ -8,29 +8,48 @@ import {
   CreditCard, Bell, Settings, LogOut, Users, CheckSquare,
   DollarSign, ScrollText, Crown,
   TrendingUp, UserCog, ArrowLeftRight, BadgeCheck, AlertCircle, Clock, XCircle,
-  Sparkles, Play, BarChart2, Menu, X,
+  Sparkles, Play, BarChart2, Menu, X, ChevronDown,
+  Library, FileText, Lightbulb, Layers, Archive, BrainCircuit,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+
+type NavItem = {
+  icon: any;
+  label: string;
+  href?: string;
+  special?: boolean;
+  accordion?: boolean;
+  children?: { icon: any; label: string; href: string }[];
+};
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logoutFn, impersonating, exitImpersonation } = useAuth();
   const [location] = useLocation();
   const { t } = useTranslation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [revisionOpen, setRevisionOpen] = useState(false);
 
   if (!user) return null;
 
   const isSuperAdmin = user.role === "super_admin";
   const isAdmin = user.role === "admin" || isSuperAdmin;
 
-  const NAV_ITEMS: Record<string, { icon: any; label: string; href: string; special?: boolean }[]> = {
+  const REVISION_CHILDREN = [
+    { icon: Library,   label: "Banque de Questions", href: "/revision/banque-de-questions" },
+    { icon: FileText,  label: "Examens Blancs",       href: "/revision/examens-blancs" },
+    { icon: Lightbulb, label: "Notions Clés",         href: "/revision/notions-cles" },
+    { icon: Archive,   label: "Annales",              href: "/revision/annales" },
+    { icon: Layers,    label: "Flashcards",           href: "/revision/flashcards" },
+  ];
+
+  const NAV_ITEMS: Record<string, NavItem[]> = {
     student: [
       { icon: LayoutDashboard, label: t("sidebar.student.dashboard"), href: "/student/dashboard" },
       { icon: BookOpen,        label: t("sidebar.student.browse"),    href: "/student/browse" },
       { icon: GraduationCap,  label: t("sidebar.student.classes"),   href: "/student/classes" },
-      { icon: Sparkles,        label: "Mon Prof Étude",               href: "/student/mon-prof", special: true },
+      { icon: Sparkles,        label: "Révision Étude+",              special: true, accordion: true, children: REVISION_CHILDREN },
       { icon: Calendar,        label: t("sidebar.student.calendar"),  href: "/student/calendar" },
       { icon: CheckSquare,     label: t("sidebar.student.grades"),    href: "/student/grades" },
       { icon: CreditCard,      label: t("sidebar.student.payments"),  href: "/student/payments" },
@@ -49,12 +68,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     admin: [
       { icon: LayoutDashboard, label: t("sidebar.admin.dashboard"), href: "/admin/dashboard" },
       { icon: Users,           label: t("sidebar.admin.users"),     href: "/admin/users" },
+      { icon: BrainCircuit,    label: "Gestion des Questions",      href: "/admin/questions" },
       // { icon: Play, label: "Shorts Étude", href: "/admin/videos" }, // shorts disabled
     ],
     super_admin: [
       { icon: LayoutDashboard, label: t("sidebar.admin.dashboard"),  href: "/admin/dashboard" },
       { icon: BarChart2,       label: "Analytiques",                 href: "/admin/analytics" },
       { icon: Users,           label: t("sidebar.admin.users"),      href: "/admin/users" },
+      { icon: BrainCircuit,    label: "Gestion des Questions",       href: "/admin/questions" },
       // { icon: Play, label: "Shorts Étude", href: "/admin/videos" }, // shorts disabled
       { icon: TrendingUp,      label: t("sidebar.admin.finances"),   href: "/admin/finances" },
       { icon: ScrollText,      label: t("sidebar.admin.auditLogs"),  href: "/admin/audit-logs" },
@@ -125,12 +146,55 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </p>
           )}
 
-          {items.map((item) => {
-            const active = location === item.href || location.startsWith(item.href + "/");
+          {items.map((item: NavItem) => {
+            if (item.accordion && item.children) {
+              const isChildActive = item.children.some(c => location === c.href || location.startsWith(c.href + "/"));
+              const isOpen = revisionOpen || isChildActive;
+              return (
+                <div key={item.label}>
+                  <button
+                    onClick={() => setRevisionOpen(o => !o)}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium w-full",
+                      isChildActive
+                        ? "bg-yellow-400/20 text-yellow-300 shadow-lg shadow-yellow-400/10"
+                        : "text-yellow-400/80 hover:bg-yellow-400/10 hover:text-yellow-300"
+                    )}
+                  >
+                    <item.icon className="w-5 h-5 shrink-0 text-yellow-400" />
+                    <span className="flex-1 text-left">{item.label}</span>
+                    <ChevronDown className={cn("w-4 h-4 text-yellow-400/70 transition-transform duration-200", isOpen && "rotate-180")} />
+                  </button>
+                  {isOpen && (
+                    <div className="ml-3 mt-1 space-y-0.5 border-l border-yellow-400/20 pl-3">
+                      {item.children.map(child => {
+                        const childActive = location === child.href || location.startsWith(child.href + "/");
+                        return (
+                          <Link
+                            key={child.href}
+                            href={child.href}
+                            className={cn(
+                              "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 font-medium text-sm",
+                              childActive
+                                ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                                : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                            )}
+                          >
+                            <child.icon className="w-4 h-4 shrink-0" />
+                            {child.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            const active = location === item.href || location.startsWith((item.href ?? "") + "/");
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={item.href ?? "/"}
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
                   active
@@ -231,12 +295,56 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </div>
               {/* Nav */}
               <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-                {items.map((item) => {
-                  const active = location === item.href || location.startsWith(item.href + "/");
+                {items.map((item: NavItem) => {
+                  if (item.accordion && item.children) {
+                    const isChildActive = item.children.some(c => location === c.href || location.startsWith(c.href + "/"));
+                    const isOpen = revisionOpen || isChildActive;
+                    return (
+                      <div key={item.label}>
+                        <button
+                          onClick={() => setRevisionOpen(o => !o)}
+                          className={cn(
+                            "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium w-full",
+                            isChildActive
+                              ? "bg-yellow-400/20 text-yellow-300"
+                              : "text-yellow-400/80 hover:bg-yellow-400/10 hover:text-yellow-300"
+                          )}
+                        >
+                          <item.icon className="w-5 h-5 shrink-0 text-yellow-400" />
+                          <span className="flex-1 text-left">{item.label}</span>
+                          <ChevronDown className={cn("w-4 h-4 text-yellow-400/70 transition-transform duration-200", isOpen && "rotate-180")} />
+                        </button>
+                        {isOpen && (
+                          <div className="ml-3 mt-1 space-y-0.5 border-l border-yellow-400/20 pl-3">
+                            {item.children.map(child => {
+                              const childActive = location === child.href || location.startsWith(child.href + "/");
+                              return (
+                                <Link
+                                  key={child.href}
+                                  href={child.href}
+                                  onClick={() => setMobileOpen(false)}
+                                  className={cn(
+                                    "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 font-medium text-sm",
+                                    childActive
+                                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                                      : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                                  )}
+                                >
+                                  <child.icon className="w-4 h-4 shrink-0" />
+                                  {child.label}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+                  const active = location === item.href || location.startsWith((item.href ?? "") + "/");
                   return (
                     <Link
                       key={item.href}
-                      href={item.href}
+                      href={item.href ?? "/"}
                       onClick={() => setMobileOpen(false)}
                       className={cn(
                         "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",

@@ -20,6 +20,7 @@ import qualificationsRouter from "./qualifications";
 import monProfRouter from "./monProf";
 import analyticsRouter from "./analytics";
 import adminAnalyticsRouter from "./adminAnalytics";
+import adminQuestionsRouter from "./adminQuestions";
 
 const router: IRouter = Router();
 
@@ -46,5 +47,6 @@ router.use("/qualifications", qualificationsRouter);
 router.use("/mon-prof", monProfRouter);
 router.use("/analytics", analyticsRouter);
 router.use("/admin/analytics", adminAnalyticsRouter);
+router.use("/admin/questions", adminQuestionsRouter);
 
 export default router;

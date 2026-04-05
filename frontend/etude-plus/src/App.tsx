@@ -29,6 +29,13 @@ import { StudentNotifications } from "@/pages/student/StudentNotifications";
 import { StudentSettings } from "@/pages/student/StudentSettings";
 import { CoursePreview } from "@/pages/student/CoursePreview";
 import { MonProfEtude } from "@/pages/student/MonProfEtude";
+import { BanqueDeQuestions } from "@/pages/revision/BanqueDeQuestions";
+import { BanqueDeQuestionsSubject } from "@/pages/revision/BanqueDeQuestionsSubject";
+import { BanqueDeQuestionsTopic } from "@/pages/revision/BanqueDeQuestionsTopic";
+import { ExamensBlancs } from "@/pages/revision/ExamensBlancs";
+import { NotionsCles } from "@/pages/revision/NotionsCles";
+import { Annales } from "@/pages/revision/Annales";
+import { Flashcards } from "@/pages/revision/Flashcards";
 
 // Professor Pages
 import { ProfessorDashboard } from "@/pages/professor/ProfessorDashboard";
@@ -50,6 +57,8 @@ import { AdminSettings } from "@/pages/admin/AdminSettings";
 import { AdminAuditLogs } from "@/pages/admin/AdminAuditLogs";
 // import { AdminVideos } from "@/pages/admin/AdminVideos"; // shorts feature disabled
 import { AdminAnalytics } from "@/pages/admin/AdminAnalytics";
+import { AdminQuestions } from "@/pages/admin/AdminQuestions";
+import { AdminQuestionsGenerate } from "@/pages/admin/AdminQuestionsGenerate";
 
 // Legal pages
 import { Terms } from "@/pages/Terms";
@@ -158,6 +167,29 @@ function Router() {
         {() => <ProtectedRoute component={MonProfEtude} allowedRoles={["student"]} />}
       </Route>
 
+      {/* Révision Étude+ Routes */}
+      <Route path="/revision/banque-de-questions/:subject/:topic">
+        {() => <ProtectedRoute component={BanqueDeQuestionsTopic} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/revision/banque-de-questions/:subject">
+        {() => <ProtectedRoute component={BanqueDeQuestionsSubject} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/revision/banque-de-questions">
+        {() => <ProtectedRoute component={BanqueDeQuestions} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/revision/examens-blancs">
+        {() => <ProtectedRoute component={ExamensBlancs} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/revision/notions-cles">
+        {() => <ProtectedRoute component={NotionsCles} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/revision/annales">
+        {() => <ProtectedRoute component={Annales} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/revision/flashcards">
+        {() => <ProtectedRoute component={Flashcards} allowedRoles={["student"]} />}
+      </Route>
+
       {/* Shared/Special Routes */}
       <Route path="/checkout/:id">
         {() => <ProtectedRoute component={Checkout} allowedRoles={["student"]} />}
@@ -207,6 +239,12 @@ function Router() {
       </Route>
       <Route path="/admin/users">
         {() => <ProtectedRoute component={AdminUsers} allowedRoles={["admin", "super_admin"]} />}
+      </Route>
+      <Route path="/admin/questions/generate">
+        {() => <ProtectedRoute component={AdminQuestionsGenerate} allowedRoles={["admin", "super_admin"]} />}
+      </Route>
+      <Route path="/admin/questions">
+        {() => <ProtectedRoute component={AdminQuestions} allowedRoles={["admin", "super_admin"]} />}
       </Route>
 
       {/* Super Admin only routes */}
