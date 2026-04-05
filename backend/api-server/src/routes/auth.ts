@@ -153,14 +153,17 @@ router.post("/login", loginLimiter, async (req, res) => {
     return;
   }
 
-  // Block login if email not verified
-  if (!user.emailVerified) {
-    res.status(403).json({
-      error: "email_not_verified",
-      message: "Veuillez confirmer votre email avant de vous connecter.",
-    });
-    return;
-  }
+  // Email verification check temporarily disabled — unverified users can log in.
+  // Re-enable by un-commenting the block below when APP_URL is confirmed correct
+  // and the verification email flow is fully tested end-to-end.
+  //
+  // if (!user.emailVerified) {
+  //   res.status(403).json({
+  //     error: "email_not_verified",
+  //     message: "Veuillez confirmer votre email avant de vous connecter.",
+  //   });
+  //   return;
+  // }
 
   // Silently upgrade legacy SHA-256 hash to bcrypt on successful login
   if (isLegacyPasswordHash(user.passwordHash)) {
