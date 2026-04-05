@@ -111,7 +111,10 @@ function send(to: string, subject: string, html: string): void {
     .catch(err => console.error(`[emailService] Failed to send "${subject}" to ${to}:`, err));
 }
 
-// ─── 1. OTP verification code ─────────────────────────────────────────────────
+// ─── 1. OTP verification code (combined with welcome message) ────────────────
+// Sends a single email with the OTP code + welcome copy.
+// The separate sendAccountVerificationEmail is NOT sent after registration
+// so this is the only email a new user receives during signup.
 
 export function sendOtpEmail(to: string, code: string): void {
   if (IS_DEV) {
@@ -119,10 +122,11 @@ export function sendOtpEmail(to: string, code: string): void {
     console.log("DEV OTP for", to, ":", code);
     console.log("================================");
   }
-  const subject = "Votre code de vérification Étude+";
+  const subject = "Bienvenue sur Étude+ — votre code de vérification";
   const html = buildEmailHtml(
-    "Code de vérification",
-    `<p>Utilisez ce code pour confirmer votre adresse email.</p>
+    "Bienvenue sur Étude+ !",
+    `<p>Merci de rejoindre Étude+, la plateforme de cours particuliers en Tunisie.</p>
+     <p>Utilisez le code ci-dessous pour confirmer votre adresse email et activer votre compte :</p>
      <div style="background:#fefce8;border:1px solid #fbbf24;border-radius:12px;
                  padding:24px;text-align:center;margin:20px 0">
        <span style="font-size:40px;font-weight:800;letter-spacing:12px;color:#1a1a2e;

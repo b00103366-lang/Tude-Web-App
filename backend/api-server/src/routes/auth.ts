@@ -325,11 +325,8 @@ router.post("/register", registerLimiter, async (req, res) => {
     termsAcceptedAt: termsAccepted === true ? now : null,
   }).returning();
 
-  // Fire-and-forget: send email confirmation link
-  sendAccountVerificationEmail(
-    { email: newUser.email, fullName: newUser.fullName, merchantId: newUser.merchantId },
-    verificationToken
-  );
+  // Account verification email suppressed — the OTP email sent at /send-code
+  // already welcomes the user. Re-enable when sending limits increase.
 
   let professorProfile = null;
   let studentProfile = null;
