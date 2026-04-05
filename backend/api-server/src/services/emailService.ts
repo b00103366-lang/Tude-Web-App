@@ -8,10 +8,10 @@ import { Resend } from "resend";
 const APP_URL = process.env["APP_URL"] ?? "http://localhost:5173";
 const IS_DEV  = process.env["NODE_ENV"] !== "production";
 // Resend free tier only allows sending from onboarding@resend.dev without domain verification.
-// In production, set RESEND_FROM to your verified domain sender.
+// In production, set RESEND_FROM to your verified domain sender (e.g. "Étude+ <noreply@etude-plus.com>").
 const FROM = IS_DEV
   ? "onboarding@resend.dev"
-  : (process.env["RESEND_FROM"] ?? "Étude+ <noreply@etude.tn>");
+  : (process.env["RESEND_FROM"] ?? "Étude+ <noreply@etude-plus.com>");
 
 // ─── Resend client ────────────────────────────────────────────────────────────
 
