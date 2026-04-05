@@ -48,7 +48,7 @@ import { AdminUsers } from "@/pages/admin/AdminUsers";
 import { AdminFinances } from "@/pages/admin/AdminFinances";
 import { AdminSettings } from "@/pages/admin/AdminSettings";
 import { AdminAuditLogs } from "@/pages/admin/AdminAuditLogs";
-import { AdminVideos } from "@/pages/admin/AdminVideos";
+// import { AdminVideos } from "@/pages/admin/AdminVideos"; // shorts feature disabled
 import { AdminAnalytics } from "@/pages/admin/AdminAnalytics";
 
 // Legal pages
@@ -222,9 +222,7 @@ function Router() {
       <Route path="/admin/settings">
         {() => <ProtectedRoute component={AdminSettings} allowedRoles={["super_admin"]} />}
       </Route>
-      <Route path="/admin/videos">
-        {() => <ProtectedRoute component={AdminVideos} allowedRoles={["admin", "super_admin"]} />}
-      </Route>
+      {/* /admin/videos route disabled — shorts feature suppressed */}
 
       {/* Redirect deprecated routes */}
       <Route path="/admin/professors">

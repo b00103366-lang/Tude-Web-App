@@ -49,13 +49,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     admin: [
       { icon: LayoutDashboard, label: t("sidebar.admin.dashboard"), href: "/admin/dashboard" },
       { icon: Users,           label: t("sidebar.admin.users"),     href: "/admin/users" },
-      { icon: Play,            label: "Shorts Étude",               href: "/admin/videos" },
+      // { icon: Play, label: "Shorts Étude", href: "/admin/videos" }, // shorts disabled
     ],
     super_admin: [
       { icon: LayoutDashboard, label: t("sidebar.admin.dashboard"),  href: "/admin/dashboard" },
       { icon: BarChart2,       label: "Analytiques",                 href: "/admin/analytics" },
       { icon: Users,           label: t("sidebar.admin.users"),      href: "/admin/users" },
-      { icon: Play,            label: "Shorts Étude",                href: "/admin/videos" },
+      // { icon: Play, label: "Shorts Étude", href: "/admin/videos" }, // shorts disabled
       { icon: TrendingUp,      label: t("sidebar.admin.finances"),   href: "/admin/finances" },
       { icon: ScrollText,      label: t("sidebar.admin.auditLogs"),  href: "/admin/audit-logs" },
       { icon: Settings,        label: t("sidebar.admin.settings"),   href: "/admin/settings" },

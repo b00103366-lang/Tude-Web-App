@@ -275,85 +275,55 @@ router.post("/watch-ad", requireAuth, async (req, res) => {
   });
 });
 
-// ── GET /api/mon-prof/videos ───────────────────────────────────────────────────
-router.get("/videos", requireAuth, async (req, res) => {
-  const { gradeLevel, subject } = req.query as { gradeLevel?: string; subject?: string };
+// ── Shorts/video routes disabled ──────────────────────────────────────────────
+// All four endpoints return 404. To re-enable, delete these stubs and uncomment
+// the original handlers in the block below.
 
-  const videos = await db.select({
-    id: studyVideosTable.id,
-    title: studyVideosTable.title,
-    description: studyVideosTable.description,
-    videoPath: studyVideosTable.videoPath,
-    thumbnailPath: studyVideosTable.thumbnailPath,
-    gradeLevel: studyVideosTable.gradeLevel,
-    subject: studyVideosTable.subject,
-    views: studyVideosTable.views,
-    createdAt: studyVideosTable.createdAt,
-    uploaderName: usersTable.fullName,
-  })
-    .from(studyVideosTable)
-    .leftJoin(usersTable, eq(studyVideosTable.uploadedBy, usersTable.id))
-    .orderBy(desc(studyVideosTable.createdAt));
+router.get("/videos",         (_req, res) => { res.status(404).json({ error: "Feature disabled" }); });
+router.post("/videos",        (_req, res) => { res.status(404).json({ error: "Feature disabled" }); });
+router.delete("/videos/:id",  (_req, res) => { res.status(404).json({ error: "Feature disabled" }); });
+router.post("/videos/:id/view", (_req, res) => { res.status(404).json({ error: "Feature disabled" }); });
 
-  let filtered = videos;
-  if (gradeLevel) filtered = filtered.filter(v => v.gradeLevel === gradeLevel);
-  if (subject) filtered = filtered.filter(v => v.subject === subject);
+// Original handlers preserved below (commented out):
+//
+// router.get("/videos", requireAuth, async (req, res) => {
+//   const { gradeLevel, subject } = req.query as { gradeLevel?: string; subject?: string };
+//   const videos = await db.select({ id: studyVideosTable.id, title: studyVideosTable.title,
+//     description: studyVideosTable.description, videoPath: studyVideosTable.videoPath,
+//     thumbnailPath: studyVideosTable.thumbnailPath, gradeLevel: studyVideosTable.gradeLevel,
+//     subject: studyVideosTable.subject, views: studyVideosTable.views,
+//     createdAt: studyVideosTable.createdAt, uploaderName: usersTable.fullName,
+//   }).from(studyVideosTable).leftJoin(usersTable, eq(studyVideosTable.uploadedBy, usersTable.id))
+//     .orderBy(desc(studyVideosTable.createdAt));
+//   let filtered = videos;
+//   if (gradeLevel) filtered = filtered.filter(v => v.gradeLevel === gradeLevel);
+//   if (subject) filtered = filtered.filter(v => v.subject === subject);
+//   res.json(filtered);
+// });
+//
+// router.post("/videos", requireAuth, async (req, res) => {
+//   const user = (req as any).user;
+//   if (user.role !== "admin" && user.role !== "super_admin") { res.status(403).json({ error: "Admin only" }); return; }
+//   const { title, description, videoPath, thumbnailPath, gradeLevel, subject } = req.body;
+//   if (!title?.trim() || !videoPath?.trim()) { res.status(400).json({ error: "title and videoPath are required" }); return; }
+//   const [video] = await db.insert(studyVideosTable).values({ uploadedBy: user.id, title: title.trim(),
+//     description: description?.trim() ?? null, videoPath: videoPath.trim(),
+//     thumbnailPath: thumbnailPath?.trim() ?? null, gradeLevel: gradeLevel?.trim() ?? null,
+//     subject: subject?.trim() ?? null }).returning();
+//   res.status(201).json(video);
+// });
+//
+// router.delete("/videos/:id", requireAuth, async (req, res) => {
+//   const user = (req as any).user;
+//   if (user.role !== "admin" && user.role !== "super_admin") { res.status(403).json({ error: "Admin only" }); return; }
+//   await db.delete(studyVideosTable).where(eq(studyVideosTable.id, Number(req.params.id)));
+//   res.json({ success: true });
+// });
 
-  res.json(filtered);
-});
-
-// ── POST /api/mon-prof/videos ──────────────────────────────────────────────────
-router.post("/videos", requireAuth, async (req, res) => {
-  const user = (req as any).user;
-  if (user.role !== "admin" && user.role !== "super_admin") {
-    res.status(403).json({ error: "Admin only" });
-    return;
-  }
-
-  const { title, description, videoPath, thumbnailPath, gradeLevel, subject } = req.body as {
-    title: string;
-    description?: string;
-    videoPath: string;
-    thumbnailPath?: string;
-    gradeLevel?: string;
-    subject?: string;
-  };
-
-  if (!title?.trim() || !videoPath?.trim()) {
-    res.status(400).json({ error: "title and videoPath are required" });
-    return;
-  }
-
-  const [video] = await db.insert(studyVideosTable).values({
-    uploadedBy: user.id,
-    title: title.trim(),
-    description: description?.trim() ?? null,
-    videoPath: videoPath.trim(),
-    thumbnailPath: thumbnailPath?.trim() ?? null,
-    gradeLevel: gradeLevel?.trim() ?? null,
-    subject: subject?.trim() ?? null,
-  }).returning();
-
-  res.status(201).json(video);
-});
-
-// ── DELETE /api/mon-prof/videos/:id ──────────────────────────────────────────
-router.delete("/videos/:id", requireAuth, async (req, res) => {
-  const user = (req as any).user;
-  if (user.role !== "admin" && user.role !== "super_admin") {
-    res.status(403).json({ error: "Admin only" });
-    return;
-  }
-  await db.delete(studyVideosTable).where(eq(studyVideosTable.id, Number(req.params.id)));
-  res.json({ success: true });
-});
-
-// ── POST /api/mon-prof/videos/:id/view ────────────────────────────────────────
-router.post("/videos/:id/view", requireAuth, async (req, res) => {
-  await db.update(studyVideosTable)
-    .set({ views: sql`${studyVideosTable.views} + 1` })
-    .where(eq(studyVideosTable.id, Number(req.params.id)));
-  res.json({ success: true });
-});
+// router.post("/videos/:id/view", requireAuth, async (req, res) => {
+//   await db.update(studyVideosTable).set({ views: sql`${studyVideosTable.views} + 1` })
+//     .where(eq(studyVideosTable.id, Number(req.params.id)));
+//   res.json({ success: true });
+// });
 
 export default router;

@@ -60,7 +60,7 @@ interface StudyVideo {
   uploaderName: string | null;
 }
 
-type Tab = "pratique" | "questions" | "shorts";
+type Tab = "pratique" | "questions"; // "shorts" tab disabled
 
 // ── API helper ────────────────────────────────────────────────────────────────
 
@@ -805,7 +805,7 @@ export function MonProfEtude() {
   const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "pratique", label: t("student.monProf.tabPractice"), icon: <Sparkles className="w-4 h-4" /> },
     { id: "questions", label: t("student.monProf.tabQuestions"), icon: <BookOpen className="w-4 h-4" /> },
-    { id: "shorts", label: t("student.monProf.tabShorts"), icon: <Play className="w-4 h-4" /> },
+    // { id: "shorts", label: t("student.monProf.tabShorts"), icon: <Play className="w-4 h-4" /> }, // shorts disabled
   ];
 
   // Loading state
@@ -908,9 +908,7 @@ export function MonProfEtude() {
         {activeTab === "questions" && (
           <QuestionsTab userId={user?.id} />
         )}
-        {activeTab === "shorts" && (
-          <ShortsTab />
-        )}
+        {/* shorts tab disabled */}
           </>
         )}
       </div>
