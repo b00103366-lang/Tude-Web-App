@@ -68,6 +68,11 @@ async function getUniqueMerchantId(): Promise<string> {
 
 const router = Router();
 
+// ── Feature flags ─────────────────────────────────────────────────────────────
+// Set to true when Resend sending limits allow additional transactional emails.
+// While false, only the OTP email fires during the signup/auth flow.
+const ENABLE_EXTRA_EMAILS = false;
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 128;
@@ -488,10 +493,12 @@ router.post("/resend-verification", async (req, res) => {
     emailVerificationExpiresAt: newExpiry,
   }).where(eq(usersTable.id, user.id));
 
-  sendAccountVerificationEmail(
-    { email: user.email, fullName: user.fullName, merchantId: user.merchantId },
-    newToken
-  );
+  if (ENABLE_EXTRA_EMAILS) {
+    sendAccountVerificationEmail(
+      { email: user.email, fullName: user.fullName, merchantId: user.merchantId },
+      newToken
+    );
+  }
 
   res.json({ success: true, message: "Email de confirmation renvoyé." });
 });

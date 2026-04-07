@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 import { Link, useLocation } from "wouter";
@@ -8,48 +8,69 @@ import {
   CreditCard, Bell, Settings, LogOut, Users, CheckSquare,
   DollarSign, ScrollText, Crown,
   TrendingUp, UserCog, ArrowLeftRight, BadgeCheck, AlertCircle, Clock, XCircle,
-  Sparkles, Play, BarChart2, Menu, X, ChevronDown,
-  Library, FileText, Lightbulb, Layers, Archive, BrainCircuit,
+  Sparkles, Play, BarChart2, Menu, X, BrainCircuit, ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import {
+  getSubjectsForNiveauSection, isSectionLevel, subjectToSlug,
+} from "@/lib/educationConfig";
 
 type NavItem = {
   icon: any;
   label: string;
-  href?: string;
+  href: string;
   special?: boolean;
-  accordion?: boolean;
-  children?: { icon: any; label: string; href: string }[];
 };
+
+const REVISION_SECTIONS = [
+  { key: "banque-de-questions", label: "Banque de Questions" },
+  { key: "examens-blancs",      label: "Examens Blancs" },
+  { key: "notions-cles",        label: "Notions Clés" },
+  { key: "annales",             label: "Annales" },
+  { key: "flashcards",          label: "Flashcards" },
+];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logoutFn, impersonating, exitImpersonation } = useAuth();
   const [location] = useLocation();
   const { t } = useTranslation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [revisionOpen, setRevisionOpen] = useState(false);
+
+  // ── Revision accordion state ────────────────────────────────────────────────
+  const [revisionOpen, setRevisionOpen] = useState(() => location.startsWith("/revision"));
+  const [openSubject, setOpenSubject] = useState<string | null>(() => {
+    const parts = location.split("/");
+    return parts[1] === "revision" && parts[2] ? parts[2] : null;
+  });
+
+  // Sync accordion to external navigation (e.g., breadcrumb clicks)
+  useEffect(() => {
+    if (location.startsWith("/revision")) {
+      setRevisionOpen(true);
+      const parts = location.split("/");
+      if (parts[2]) setOpenSubject(parts[2]);
+    }
+  }, [location]);
 
   if (!user) return null;
 
   const isSuperAdmin = user.role === "super_admin";
   const isAdmin = user.role === "admin" || isSuperAdmin;
 
-  const REVISION_CHILDREN = [
-    { icon: Library,   label: "Banque de Questions", href: "/revision/banque-de-questions" },
-    { icon: FileText,  label: "Examens Blancs",       href: "/revision/examens-blancs" },
-    { icon: Lightbulb, label: "Notions Clés",         href: "/revision/notions-cles" },
-    { icon: Archive,   label: "Annales",              href: "/revision/annales" },
-    { icon: Layers,    label: "Flashcards",           href: "/revision/flashcards" },
-  ];
+  // Subjects list for the student's grade/section
+  const gradeLevel: string = user.role === "student" ? ((user as any)?.studentProfile?.gradeLevel ?? "") : "";
+  const educationSection: string | null = user.role === "student" ? ((user as any)?.studentProfile?.educationSection ?? null) : null;
+  const sectionKey = gradeLevel && isSectionLevel(gradeLevel) ? educationSection : null;
+  const revisionSubjects = gradeLevel ? (getSubjectsForNiveauSection(gradeLevel, sectionKey) as readonly string[]) : [];
 
   const NAV_ITEMS: Record<string, NavItem[]> = {
     student: [
       { icon: LayoutDashboard, label: t("sidebar.student.dashboard"), href: "/student/dashboard" },
       { icon: BookOpen,        label: t("sidebar.student.browse"),    href: "/student/browse" },
       { icon: GraduationCap,  label: t("sidebar.student.classes"),   href: "/student/classes" },
-      { icon: Sparkles,        label: "Révision Étude+",              special: true, accordion: true, children: REVISION_CHILDREN },
+      { icon: Sparkles,        label: "Révision Étude+",              href: "/revision", special: true },
       { icon: Calendar,        label: t("sidebar.student.calendar"),  href: "/student/calendar" },
       { icon: CheckSquare,     label: t("sidebar.student.grades"),    href: "/student/grades" },
       { icon: CreditCard,      label: t("sidebar.student.payments"),  href: "/student/payments" },
@@ -69,14 +90,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       { icon: LayoutDashboard, label: t("sidebar.admin.dashboard"), href: "/admin/dashboard" },
       { icon: Users,           label: t("sidebar.admin.users"),     href: "/admin/users" },
       { icon: BrainCircuit,    label: "Gestion des Questions",      href: "/admin/questions" },
-      // { icon: Play, label: "Shorts Étude", href: "/admin/videos" }, // shorts disabled
     ],
     super_admin: [
       { icon: LayoutDashboard, label: t("sidebar.admin.dashboard"),  href: "/admin/dashboard" },
       { icon: BarChart2,       label: "Analytiques",                 href: "/admin/analytics" },
       { icon: Users,           label: t("sidebar.admin.users"),      href: "/admin/users" },
       { icon: BrainCircuit,    label: "Gestion des Questions",       href: "/admin/questions" },
-      // { icon: Play, label: "Shorts Étude", href: "/admin/videos" }, // shorts disabled
       { icon: TrendingUp,      label: t("sidebar.admin.finances"),   href: "/admin/finances" },
       { icon: ScrollText,      label: t("sidebar.admin.auditLogs"),  href: "/admin/audit-logs" },
       { icon: Settings,        label: t("sidebar.admin.settings"),   href: "/admin/settings" },
@@ -91,9 +110,121 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     user.role === "professor" ? t("sidebar.roles.professor") :
     t("sidebar.roles.student");
 
+  // ── Render a single nav item (handles regular links + the revision accordion) ─
+  function renderNavItem(item: NavItem, onLinkClick?: () => void) {
+    if (!item.special) {
+      const active = location === item.href || location.startsWith(item.href + "/");
+      return (
+        <Link
+          key={item.href}
+          href={item.href}
+          onClick={onLinkClick}
+          className={cn(
+            "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
+            active
+              ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/20"
+              : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          )}
+        >
+          <item.icon className="w-5 h-5 shrink-0" />
+          {item.label}
+        </Link>
+      );
+    }
+
+    // ── Two-level Révision Étude+ accordion ──────────────────────────────────
+    const isRevisionActive = location.startsWith("/revision");
+    const currentSlug = location.startsWith("/revision/") ? location.split("/")[2] : null;
+
+    return (
+      <div key="revision">
+        {/* Level 1: toggle */}
+        <button
+          type="button"
+          onClick={() => setRevisionOpen(o => !o)}
+          className={cn(
+            "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium w-full",
+            isRevisionActive
+              ? "bg-yellow-400/20 text-yellow-300 shadow-lg shadow-yellow-400/10"
+              : "text-yellow-400/80 hover:bg-yellow-400/10 hover:text-yellow-300"
+          )}
+        >
+          <Sparkles className="w-5 h-5 shrink-0 text-yellow-400" />
+          <span className="flex-1 text-left">Révision Étude+</span>
+          <ChevronDown className={cn(
+            "w-4 h-4 shrink-0 text-yellow-400/70 transition-transform duration-200",
+            revisionOpen && "rotate-180"
+          )} />
+        </button>
+
+        {/* Level 2: subjects */}
+        {revisionOpen && (
+          <div className="ml-3 mt-1 space-y-0.5 border-l border-yellow-400/20 pl-2">
+            {revisionSubjects.length === 0 ? (
+              <p className="px-3 py-2 text-xs text-sidebar-foreground/40 italic">
+                Niveau non défini
+              </p>
+            ) : revisionSubjects.map(subject => {
+              const slug = subjectToSlug(subject);
+              const isSubjectActive = currentSlug === slug;
+              const isSubjectOpen = openSubject === slug;
+
+              return (
+                <div key={subject}>
+                  {/* Subject toggle */}
+                  <button
+                    type="button"
+                    onClick={() => setOpenSubject(isSubjectOpen ? null : slug)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-lg transition-all w-full text-sm",
+                      isSubjectActive
+                        ? "text-yellow-300 bg-yellow-400/10 font-semibold"
+                        : "text-sidebar-foreground/60 hover:text-yellow-300/80 hover:bg-yellow-400/5 font-medium"
+                    )}
+                  >
+                    <span className="flex-1 text-left truncate">{subject}</span>
+                    <ChevronDown className={cn(
+                      "w-3.5 h-3.5 shrink-0 text-yellow-400/50 transition-transform duration-150",
+                      isSubjectOpen && "rotate-180"
+                    )} />
+                  </button>
+
+                  {/* Section links */}
+                  {isSubjectOpen && (
+                    <div className="ml-2 mt-0.5 mb-1 space-y-0.5 border-l border-yellow-400/15 pl-2">
+                      {REVISION_SECTIONS.map(section => {
+                        const href = `/revision/${slug}/${section.key}`;
+                        const sectionActive = location === href || location.startsWith(href + "/");
+                        return (
+                          <Link
+                            key={section.key}
+                            href={href}
+                            onClick={onLinkClick}
+                            className={cn(
+                              "flex items-center px-3 py-1.5 rounded-lg text-xs transition-colors",
+                              sectionActive
+                                ? "text-yellow-300 font-semibold bg-yellow-400/10"
+                                : "text-sidebar-foreground/45 hover:text-yellow-200/80 hover:bg-yellow-400/5"
+                            )}
+                          >
+                            {section.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
+      {/* Desktop Sidebar */}
       <aside className="w-72 bg-sidebar text-sidebar-foreground border-r border-sidebar-border hidden lg:flex flex-col fixed inset-y-0 z-40 shadow-2xl shadow-black/10">
         {/* Brand */}
         <div className="p-6 flex items-center gap-3">
@@ -145,72 +276,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               {isSuperAdmin ? t("sidebar.controlPanel") : t("sidebar.administration")}
             </p>
           )}
-
-          {items.map((item: NavItem) => {
-            if (item.accordion && item.children) {
-              const isChildActive = item.children.some(c => location === c.href || location.startsWith(c.href + "/"));
-              const isOpen = revisionOpen || isChildActive;
-              return (
-                <div key={item.label}>
-                  <button
-                    onClick={() => setRevisionOpen(o => !o)}
-                    className={cn(
-                      "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium w-full",
-                      isChildActive
-                        ? "bg-yellow-400/20 text-yellow-300 shadow-lg shadow-yellow-400/10"
-                        : "text-yellow-400/80 hover:bg-yellow-400/10 hover:text-yellow-300"
-                    )}
-                  >
-                    <item.icon className="w-5 h-5 shrink-0 text-yellow-400" />
-                    <span className="flex-1 text-left">{item.label}</span>
-                    <ChevronDown className={cn("w-4 h-4 text-yellow-400/70 transition-transform duration-200", isOpen && "rotate-180")} />
-                  </button>
-                  {isOpen && (
-                    <div className="ml-3 mt-1 space-y-0.5 border-l border-yellow-400/20 pl-3">
-                      {item.children.map(child => {
-                        const childActive = location === child.href || location.startsWith(child.href + "/");
-                        return (
-                          <Link
-                            key={child.href}
-                            href={child.href}
-                            className={cn(
-                              "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 font-medium text-sm",
-                              childActive
-                                ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                                : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                            )}
-                          >
-                            <child.icon className="w-4 h-4 shrink-0" />
-                            {child.label}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            }
-            const active = location === item.href || location.startsWith((item.href ?? "") + "/");
-            return (
-              <Link
-                key={item.href}
-                href={item.href ?? "/"}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
-                  active
-                    ? item.special
-                      ? "bg-yellow-400/20 text-yellow-300 shadow-lg shadow-yellow-400/10"
-                      : "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/20"
-                    : item.special
-                      ? "text-yellow-400/80 hover:bg-yellow-400/10 hover:text-yellow-300"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                )}
-              >
-                <item.icon className={cn("w-5 h-5 shrink-0", item.special && "text-yellow-400")} />
-                {item.label}
-              </Link>
-            );
-          })}
+          {items.map((item: NavItem) => renderNavItem(item))}
         </nav>
 
         <div className="p-4 border-t border-sidebar-border mt-auto space-y-2">
@@ -295,73 +361,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </div>
               {/* Nav */}
               <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-                {items.map((item: NavItem) => {
-                  if (item.accordion && item.children) {
-                    const isChildActive = item.children.some(c => location === c.href || location.startsWith(c.href + "/"));
-                    const isOpen = revisionOpen || isChildActive;
-                    return (
-                      <div key={item.label}>
-                        <button
-                          onClick={() => setRevisionOpen(o => !o)}
-                          className={cn(
-                            "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium w-full",
-                            isChildActive
-                              ? "bg-yellow-400/20 text-yellow-300"
-                              : "text-yellow-400/80 hover:bg-yellow-400/10 hover:text-yellow-300"
-                          )}
-                        >
-                          <item.icon className="w-5 h-5 shrink-0 text-yellow-400" />
-                          <span className="flex-1 text-left">{item.label}</span>
-                          <ChevronDown className={cn("w-4 h-4 text-yellow-400/70 transition-transform duration-200", isOpen && "rotate-180")} />
-                        </button>
-                        {isOpen && (
-                          <div className="ml-3 mt-1 space-y-0.5 border-l border-yellow-400/20 pl-3">
-                            {item.children.map(child => {
-                              const childActive = location === child.href || location.startsWith(child.href + "/");
-                              return (
-                                <Link
-                                  key={child.href}
-                                  href={child.href}
-                                  onClick={() => setMobileOpen(false)}
-                                  className={cn(
-                                    "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 font-medium text-sm",
-                                    childActive
-                                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                                      : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                                  )}
-                                >
-                                  <child.icon className="w-4 h-4 shrink-0" />
-                                  {child.label}
-                                </Link>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  }
-                  const active = location === item.href || location.startsWith((item.href ?? "") + "/");
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href ?? "/"}
-                      onClick={() => setMobileOpen(false)}
-                      className={cn(
-                        "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
-                        active
-                          ? item.special
-                            ? "bg-yellow-400/20 text-yellow-300"
-                            : "bg-sidebar-primary text-sidebar-primary-foreground"
-                          : item.special
-                            ? "text-yellow-400/80 hover:bg-yellow-400/10 hover:text-yellow-300"
-                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                      )}
-                    >
-                      <item.icon className={cn("w-5 h-5 shrink-0", item.special && "text-yellow-400")} />
-                      {item.label}
-                    </Link>
-                  );
-                })}
+                {items.map((item: NavItem) => renderNavItem(item, () => setMobileOpen(false)))}
               </nav>
               {/* Footer */}
               <div className="p-4 border-t border-sidebar-border space-y-2">

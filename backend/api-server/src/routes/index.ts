@@ -21,6 +21,8 @@ import monProfRouter from "./monProf";
 import analyticsRouter from "./analytics";
 import adminAnalyticsRouter from "./adminAnalytics";
 import adminQuestionsRouter from "./adminQuestions";
+import { revisionRouter, adminKBRouter } from "./revision";
+import kbRouter from "./kb";
 
 const router: IRouter = Router();
 
@@ -48,5 +50,8 @@ router.use("/mon-prof", monProfRouter);
 router.use("/analytics", analyticsRouter);
 router.use("/admin/analytics", adminAnalyticsRouter);
 router.use("/admin/questions", adminQuestionsRouter);
+router.use("/revision", revisionRouter);
+router.use("/admin/knowledge-base", adminKBRouter);
+router.use("/kb", kbRouter);
 
 export default router;

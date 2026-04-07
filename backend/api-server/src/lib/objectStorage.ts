@@ -1,6 +1,11 @@
 import { Storage, File } from "@google-cloud/storage";
 import { Readable } from "stream";
 import { randomUUID } from "crypto";
+import { join } from "path";
+import { writeFile } from "fs/promises";
+import { existsSync, mkdirSync } from "fs";
+
+const LOCAL_UPLOAD_DIR = join(process.cwd(), "local-uploads");
 import {
   ObjectAclPolicy,
   ObjectPermission,
@@ -264,4 +269,39 @@ async function signObjectURL({
 
   const body = await response.json() as { signed_url: string };
   return body.signed_url;
+}
+
+/**
+ * Save a file buffer to storage (GCS or local fallback).
+ * Returns the internal storage path suitable for use as fileUrl.
+ */
+export async function saveBufferToStorage(
+  buffer: Buffer,
+  originalName: string,
+  contentType: string,
+  prefix = "kb",
+): Promise<string> {
+  const uuid   = randomUUID();
+  const ext    = originalName.includes(".") ? originalName.split(".").pop()!.toLowerCase() : "";
+  const suffix = ext ? `.${ext}` : "";
+
+  const privateDir = process.env["PRIVATE_OBJECT_DIR"];
+  if (privateDir) {
+    // GCS mode — upload directly via @google-cloud/storage
+    const objectId    = `${uuid}${suffix}`;
+    const fullPath    = `/${privateDir.replace(/^\//, "")}/${prefix}/${objectId}`;
+    const pathParts   = fullPath.slice(1).split("/");
+    const bucketName  = pathParts[0];
+    const objectName  = pathParts.slice(1).join("/");
+    await objectStorageClient.bucket(bucketName).file(objectName).save(buffer, { contentType });
+    return `/objects/${prefix}/${objectId}`;
+  }
+
+  // Local fallback
+  if (!existsSync(LOCAL_UPLOAD_DIR)) {
+    mkdirSync(LOCAL_UPLOAD_DIR, { recursive: true });
+  }
+  const localName = `${prefix}-${uuid}${suffix}`;
+  await writeFile(join(LOCAL_UPLOAD_DIR, localName), buffer);
+  return `/local/${localName}`;
 }

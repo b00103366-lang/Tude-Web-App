@@ -13,6 +13,7 @@ import {
   isValidNiveauKey, isSectionLevel, isValidSectionKey, getSubjectsForNiveauSection,
   getClassLevel, getStudentLevel, VALID_LEVEL_KEYS, getSubjectsForLevel,
 } from "../lib/educationConfig";
+import { processUpload } from "../services/knowledgeBaseProcessor";
 import { PRACTICE_QUESTIONS, makePracticeKey } from "../config/practiceQuestions";
 
 const router = Router();
@@ -600,6 +601,23 @@ router.post("/:id/materials", requireAuth, async (req, res) => {
     fileType: req.body.fileType || null,
     type: req.body.type || "document",
   }).returning();
+
+  // Fire-and-forget knowledge base processing — professor does NOT wait for this.
+  // No professor notification, no UI change, errors silently logged server-side only.
+  if (material.fileUrl && material.type === "document") {
+    setImmediate(() => {
+      processUpload({
+        fileId:     material.id,
+        fileUrl:    material.fileUrl!,
+        fileType:   material.fileType ?? null,
+        subject:    cls.subject,
+        gradeLevel: cls.gradeLevel,
+        sectionKey: cls.sectionKey ?? null,
+        topic:      material.title,
+      }).catch(err => console.error("[kb] Background processing error:", err));
+    });
+  }
+
   res.json(material);
 });
 

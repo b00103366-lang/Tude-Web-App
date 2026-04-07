@@ -1,9 +1,12 @@
 import { pgTable, serial, integer, text, boolean, timestamp } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
+import { materialsTable } from "./materials";
 
 export const questionsTable = pgTable("questions", {
   id:                     serial("id").primaryKey(),
   createdBy:              integer("created_by").references(() => usersTable.id, { onDelete: "set null" }),
+  sourceFileId:           integer("source_file_id").references(() => materialsTable.id, { onDelete: "set null" }),
+  kbFileId:               integer("kb_file_id"),   // soft ref to knowledge_base_files.id
   status:                 text("status").notNull().default("draft"),   // 'draft' | 'published'
   gradeLevel:             text("grade_level").notNull(),                // e.g. "7eme", "bac"
   sectionKey:             text("section_key"),                          // e.g. "sciences_maths" or null

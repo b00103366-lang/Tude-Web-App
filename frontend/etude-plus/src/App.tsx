@@ -30,7 +30,8 @@ import { StudentSettings } from "@/pages/student/StudentSettings";
 import { CoursePreview } from "@/pages/student/CoursePreview";
 import { MonProfEtude } from "@/pages/student/MonProfEtude";
 import { ProfessorProfile } from "@/pages/student/ProfessorProfile";
-import { BanqueDeQuestions } from "@/pages/revision/BanqueDeQuestions";
+import { RevisionHub } from "@/pages/revision/BanqueDeQuestions";
+import { RevisionSubject } from "@/pages/revision/RevisionSubject";
 import { BanqueDeQuestionsSubject } from "@/pages/revision/BanqueDeQuestionsSubject";
 import { BanqueDeQuestionsTopic } from "@/pages/revision/BanqueDeQuestionsTopic";
 import { ExamensBlancs } from "@/pages/revision/ExamensBlancs";
@@ -60,6 +61,7 @@ import { AdminAuditLogs } from "@/pages/admin/AdminAuditLogs";
 import { AdminAnalytics } from "@/pages/admin/AdminAnalytics";
 import { AdminQuestions } from "@/pages/admin/AdminQuestions";
 import { AdminQuestionsGenerate } from "@/pages/admin/AdminQuestionsGenerate";
+import { KnowledgeBase } from "@/pages/admin/KnowledgeBase";
 
 // Legal pages
 import { Terms } from "@/pages/Terms";
@@ -171,27 +173,30 @@ function Router() {
         {() => <ProtectedRoute component={MonProfEtude} allowedRoles={["student"]} />}
       </Route>
 
-      {/* Révision Étude+ Routes */}
-      <Route path="/revision/banque-de-questions/:subject/:topic">
+      {/* Révision Étude+ Routes — most specific first */}
+      <Route path="/revision/:subject/banque-de-questions/:topic">
         {() => <ProtectedRoute component={BanqueDeQuestionsTopic} allowedRoles={["student"]} />}
       </Route>
-      <Route path="/revision/banque-de-questions/:subject">
+      <Route path="/revision/:subject/banque-de-questions">
         {() => <ProtectedRoute component={BanqueDeQuestionsSubject} allowedRoles={["student"]} />}
       </Route>
-      <Route path="/revision/banque-de-questions">
-        {() => <ProtectedRoute component={BanqueDeQuestions} allowedRoles={["student"]} />}
-      </Route>
-      <Route path="/revision/examens-blancs">
+      <Route path="/revision/:subject/examens-blancs">
         {() => <ProtectedRoute component={ExamensBlancs} allowedRoles={["student"]} />}
       </Route>
-      <Route path="/revision/notions-cles">
+      <Route path="/revision/:subject/notions-cles">
         {() => <ProtectedRoute component={NotionsCles} allowedRoles={["student"]} />}
       </Route>
-      <Route path="/revision/annales">
+      <Route path="/revision/:subject/annales">
         {() => <ProtectedRoute component={Annales} allowedRoles={["student"]} />}
       </Route>
-      <Route path="/revision/flashcards">
+      <Route path="/revision/:subject/flashcards">
         {() => <ProtectedRoute component={Flashcards} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/revision/:subject">
+        {() => <ProtectedRoute component={RevisionSubject} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/revision">
+        {() => <ProtectedRoute component={RevisionHub} allowedRoles={["student"]} />}
       </Route>
 
       {/* Shared/Special Routes */}
@@ -250,6 +255,9 @@ function Router() {
       <Route path="/admin/questions">
         {() => <ProtectedRoute component={AdminQuestions} allowedRoles={["admin", "super_admin"]} />}
       </Route>
+
+      {/* Hidden admin KB tool — no link in UI, accessed by typing /kb directly */}
+      <Route path="/kb" component={KnowledgeBase} />
 
       {/* Super Admin only routes */}
       <Route path="/admin/analytics">

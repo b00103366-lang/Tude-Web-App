@@ -23,3 +23,5 @@ export * from "./aiUsage";
 export * from "./studyVideos";
 export * from "./userEvents";
 export * from "./questions";
+export * from "./knowledgeBase";
+export * from "./knowledgeBaseFiles";

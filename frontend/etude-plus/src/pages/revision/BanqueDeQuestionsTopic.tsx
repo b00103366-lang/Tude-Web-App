@@ -1,11 +1,11 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Link } from "wouter";
+import { Link, useRoute } from "wouter";
 import { BookOpen, ChevronRight, Construction } from "lucide-react";
-import { useRoute } from "wouter";
+import { subjectToSlug, subjectFromSlug } from "@/lib/educationConfig";
 
 export function BanqueDeQuestionsTopic() {
-  const [, params] = useRoute("/revision/banque-de-questions/:subject/:topic");
-  const subject = params?.subject ? decodeURIComponent(params.subject) : "";
+  const [, params] = useRoute("/revision/:subject/banque-de-questions/:topic");
+  const subject = params?.subject ? (subjectFromSlug(params.subject) ?? decodeURIComponent(params.subject)) : "";
   const topic = params?.topic ? decodeURIComponent(params.topic) : "";
 
   return (
@@ -15,12 +15,16 @@ export function BanqueDeQuestionsTopic() {
         <div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1 flex-wrap">
             <BookOpen className="w-4 h-4" />
-            <Link href="/revision/banque-de-questions" className="hover:text-foreground transition-colors">
-              Banque de Questions
+            <Link href="/revision" className="hover:text-foreground transition-colors">
+              Révision Étude+
             </Link>
             <ChevronRight className="w-3 h-3" />
-            <Link href={`/revision/banque-de-questions/${encodeURIComponent(subject)}`} className="hover:text-foreground transition-colors">
+            <Link href={`/revision/${subjectToSlug(subject)}`} className="hover:text-foreground transition-colors">
               {subject}
+            </Link>
+            <ChevronRight className="w-3 h-3" />
+            <Link href={`/revision/${subjectToSlug(subject)}/banque-de-questions`} className="hover:text-foreground transition-colors">
+              Banque de Questions
             </Link>
             <ChevronRight className="w-3 h-3" />
             <span>{topic}</span>

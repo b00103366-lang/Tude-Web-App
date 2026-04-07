@@ -330,6 +330,26 @@ export function isCollegeLevel(key: string): boolean {
   return (SIMPLE_LEVELS as any)[key]?.cycle === "college";
 }
 
+// ── Subject URL slugs ─────────────────────────────────────────────────────────
+
+/** Convert a subject display name to a URL-safe slug.
+ *  e.g. "Mathématiques" → "mathematiques", "Physique-Chimie" → "physique-chimie" */
+export function subjectToSlug(subject: string): string {
+  return subject
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")  // strip diacritics
+    .replace(/[''ʼ]/g, "-")           // apostrophes → hyphen
+    .replace(/[^a-zA-Z0-9]+/g, "-")   // non-alphanumeric → hyphen
+    .replace(/-+/g, "-")              // collapse consecutive hyphens
+    .replace(/^-|-$/g, "")            // trim
+    .toLowerCase();
+}
+
+/** Reverse a slug back to the canonical subject display name, or null if not found. */
+export function subjectFromSlug(slug: string): string | null {
+  return ALL_SUBJECTS.find(s => subjectToSlug(s) === slug) ?? null;
+}
+
 /** All unique subjects across all levels */
 export const ALL_SUBJECTS: string[] = [
   ...new Set([
