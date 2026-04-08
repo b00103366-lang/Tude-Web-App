@@ -115,7 +115,7 @@ function statusBadge(status: KBFileRecord["status"]) {
   );
 }
 
-function authHeader() {
+function authHeader(): Record<string, string> {
   const token = localStorage.getItem("token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
