@@ -70,6 +70,7 @@ import { Cookies } from "@/pages/Cookies";
 
 // Cookie consent
 import { CookieBanner } from "@/components/CookieBanner";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Shared Pages
 import { Checkout } from "@/pages/checkout/Checkout";
@@ -292,15 +293,19 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-        <CookieBanner />
-      </AuthProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <ErrorBoundary>
+              <Router />
+            </ErrorBoundary>
+          </WouterRouter>
+          <Toaster />
+          <CookieBanner />
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

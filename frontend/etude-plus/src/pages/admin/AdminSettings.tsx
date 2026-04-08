@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Button, Input, Label } from "@/components/ui/Premium";
 import { ProfileCard } from "@/components/shared/ProfileCard";
@@ -146,12 +146,13 @@ export function AdminSettings() {
     queryFn: () => adminFetch(`${API_URL}/api/admin/settings`),
   });
 
-  // Sync state when settings load
-  if (platformSettings && commission === "15" && maxPrice === "30" && !maintenance) {
+  // Sync state when settings load (must be in useEffect — never call setState during render)
+  useEffect(() => {
+    if (!platformSettings) return;
     if (platformSettings.commissionRate !== undefined) setCommission(String(platformSettings.commissionRate));
     if (platformSettings.maxCoursePrice !== undefined) setMaxPrice(String(platformSettings.maxCoursePrice));
     if (platformSettings.maintenanceMode !== undefined) setMaintenance(!!platformSettings.maintenanceMode);
-  }
+  }, [platformSettings]);
 
   // Password change
   const [currentPassword, setCurrentPassword] = useState("");
