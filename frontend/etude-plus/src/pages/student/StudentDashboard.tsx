@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Button, Badge } from "@/components/ui/Premium";
+import { JoinClassButton, LiveBadge } from "@/components/shared/SessionButton";
 import { useGetMyEnrollments, getToken } from "@workspace/api-client-react";
 import { BookOpen, Calendar, PlayCircle, Clock, GraduationCap, Wallet } from "lucide-react";
 import { format } from "date-fns";
@@ -111,18 +112,21 @@ export function StudentDashboard() {
                   <PlayCircle className="w-10 h-10 text-primary" />
                 </div>
                 <div className="flex-1 text-center sm:text-left">
-                  <Badge className="mb-2">{upcomingSessions[0].subject}</Badge>
+                  <div className="flex items-center gap-2 mb-2 flex-wrap justify-center sm:justify-start">
+                    <Badge>{upcomingSessions[0].subject}</Badge>
+                    {upcomingSessions[0].status === "live" && <LiveBadge />}
+                  </div>
                   <h3 className="text-2xl font-bold text-foreground">{upcomingSessions[0].title}</h3>
                   <p className="text-muted-foreground mt-1 flex items-center justify-center sm:justify-start gap-2">
                     <Clock className="w-4 h-4" />
                     {format(new Date(upcomingSessions[0].scheduledAt), "EEEE d MMMM 'à' HH:mm", { locale: fr })}
                   </p>
                 </div>
-                <Link href={`/classroom/${upcomingSessions[0].id}`}>
-                  <Button size="lg" className="w-full sm:w-auto shadow-lg shadow-primary/20">
-                    {t("student.dashboard.joinRoom")}
-                  </Button>
-                </Link>
+                <JoinClassButton
+                  session={upcomingSessions[0]}
+                  userName={user?.fullName ?? "Étudiant"}
+                  className="w-full sm:w-auto"
+                />
               </div>
             </Card>
           </div>
@@ -159,7 +163,10 @@ export function StudentDashboard() {
                     <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                       <span>{cls.subject}</span> &bull; <span>{cls.gradeLevel}</span>
                     </div>
-                    <h3 className="font-bold text-lg leading-tight mb-2 group-hover:text-primary transition-colors">{cls.title}</h3>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">{cls.title}</h3>
+                      {cls.nextSession?.status === "live" && <LiveBadge />}
+                    </div>
                     <p className="text-sm text-muted-foreground mb-4">{t("student.dashboard.by")} {cls.professor?.fullName ?? "—"}</p>
                     <Link href={`/student/classes/${cls.id}`}>
                       <Button variant="outline" className="w-full">{t("student.dashboard.openCourse")}</Button>

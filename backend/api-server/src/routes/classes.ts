@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { randomUUID } from "crypto";
 import {
   db, classesTable, professorsTable, usersTable, liveSessionsTable,
   enrollmentsTable, materialsTable, quizzesTable, testsTable, assignmentsTable,
@@ -481,6 +482,8 @@ router.post("/:id/sessions", requireAuth, async (req, res) => {
     return;
   }
 
+  const sessionLink = `https://meet.jit.si/etude-plus-${classId}-${randomUUID()}`;
+
   const [session] = await db.insert(liveSessionsTable).values({
     classId,
     title,
@@ -489,6 +492,7 @@ router.post("/:id/sessions", requireAuth, async (req, res) => {
     durationHours: durationHours ?? 1,
     scheduledAt: new Date(scheduledAt),
     status: "scheduled",
+    sessionLink,
     enrolledCount: 0,
   }).returning();
   res.json(session);

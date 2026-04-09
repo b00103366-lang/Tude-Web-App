@@ -14,6 +14,7 @@ export const liveSessionsTable = pgTable("live_sessions", {
   durationHours: real("duration_hours").notNull(),
   scheduledAt: timestamp("scheduled_at").notNull(),
   status: sessionStatusEnum("status").notNull().default("scheduled"),
+  sessionLink: text("session_link"),
   enrolledCount: integer("enrolled_count").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

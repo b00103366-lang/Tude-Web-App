@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useRoute, Link } from "wouter";
+import { JoinClassButton, LiveBadge } from "@/components/shared/SessionButton";
+import { useAuth } from "@/hooks/use-auth";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Button, Badge } from "@/components/ui/Premium";
 import { useTranslation } from "react-i18next";
@@ -359,6 +361,7 @@ export function StudentClassDetail() {
   const [, params] = useRoute("/student/classes/:id");
   const [activeTab, setActiveTab] = useState("overview");
   const classId = params?.id ? parseInt(params.id) : 0;
+  const { user } = useAuth();
 
   const { data: cls, isLoading } = useGetClass(classId, { query: { enabled: !!classId } as any });
   const { data: allMaterials = [] } = useListClassMaterials(classId, { query: { enabled: !!classId } as any }) as any;
@@ -608,13 +611,11 @@ export function StudentClassDetail() {
                       <div className="space-y-4">
                         {upcomingSessions.map((s: any) => (
                           <Card key={s.id} className={`p-6 ${s.status === "live" ? "border-red-300 shadow-lg shadow-red-100" : "border-primary/20"}`}>
-                            <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start justify-between gap-4 flex-wrap">
                               <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
+                                <div className="flex items-center gap-2 mb-2 flex-wrap">
                                   {s.status === "live" ? (
-                                    <Badge className="bg-red-500/10 text-red-600 border-red-200">
-                                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse inline-block mr-1" /> EN DIRECT
-                                    </Badge>
+                                    <LiveBadge />
                                   ) : (
                                     <Badge variant="secondary">Programmée</Badge>
                                   )}
@@ -637,12 +638,10 @@ export function StudentClassDetail() {
                                   </span>
                                 </div>
                               </div>
-                              <Link href={`/classroom/${s.id}`}>
-                                <Button className={s.status === "live" ? "bg-red-600 hover:bg-red-700 text-white" : ""}>
-                                  <PlayCircle className="w-4 h-4 mr-2" />
-                                  {s.status === "live" ? "Rejoindre" : "Accéder"}
-                                </Button>
-                              </Link>
+                              <JoinClassButton
+                                session={s}
+                                userName={user?.fullName ?? "Étudiant"}
+                              />
                             </div>
                           </Card>
                         ))}

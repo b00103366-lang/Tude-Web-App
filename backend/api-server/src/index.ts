@@ -10,6 +10,7 @@ process.on("uncaughtException", (error) => {
 
 console.log("Loading app...");
 import app from "./app.js";
+import { startSessionScheduler } from "./services/sessionScheduler.js";
 
 console.log("Checking environment variables...");
 const rawPort = process.env["PORT"];
@@ -40,4 +41,5 @@ console.log("Starting HTTP listener...");
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
   console.log("Server ready.");
+  startSessionScheduler();
 });

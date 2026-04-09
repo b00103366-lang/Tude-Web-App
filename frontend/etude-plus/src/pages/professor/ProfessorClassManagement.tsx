@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { PracticeQuestionsTab } from "@/components/shared/PracticeQuestionsTab";
+import { StartClassButton, LiveBadge } from "@/components/shared/SessionButton";
 import { useRoute, Link } from "wouter";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -27,6 +28,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { formatTND } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
@@ -231,6 +233,7 @@ export function ProfessorClassManagement() {
   const classId = params?.id ? parseInt(params.id) : 0;
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState("overview");
   const [showAddMaterial, setShowAddMaterial] = useState(false);
@@ -307,6 +310,20 @@ export function ProfessorClassManagement() {
       toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     },
   });
+
+  const startSession = async (sessionId: number) => {
+    const token = getToken();
+    const res = await fetch(`${API_URL}/api/classes/sessions/${sessionId}/start`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(d?.error ?? "Erreur lors du démarrage");
+    }
+    qc.invalidateQueries({ queryKey: [`/api/classes/${classId}/sessions`] });
+    toast({ title: "Cours démarré", description: "Le statut est maintenant EN DIRECT." });
+  };
 
   const cancelSession = useMutation({
     mutationFn: async (sessionId: number) => {
@@ -507,9 +524,13 @@ export function ProfessorClassManagement() {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <Badge className={s.status === "live" ? "bg-red-100 text-red-700" : s.status === "scheduled" ? "bg-blue-100 text-blue-700" : ""} variant={s.status === "ended" ? "secondary" : undefined}>
-                            {s.status === "live" ? t("prof.classManagement.statusLive") : s.status === "scheduled" ? t("prof.classManagement.statusScheduled") : t("prof.classManagement.statusEnded")}
-                          </Badge>
+                          {s.status === "live" ? (
+                            <LiveBadge />
+                          ) : (
+                            <Badge className={s.status === "scheduled" ? "bg-blue-100 text-blue-700" : ""} variant={s.status === "ended" ? "secondary" : undefined}>
+                              {s.status === "scheduled" ? t("prof.classManagement.statusScheduled") : t("prof.classManagement.statusEnded")}
+                            </Badge>
+                          )}
                           <span className="text-sm text-muted-foreground">{s.price} TND</span>
                         </div>
                         <h4 className="text-lg font-bold mb-1">{s.title}</h4>
@@ -519,7 +540,7 @@ export function ProfessorClassManagement() {
                           <span className="flex items-center gap-1"><Clock className="w-4 h-4" />{s.durationHours}h</span>
                         </div>
                       </div>
-                      <div className="flex gap-3">
+                      <div className="flex gap-3 items-center flex-wrap">
                         {(s.status === "scheduled" || s.status === "live") && (
                           <>
                             <Button
@@ -535,11 +556,11 @@ export function ProfessorClassManagement() {
                             >
                               <XCircle className="w-4 h-4 mr-2" /> {t("prof.classManagement.cancel")}
                             </Button>
-                            <Link href={`/classroom/${s.id}`}>
-                              <Button className="bg-red-600 hover:bg-red-700 text-white shadow-lg">
-                                <PlayCircle className="w-4 h-4 mr-2" /> {t("prof.classManagement.launch")}
-                              </Button>
-                            </Link>
+                            <StartClassButton
+                              session={s}
+                              userName={user?.fullName ?? "Professeur"}
+                              onStart={startSession}
+                            />
                           </>
                         )}
                         {s.status === "ended" && (
