@@ -76,7 +76,8 @@ const ENABLE_EXTRA_EMAILS = false;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 128;
-const ALLOWED_ROLES = ["student", "professor"] as const;
+// MVP: professor role suppressed from self-registration
+const ALLOWED_ROLES = ["student"] as const;
 type AllowedRole = (typeof ALLOWED_ROLES)[number];
 
 router.get("/me", requireAuth, async (req, res) => {
@@ -300,7 +301,7 @@ router.post("/register", registerLimiter, async (req, res) => {
 
   // Prevent self-registration as admin
   if (!ALLOWED_ROLES.includes(role as AllowedRole)) {
-    res.status(400).json({ error: "Invalid role. Must be 'student' or 'professor'" });
+    res.status(400).json({ error: "Invalid role. Must be 'student'" });
     return;
   }
 

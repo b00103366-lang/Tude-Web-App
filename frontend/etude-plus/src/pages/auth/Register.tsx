@@ -72,9 +72,8 @@ export function Register() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const searchParams = new URLSearchParams(window.location.search);
-  const initialRole = searchParams.get("role") === "professor" ? "professor" : "student";
-  const [role, setRole] = useState<"student" | "professor">(initialRole as any);
+  // MVP: professor role suppressed — always default to student regardless of query param
+  const [role, setRole] = useState<"student" | "professor">("student");
 
   // Step state
   const [step, setStep] = useState<string>("form");
@@ -175,12 +174,9 @@ export function Register() {
 
       const registeredUser = await registerFn(payload);
 
-      if (role === "professor") {
-        setLocation("/professor/kyc");
-      } else {
-        setStep("done");
-        setTimeout(() => setLocation(getDashboardPath(registeredUser.role)), 800);
-      }
+      // MVP: professor post-registration redirect suppressed
+      setStep("done");
+      setTimeout(() => setLocation(getDashboardPath(registeredUser.role)), 800);
     } catch (e: any) {
       const msg = e?.data?.error ?? e?.message ?? t("common.error");
       toast({ title: t("common.error"), description: msg, variant: "destructive" });
@@ -274,24 +270,19 @@ export function Register() {
   // ══════════════════════════════════════════════════════════════════════════════
   return wrapper(
     <Card className="shadow-xl overflow-hidden">
-      {/* Role toggle */}
+      {/* MVP: role toggle suppressed — student-only registration
       <div className="bg-muted p-2 flex border-b border-border">
         {(["student", "professor"] as const).map(r => (
-          <button key={r} type="button"
-            className={`flex-1 py-3 text-sm font-bold rounded-lg transition-colors ${role === r ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-            onClick={() => { setRole(r); setStep("form"); }}
-          >
+          <button key={r} type="button" ...>
             {r === "student" ? t("register.iAmStudent") : t("register.iAmProfessor")}
           </button>
         ))}
       </div>
+      */}
 
       <form onSubmit={handleFormSubmit} className="p-8 space-y-5">
         <div className="text-center mb-2">
-          <h1 className="text-2xl font-bold">
-            {role === "student" ? t("register.createStudentAccount") : t("register.becomeProfessor")}
-          </h1>
-          {role === "professor" && <p className="text-sm text-muted-foreground mt-1">{t("register.profStep1")}</p>}
+          <h1 className="text-2xl font-bold">{t("register.createStudentAccount")}</h1>
         </div>
 
         {/* First + Last name */}
@@ -366,13 +357,7 @@ export function Register() {
           </>
         )}
 
-        {/* ── PROFESSOR INFO NOTE ── */}
-        {role === "professor" && (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800">
-            <p className="font-semibold mb-1">{t("register.kycRequired")}</p>
-            <p>{t("register.kycDescription")}</p>
-          </div>
-        )}
+        {/* MVP: professor KYC note suppressed */}
 
         {/* Terms acceptance */}
         <label className="flex items-start gap-3 cursor-pointer group">

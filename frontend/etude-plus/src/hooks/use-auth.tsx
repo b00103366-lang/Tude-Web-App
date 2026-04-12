@@ -57,7 +57,8 @@ function saveAccount(user: User) {
 }
 
 export function getDashboardPath(role: string) {
-  if (role === "professor") return "/professor/dashboard";
+  // MVP: professor role suppressed — redirect to student dashboard if encountered
+  // if (role === "professor") return "/professor/dashboard";
   if (role === "admin" || role === "super_admin") return "/admin/dashboard";
   return "/student/dashboard";
 }

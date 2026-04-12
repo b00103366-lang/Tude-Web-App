@@ -12,8 +12,8 @@
  */
 
 import { Router } from "express";
-import { db, processingErrorsTable, flashcardsTable, notionsTable, annalesTable } from "@workspace/db";
-import { desc, count } from "drizzle-orm";
+import { db, processingErrorsTable, flashcardsTable, notionsTable, annalesTable, questionsTable, questionPartsTable, markSchemesTable } from "@workspace/db";
+import { desc, count, eq, and, inArray } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth";
 import { processUpload, type ProcessUploadParams } from "../services/knowledgeBaseProcessor";
 
@@ -54,6 +54,165 @@ revisionRouter.post("/process-upload", requireAuth, requireAdmin, async (req, re
       console.error("[revision/process-upload] Unhandled error:", err)
     );
   });
+});
+
+// ── Student-facing content endpoints ─────────────────────────────────────────
+
+/**
+ * GET /api/revision/content/questions
+ * Returns published questions for a given subject/gradeLevel.
+ * Includes parts and markschemes so the frontend can render full correction.
+ * Query params: subject, gradeLevel, sectionKey?, topic?, limit?, difficulty?
+ */
+revisionRouter.get("/content/questions", requireAuth, async (req, res) => {
+  const { subject, gradeLevel, sectionKey, topic, difficulty } = req.query;
+  const limit = Math.min(Number(req.query.limit) || 20, 100);
+
+  if (!subject || !gradeLevel) {
+    res.status(400).json({ error: "subject and gradeLevel are required" });
+    return;
+  }
+
+  const conditions = [
+    eq(questionsTable.status, "published"),
+    eq(questionsTable.subject, String(subject)),
+    eq(questionsTable.gradeLevel, String(gradeLevel)),
+  ];
+  if (sectionKey) conditions.push(eq(questionsTable.sectionKey, String(sectionKey)));
+  if (topic) conditions.push(eq(questionsTable.topic, String(topic)));
+  if (difficulty) conditions.push(eq(questionsTable.difficulty, String(difficulty)));
+
+  const questions = await db
+    .select()
+    .from(questionsTable)
+    .where(and(...conditions))
+    .limit(limit);
+
+  const questionIds = questions.map(q => q.id);
+
+  if (questionIds.length === 0) {
+    res.json([]);
+    return;
+  }
+
+  // Fetch parts and markschemes for all questions
+  const [parts, schemes] = await Promise.all([
+    db.select().from(questionPartsTable).where(inArray(questionPartsTable.questionId, questionIds)),
+    db.select().from(markSchemesTable).where(inArray(markSchemesTable.questionId, questionIds)),
+  ]);
+
+  const enriched = questions.map(q => ({
+    ...q,
+    parts: parts.filter(p => p.questionId === q.id).sort((a, b) => a.orderIndex - b.orderIndex),
+    markScheme: schemes.filter(s => s.questionId === q.id).sort((a, b) => a.orderIndex - b.orderIndex),
+  }));
+
+  res.json(enriched);
+});
+
+/**
+ * GET /api/revision/content/topics
+ * Returns distinct topics for a subject/gradeLevel (for topic picker).
+ */
+revisionRouter.get("/content/topics", requireAuth, async (req, res) => {
+  const { subject, gradeLevel, sectionKey } = req.query;
+  if (!subject || !gradeLevel) {
+    res.status(400).json({ error: "subject and gradeLevel are required" });
+    return;
+  }
+
+  const conditions = [
+    eq(questionsTable.status, "published"),
+    eq(questionsTable.subject, String(subject)),
+    eq(questionsTable.gradeLevel, String(gradeLevel)),
+  ];
+  if (sectionKey) conditions.push(eq(questionsTable.sectionKey, String(sectionKey)));
+
+  const rows = await db
+    .selectDistinct({ topic: questionsTable.topic })
+    .from(questionsTable)
+    .where(and(...conditions));
+
+  res.json(rows.map(r => r.topic));
+});
+
+/**
+ * GET /api/revision/content/annales
+ * Returns published annales for a given subject/gradeLevel.
+ */
+revisionRouter.get("/content/annales", requireAuth, async (req, res) => {
+  const { subject, gradeLevel, sectionKey } = req.query;
+  if (!subject || !gradeLevel) {
+    res.status(400).json({ error: "subject and gradeLevel are required" });
+    return;
+  }
+
+  const conditions = [
+    eq(annalesTable.status, "live"),
+    eq(annalesTable.subject, String(subject)),
+    eq(annalesTable.gradeLevel, String(gradeLevel)),
+  ];
+  if (sectionKey) conditions.push(eq(annalesTable.sectionKey, String(sectionKey)));
+
+  const annales = await db
+    .select()
+    .from(annalesTable)
+    .where(and(...conditions))
+    .orderBy(desc(annalesTable.year));
+
+  res.json(annales);
+});
+
+/**
+ * GET /api/revision/content/flashcards
+ * Returns published flashcards for a given subject/gradeLevel.
+ */
+revisionRouter.get("/content/flashcards", requireAuth, async (req, res) => {
+  const { subject, gradeLevel, sectionKey } = req.query;
+  if (!subject || !gradeLevel) {
+    res.status(400).json({ error: "subject and gradeLevel are required" });
+    return;
+  }
+
+  const conditions = [
+    eq(flashcardsTable.status, "live"),
+    eq(flashcardsTable.subject, String(subject)),
+    eq(flashcardsTable.gradeLevel, String(gradeLevel)),
+  ];
+  if (sectionKey) conditions.push(eq(flashcardsTable.sectionKey, String(sectionKey)));
+
+  const cards = await db
+    .select()
+    .from(flashcardsTable)
+    .where(and(...conditions));
+
+  res.json(cards);
+});
+
+/**
+ * GET /api/revision/content/notions
+ * Returns published notions/key concepts for a given subject/gradeLevel.
+ */
+revisionRouter.get("/content/notions", requireAuth, async (req, res) => {
+  const { subject, gradeLevel, sectionKey } = req.query;
+  if (!subject || !gradeLevel) {
+    res.status(400).json({ error: "subject and gradeLevel are required" });
+    return;
+  }
+
+  const conditions = [
+    eq(notionsTable.status, "live"),
+    eq(notionsTable.subject, String(subject)),
+    eq(notionsTable.gradeLevel, String(gradeLevel)),
+  ];
+  if (sectionKey) conditions.push(eq(notionsTable.sectionKey, String(sectionKey)));
+
+  const notions = await db
+    .select()
+    .from(notionsTable)
+    .where(and(...conditions));
+
+  res.json(notions);
 });
 
 // ── /api/admin/knowledge-base/* ───────────────────────────────────────────────

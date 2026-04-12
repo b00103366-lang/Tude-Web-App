@@ -25,3 +25,4 @@ export * from "./userEvents";
 export * from "./questions";
 export * from "./knowledgeBase";
 export * from "./knowledgeBaseFiles";
+export * from "./revisionAttempts";

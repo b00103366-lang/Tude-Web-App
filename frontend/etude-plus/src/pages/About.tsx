@@ -11,28 +11,28 @@ const VALUES = [
   {
     icon: Target,
     title: "Excellence",
-    desc: "Nous aspirons à l'excellence dans chaque cours. Chaque fonctionnalité est conçue pour donner aux élèves les meilleurs outils pour réussir leurs examens et progresser à leur rythme.",
+    desc: "Nous aspirons à l'excellence dans chaque exercice. Chaque fonctionnalité est conçue pour donner aux élèves les meilleurs outils pour réussir leurs examens et progresser à leur rythme.",
     color: "#f59e0b",
     bg: "bg-amber-50 border-amber-200/60",
   },
   {
     icon: Heart,
     title: "Bienveillance",
-    desc: "L'apprentissage réussit dans un environnement bienveillant. Nos outils favorisent l'interaction, l'encouragement et le dialogue.",
+    desc: "La révision réussit dans un environnement bienveillant. Nos outils favorisent la pratique, l'encouragement et la progression personnelle.",
     color: "#f97316",
     bg: "bg-orange-50 border-orange-200/60",
   },
   {
     icon: Shield,
     title: "Confiance",
-    desc: "Paiements sécurisés, identités vérifiées, données protégées. La confiance est le socle de chaque interaction sur Étude+.",
+    desc: "Contenu vérifié, données protégées, plateforme sécurisée. La confiance est le socle de chaque interaction sur Étude+.",
     color: "#10b981",
     bg: "bg-emerald-50 border-emerald-200/60",
   },
   {
     icon: Globe,
     title: "Accessibilité",
-    desc: "Peu importe votre ville ou votre niveau, Étude+ vous connecte aux meilleurs professeurs tunisiens, depuis n'importe quel appareil.",
+    desc: "Peu importe votre ville ou votre niveau, Étude+ vous donne accès à des ressources de révision complètes, depuis n'importe quel appareil.",
     color: "#3b82f6",
     bg: "bg-blue-50 border-blue-200/60",
   },
@@ -40,15 +40,15 @@ const VALUES = [
 
 const TEAM_HIGHLIGHTS = [
   { icon: GraduationCap, label: "Fondée par un Tunisien passionné d'éducation et de technologie" },
-  { icon: Award,         label: "Plateforme ouverte à tous les professeurs tunisiens" },
-  { icon: BookOpen,      label: "Classes virtuelles complètes pour chaque matière du programme" },
+  { icon: Award,         label: "Plateforme ouverte à tous les élèves tunisiens" },
+  { icon: BookOpen,      label: "Questions et quiz pour chaque matière du programme national" },
   { icon: Zap,           label: "Technologie conçue pour la Tunisie" },
 ];
 
 const TIMELINE = [
-  { year: "Mars 2026", short: "26", title: "Naissance d'Étude+", desc: "Fondée le 2 mars 2026 par un Tunisien vivant à l'étranger, Étude+ naît de la conviction que chaque élève tunisien mérite un accès à une éducation de qualité, peu importe où il vit." },
-  { year: "Bientôt", short: "◎", title: "Lancement officiel", desc: "La plateforme ouvrira ses portes aux professeurs et élèves tunisiens de toutes les régions, avec une ambition simple : rendre l'excellence scolaire accessible à tous." },
-  { year: "Demain", short: "→", title: "Une ambition sans frontières", desc: "Devenir la référence de l'éducation en ligne en Tunisie et au-delà — pour que chaque élève, de Tunis à Djerba, atteigne son plein potentiel." },
+  { year: "Mars 2026", short: "26", title: "Naissance d'Étude+", desc: "Fondée le 2 mars 2026 par un Tunisien vivant à l'étranger, Étude+ naît de la conviction que chaque élève tunisien mérite un accès à des outils de révision efficaces, peu importe où il vit." },
+  { year: "Bientôt", short: "◎", title: "Lancement officiel", desc: "La plateforme s'ouvre à tous les élèves tunisiens, avec une ambition simple : rendre l'excellence scolaire accessible à tous, dans chaque région." },
+  { year: "Demain", short: "→", title: "Une ambition sans frontières", desc: "Devenir la référence de la révision en ligne en Tunisie et au-delà — pour que chaque élève, de Tunis à Djerba, atteigne son plein potentiel." },
 ];
 
 export function About() {
@@ -72,7 +72,7 @@ export function About() {
           <FadeIn>
             <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-4">Notre histoire</p>
             <h1 className="text-5xl sm:text-6xl font-serif font-bold text-gray-900 mb-6 leading-tight">
-              Réinventer le soutien
+              Réinventer la révision
               <br />
               <span
                 style={{
@@ -86,7 +86,7 @@ export function About() {
             </h1>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
               Étude+ est née d'une conviction simple : chaque élève tunisien mérite
-              accès aux meilleurs professeurs, peu importe où il vit ou son niveau.
+              accès à des outils de révision efficaces, peu importe où il vit ou son niveau.
             </p>
           </FadeIn>
         </section>
@@ -105,9 +105,9 @@ export function About() {
             <BookOpen className="w-12 h-12 mx-auto mb-6 text-amber-400" />
             <h2 className="text-3xl sm:text-4xl font-serif font-bold text-white mb-5">Notre mission</h2>
             <p className="text-gray-300 text-lg max-w-2xl mx-auto leading-relaxed">
-              Connecter chaque élève tunisien avec un professeur qualifié, à travers une plateforme
-              simple, sécurisée et adaptée au programme national — pour que le niveau scolaire
-              ne dépende plus du code postal.
+              Donner à chaque élève tunisien les meilleurs outils pour réviser, pratiquer et progresser,
+              à travers une plateforme simple et adaptée au programme national — pour que la réussite
+              scolaire ne dépende plus du code postal.
             </p>
           </FadeIn>
         </section>
@@ -180,7 +180,7 @@ export function About() {
               <h2 className="text-4xl font-serif font-bold text-gray-900">Qui sommes-nous ?</h2>
               <p className="text-gray-500 mt-4 max-w-xl mx-auto">
                 Un Tunisien vivant à l'étranger, animé par une seule ambition : que
-                chaque élève en Tunisie ait accès à une éducation de qualité, où qu'il soit.
+                chaque élève en Tunisie ait accès à des outils de révision de qualité, où qu'il soit.
               </p>
             </div>
           </FadeIn>
@@ -205,7 +205,7 @@ export function About() {
               Rejoignez l'aventure Étude+
             </h2>
             <p className="text-gray-500 mb-8 max-w-md mx-auto">
-              Que vous soyez élève cherchant à progresser ou professeur souhaitant partager votre expertise.
+              Créez votre compte gratuitement et commencez à réviser par matière dès aujourd'hui.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/select-role">

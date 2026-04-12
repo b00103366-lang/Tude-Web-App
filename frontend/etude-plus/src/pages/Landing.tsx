@@ -34,12 +34,12 @@ function useCountUp(target: number, duration = 1500) {
 const TABS = [
   {
     id: "live",
-    label: "Classes en Direct",
+    label: "Banque de Questions",
     icon: Video,
     color: "#f59e0b",
-    title: "Apprenez en temps réel",
-    subtitle: "Participez à des cours interactifs avec tous les outils essentiels réunis au même endroit.",
-    points: ["Visioconférence HD intégrée", "Tableau blanc interactif", "Chat et partage d'écran en direct"],
+    title: "Pratiquez par sujet",
+    subtitle: "Des milliers de questions classées par matière, chapitre et niveau pour réviser efficacement.",
+    points: ["Questions conformes au programme national", "Classées par matière, chapitre et niveau", "Nouvelles questions ajoutées régulièrement"],
   },
   {
     id: "resources",
@@ -47,17 +47,17 @@ const TABS = [
     icon: BookOpen,
     color: "#fb923c",
     title: "Tout votre contenu, bien organisé",
-    subtitle: "Retrouvez facilement vos supports de cours et révisez plus efficacement.",
-    points: ["Cours classés par matière et chapitre", "Fichiers et supports téléchargeables", "Accès rapide aux contenus importants"],
+    subtitle: "Retrouvez facilement fiches, annales et supports de révision classés par matière.",
+    points: ["Fiches et annales par matière et chapitre", "Notions clés à retenir", "Accès rapide aux contenus essentiels"],
   },
   {
     id: "assessments",
-    label: "Évaluations",
+    label: "Quiz & Examens",
     icon: Trophy,
     color: "#10b981",
     title: "Entraînez-vous avec méthode",
-    subtitle: "Préparez-vous avec des quiz, devoirs et examens blancs dans un espace structuré.",
-    points: ["Quiz interactifs", "Devoirs et suivi", "Examens blancs par chapitre"],
+    subtitle: "Préparez-vous avec des quiz et examens blancs dans un espace structuré.",
+    points: ["Quiz interactifs par chapitre", "Examens blancs chronométrés", "Correction et analyse de vos erreurs"],
   },
   {
     id: "dashboard",
@@ -65,8 +65,8 @@ const TABS = [
     icon: GraduationCap,
     color: "#3b82f6",
     title: "Suivez votre progression",
-    subtitle: "Gardez une vue claire sur vos cours, vos résultats et vos prochaines étapes.",
-    points: ["Vue d'ensemble personnalisée", "Progression par matière", "Rappels et prochaines sessions"],
+    subtitle: "Gardez une vue claire sur vos révisions, vos résultats et vos points à améliorer.",
+    points: ["Vue d'ensemble personnalisée", "Progression par matière", "Historique de vos entraînements"],
   },
 ];
 
@@ -88,11 +88,10 @@ export function Landing() {
   }, []);
 
   const studentCount = useCountUp(liveStats?.totalStudents ?? 0);
-  const professorCount = useCountUp(liveStats?.totalProfessors ?? 0);
 
   const STATS = [
     { value: liveStats ? `${studentCount}` : "…", label: t("landing.stats.students") },
-    { value: liveStats ? `${professorCount}` : "…", label: t("landing.stats.professors") },
+    { value: "5 000+", label: t("landing.stats.professors") },
     { value: "98%",  label: t("landing.stats.successRate") },
     { value: "4.9★", label: t("landing.stats.avgRating") },
   ];
@@ -200,7 +199,7 @@ export function Landing() {
                 {/* Orbiting stat cards */}
                 {[
                   { label: t("landing.stats.studentsOrbit"), value: liveStats ? `${studentCount}` : "…", angle: -60, icon: Users, color: "#f59e0b" },
-                  { label: t("landing.stats.profsOrbit"), value: liveStats ? `${professorCount}` : "…", angle: 60, icon: ShieldCheck, color: "#fb923c" },
+                  { label: t("landing.stats.profsOrbit"), value: "5 000+", angle: 60, icon: ShieldCheck, color: "#fb923c" },
                   { label: t("landing.stats.ratingOrbit"), value: "4.9 ★", angle: 180, icon: Star, color: "#f97316" },
                 ].map((item, i) => {
                   const rad = (item.angle * Math.PI) / 180;
@@ -267,7 +266,7 @@ export function Landing() {
             <FadeIn>
               <div className="text-center max-w-2xl mx-auto mb-12">
                 <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-3">Pourquoi Étude+ ?</p>
-                <h2 className="text-4xl font-serif font-bold text-gray-900">Une expérience d'apprentissage complète</h2>
+                <h2 className="text-4xl font-serif font-bold text-gray-900">Tout pour réviser intelligemment</h2>
               </div>
             </FadeIn>
 

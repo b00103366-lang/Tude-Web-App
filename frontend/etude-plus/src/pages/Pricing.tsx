@@ -6,54 +6,54 @@ import { CheckCircle, ArrowRight, BookOpen, GraduationCap, Shield, HelpCircle } 
 
 const STUDENT_FEATURES = [
   "Inscription gratuite, sans carte bancaire",
-  "Parcourir l'ensemble du catalogue de cours",
-  "Lire les avis et profils des professeurs",
-  "Payer uniquement les cours auxquels vous vous inscrivez",
-  "Accès à vie aux ressources de vos cours achetés",
-  "Sessions en direct avec votre professeur",
-  "Suivi de progression et notes",
+  "Accès à toutes les questions et quiz du programme",
+  "Révision par matière et par niveau scolaire",
+  "Suivi de progression personnalisé",
+  "Exercices corrigés et annales inclus",
+  "Disponible sur tous vos appareils",
+  "Nouvelles questions ajoutées régulièrement",
   "Support client 7j/7",
 ];
 
-const PROFESSOR_FEATURES = [
-  "Création de profil et publication de cours gratuite",
-  "Outils complets : sessions live, quiz, devoirs, matériaux",
-  "15% de commission plateforme par vente — le reste vous appartient",
-  "Tableau de bord revenus en temps réel",
-  "Gestion complète de vos élèves inscrits",
-  "Processus KYC rapide et sécurisé",
-  "Paiement mensuel automatique",
-  "Support dédié aux professeurs",
+const PLATFORM_FEATURES = [
+  "Banque de questions pour toutes les matières du programme national",
+  "Quiz chronométrés et examens blancs",
+  "Annales officielles et exercices corrigés",
+  "Tableau de bord de progression détaillé",
+  "Interface adaptée au programme tunisien",
+  "Contenu vérifié et mis à jour régulièrement",
+  "Accessible depuis n'importe quel appareil",
+  "Communauté d'élèves en constante croissance",
 ];
 
 const COURSE_EXAMPLES = [
-  { subject: "Mathématiques Terminale", range: "30 – 80 TND / session", note: "Prix fixé par le professeur" },
-  { subject: "Physique-Chimie Bac", range: "25 – 70 TND / session", note: "Prix fixé par le professeur" },
-  { subject: "Arabe Collège", range: "15 – 40 TND / session", note: "Prix fixé par le professeur" },
-  { subject: "Anglais Avancé", range: "20 – 60 TND / session", note: "Prix fixé par le professeur" },
-  { subject: "SVT Terminale", range: "25 – 65 TND / session", note: "Prix fixé par le professeur" },
+  { subject: "Mathématiques Terminale", range: "500+ questions", note: "Exercices et annales" },
+  { subject: "Physique-Chimie Bac", range: "400+ questions", note: "Exercices et annales" },
+  { subject: "Arabe Collège", range: "300+ questions", note: "Grammaire et expression" },
+  { subject: "Anglais Avancé", range: "350+ questions", note: "Vocabulaire et compréhension" },
+  { subject: "SVT Terminale", range: "450+ questions", note: "Exercices et annales" },
 ];
 
 const FAQS = [
   {
-    q: "Y a-t-il un abonnement mensuel ?",
-    a: "Non. Étude+ fonctionne à l'unité : vous payez uniquement les sessions ou cours auxquels vous souhaitez vous inscrire. Aucun abonnement obligatoire.",
+    q: "Étude+ est-il vraiment gratuit ?",
+    a: "Oui, entièrement. L'inscription et l'accès à la plateforme sont gratuits pour tous les élèves, sans abonnement ni frais cachés.",
   },
   {
-    q: "Qui fixe le prix des cours ?",
-    a: "Chaque professeur fixe librement le tarif de ses cours et sessions. Vous voyez le prix avant de vous inscrire.",
+    q: "Quelles matières sont disponibles ?",
+    a: "Étude+ couvre l'ensemble des matières du programme national tunisien, du collège au lycée. De nouvelles questions sont ajoutées régulièrement.",
   },
   {
-    q: "Quels moyens de paiement sont acceptés ?",
-    a: "Paiement en Dinars Tunisiens (TND) via les méthodes locales intégrées à la plateforme.",
+    q: "Comment fonctionne le suivi de progression ?",
+    a: "Chaque quiz complété met à jour votre tableau de bord. Vous visualisez vos points forts, vos axes d'amélioration et votre évolution dans le temps.",
   },
   {
-    q: "Puis-je obtenir un remboursement ?",
-    a: "En cas d'annulation de session par le professeur, vous êtes remboursé intégralement. Pour les autres cas, contactez notre support.",
+    q: "Sur quels appareils puis-je utiliser Étude+ ?",
+    a: "Étude+ fonctionne sur tous les appareils connectés : ordinateur, tablette ou smartphone. Aucune installation requise.",
   },
   {
-    q: "Les professeurs paient-ils pour s'inscrire ?",
-    a: "Non. L'inscription est entièrement gratuite pour les professeurs. Étude+ prélève uniquement 15% de commission sur chaque vente réalisée.",
+    q: "Comment les questions sont-elles vérifiées ?",
+    a: "Tout le contenu est relu et validé avant publication pour garantir sa conformité avec le programme officiel tunisien.",
   },
 ];
 
@@ -90,8 +90,8 @@ export function Pricing() {
               </span>
             </h1>
             <p className="text-xl text-gray-600 leading-relaxed">
-              Étude+ est gratuit pour tout le monde. Vous payez uniquement
-              les cours que vous choisissez — au tarif fixé par le professeur.
+              Étude+ est entièrement gratuit. Accédez à des milliers de questions,
+              quiz et annales pour réviser à votre rythme, où que vous soyez.
             </p>
           </FadeIn>
         </section>
@@ -115,7 +115,7 @@ export function Pricing() {
                     <span className="text-5xl font-bold text-gray-900">Gratuit</span>
                   </div>
                   <p className="text-sm text-gray-500 mt-2">
-                    + prix du cours fixé par le professeur (en TND)
+                    Toutes les fonctionnalités incluses, sans frais cachés
                   </p>
                 </div>
 
@@ -154,12 +154,12 @@ export function Pricing() {
                     <BookOpen className="w-6 h-6 text-amber-400" />
                   </div>
                   <div className="flex items-center gap-3 mb-1">
-                    <h2 className="text-2xl font-bold text-white">Professeur</h2>
+                    <h2 className="text-2xl font-bold text-white">Révision Étude+</h2>
                     <span className="text-xs font-bold bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-400/30">
-                      Commission 15%
+                      Tout inclus
                     </span>
                   </div>
-                  <p className="text-gray-400 text-sm">Pour les enseignants qui partagent leur expertise</p>
+                  <p className="text-gray-400 text-sm">Pour réviser intelligemment, à votre rythme</p>
                 </div>
 
                 <div className="relative z-10 mb-8">
@@ -167,12 +167,12 @@ export function Pricing() {
                     <span className="text-5xl font-bold text-white">Gratuit</span>
                   </div>
                   <p className="text-sm text-gray-400 mt-2">
-                    Étude+ prélève 15% sur chaque vente — vous gardez 85%
+                    Accès complet à toute la plateforme, dès la création de votre compte
                   </p>
                 </div>
 
                 <ul className="space-y-3 flex-1 mb-8 relative z-10">
-                  {PROFESSOR_FEATURES.map((f, i) => (
+                  {PLATFORM_FEATURES.map((f, i) => (
                     <li key={i} className="flex items-start gap-3 text-sm text-gray-300">
                       <CheckCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                       {f}
@@ -183,7 +183,7 @@ export function Pricing() {
                 <div className="relative z-10">
                   <Link href="/select-role">
                     <Button size="lg" className="w-full font-bold shadow-lg shadow-amber-400/20">
-                      Devenir professeur <ArrowRight className="ml-2 w-5 h-5" />
+                      Commencer à réviser <ArrowRight className="ml-2 w-5 h-5" />
                     </Button>
                   </Link>
                 </div>
@@ -197,12 +197,12 @@ export function Pricing() {
           <div className="max-w-4xl mx-auto px-4 sm:px-6">
             <FadeIn>
               <div className="text-center mb-12">
-                <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-3">Exemples de tarifs</p>
+                <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-3">Contenu disponible</p>
                 <h2 className="text-3xl font-serif font-bold text-gray-900 mb-3">
-                  Fourchettes de prix indicatives
+                  Des milliers de questions par matière
                 </h2>
                 <p className="text-gray-500 max-w-lg mx-auto">
-                  Chaque professeur fixe son tarif librement. Voici des exemples représentatifs du marché.
+                  Tout le programme national tunisien couvert, avec des exercices corrigés et des annales officielles.
                 </p>
               </div>
             </FadeIn>
@@ -233,9 +233,9 @@ export function Pricing() {
         <section className="max-w-5xl mx-auto px-4 sm:px-6 py-16">
           <div className="grid sm:grid-cols-3 gap-6">
             {[
-              { icon: Shield, title: "Paiement sécurisé", desc: "Vos transactions sont protégées et traitées en TND.", color: "#10b981" },
-              { icon: CheckCircle, title: "Satisfait ou remboursé", desc: "Session annulée par le prof ? Remboursement intégral automatique.", color: "#f59e0b" },
-              { icon: GraduationCap, title: "Qualité garantie", desc: "Tous les professeurs sont vérifiés KYC avant publication.", color: "#3b82f6" },
+              { icon: Shield, title: "Contenu vérifié", desc: "Toutes les questions sont relues et validées avant publication.", color: "#10b981" },
+              { icon: CheckCircle, title: "Toujours à jour", desc: "Le contenu est mis à jour régulièrement pour suivre le programme officiel.", color: "#f59e0b" },
+              { icon: GraduationCap, title: "Programme national", desc: "Chaque matière couvre l'intégralité du programme tunisien, du collège au lycée.", color: "#3b82f6" },
             ].map((item, i) => (
               <FadeIn key={i} delay={0.1 * i}>
                 <div className="text-center p-6 rounded-2xl bg-white/60 border border-gray-100 shadow-sm">
@@ -288,7 +288,7 @@ export function Pricing() {
               Commencez dès aujourd'hui
             </h2>
             <p className="text-white/80 text-lg mb-8 max-w-md mx-auto">
-              Créez votre compte gratuitement et trouvez votre premier cours en quelques minutes.
+              Créez votre compte gratuitement et commencez à réviser par matière dès aujourd'hui.
             </p>
             <Link href="/select-role">
               <button className="inline-flex items-center gap-2 bg-white text-amber-700 font-bold text-lg px-10 py-4 rounded-2xl shadow-xl hover:bg-amber-50 transition-colors">

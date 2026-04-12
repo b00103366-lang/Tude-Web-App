@@ -19,17 +19,12 @@ import { Register } from "@/pages/auth/Register";
 
 // Student Pages
 import { StudentDashboard } from "@/pages/student/StudentDashboard";
-import { BrowseClasses } from "@/pages/student/BrowseClasses";
-import { StudentClasses } from "@/pages/student/StudentClasses";
-import { StudentClassDetail } from "@/pages/student/StudentClassDetail";
 import { StudentCalendar } from "@/pages/student/StudentCalendar";
 import { StudentGrades } from "@/pages/student/StudentGrades";
 import { StudentPayments } from "@/pages/student/StudentPayments";
 import { StudentNotifications } from "@/pages/student/StudentNotifications";
 import { StudentSettings } from "@/pages/student/StudentSettings";
-import { CoursePreview } from "@/pages/student/CoursePreview";
-import { MonProfEtude } from "@/pages/student/MonProfEtude";
-import { ProfessorProfile } from "@/pages/student/ProfessorProfile";
+import { StudentProgress } from "@/pages/student/StudentProgress";
 import { RevisionHub } from "@/pages/revision/BanqueDeQuestions";
 import { RevisionSubject } from "@/pages/revision/RevisionSubject";
 import { BanqueDeQuestionsSubject } from "@/pages/revision/BanqueDeQuestionsSubject";
@@ -39,17 +34,26 @@ import { NotionsCles } from "@/pages/revision/NotionsCles";
 import { Annales } from "@/pages/revision/Annales";
 import { Flashcards } from "@/pages/revision/Flashcards";
 
-// Professor Pages
-import { ProfessorDashboard } from "@/pages/professor/ProfessorDashboard";
-import { ProfessorClasses } from "@/pages/professor/ProfessorClasses";
-import { ProfessorClassManagement } from "@/pages/professor/ProfessorClassManagement";
-import { CreateClass } from "@/pages/professor/CreateClass";
-import { ProfessorCalendar } from "@/pages/professor/ProfessorCalendar";
-import { ProfessorEarnings } from "@/pages/professor/ProfessorEarnings";
-import { ProfessorStudents } from "@/pages/professor/ProfessorStudents";
-import { ProfessorSettings } from "@/pages/professor/ProfessorSettings";
-import { ProfessorKYC } from "@/pages/professor/ProfessorKYC";
-import { ProfessorQualifications } from "@/pages/professor/ProfessorQualifications";
+// MVP: professor pages suppressed — imports kept for easy restore
+// import { BrowseClasses } from "@/pages/student/BrowseClasses";
+// import { StudentClasses } from "@/pages/student/StudentClasses";
+// import { StudentClassDetail } from "@/pages/student/StudentClassDetail";
+// import { CoursePreview } from "@/pages/student/CoursePreview";
+// import { MonProfEtude } from "@/pages/student/MonProfEtude";
+// import { ProfessorProfile } from "@/pages/student/ProfessorProfile";
+// import { Checkout } from "@/pages/checkout/Checkout";
+// import { PaymentSuccess } from "@/pages/checkout/PaymentSuccess";
+// import { Classroom } from "@/pages/classroom/Classroom";
+// import { ProfessorDashboard } from "@/pages/professor/ProfessorDashboard";
+// import { ProfessorClasses } from "@/pages/professor/ProfessorClasses";
+// import { ProfessorClassManagement } from "@/pages/professor/ProfessorClassManagement";
+// import { CreateClass } from "@/pages/professor/CreateClass";
+// import { ProfessorCalendar } from "@/pages/professor/ProfessorCalendar";
+// import { ProfessorEarnings } from "@/pages/professor/ProfessorEarnings";
+// import { ProfessorStudents } from "@/pages/professor/ProfessorStudents";
+// import { ProfessorSettings } from "@/pages/professor/ProfessorSettings";
+// import { ProfessorKYC } from "@/pages/professor/ProfessorKYC";
+// import { ProfessorQualifications } from "@/pages/professor/ProfessorQualifications";
 
 // Admin Pages
 import { AdminDashboard } from "@/pages/admin/AdminDashboard";
@@ -71,11 +75,6 @@ import { Cookies } from "@/pages/Cookies";
 // Cookie consent
 import { CookieBanner } from "@/components/CookieBanner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-
-// Shared Pages
-import { Checkout } from "@/pages/checkout/Checkout";
-import { PaymentSuccess } from "@/pages/checkout/PaymentSuccess";
-import { Classroom } from "@/pages/classroom/Classroom";
 
 const queryClient = new QueryClient();
 
@@ -134,26 +133,11 @@ function Router() {
       </Route>
       <Route path="/select-role" component={SelectRole} />
       <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} /> 
+      <Route path="/register" component={Register} />
 
       {/* Student Routes */}
       <Route path="/student/dashboard">
         {() => <ProtectedRoute component={StudentDashboard} allowedRoles={["student"]} />}
-      </Route>
-      <Route path="/student/browse">
-        {() => <ProtectedRoute component={BrowseClasses} allowedRoles={["student"]} />}
-      </Route>
-      <Route path="/student/browse/:id">
-        {() => <ProtectedRoute component={CoursePreview} allowedRoles={["student"]} />}
-      </Route>
-      <Route path="/student/professor/:id">
-        {() => <ProtectedRoute component={ProfessorProfile} allowedRoles={["student"]} />}
-      </Route>
-      <Route path="/student/classes">
-        {() => <ProtectedRoute component={StudentClasses} allowedRoles={["student"]} />}
-      </Route>
-      <Route path="/student/classes/:id">
-        {() => <ProtectedRoute component={StudentClassDetail} allowedRoles={["student"]} />}
       </Route>
       <Route path="/student/calendar">
         {() => <ProtectedRoute component={StudentCalendar} allowedRoles={["student"]} />}
@@ -170,9 +154,30 @@ function Router() {
       <Route path="/student/settings">
         {() => <ProtectedRoute component={StudentSettings} allowedRoles={["student"]} />}
       </Route>
+      <Route path="/student/progress">
+        {() => <ProtectedRoute component={StudentProgress} allowedRoles={["student"]} />}
+      </Route>
+
+      {/* MVP: class/professor/booking student routes suppressed — uncomment to restore
+      <Route path="/student/browse">
+        {() => <ProtectedRoute component={BrowseClasses} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/student/browse/:id">
+        {() => <ProtectedRoute component={CoursePreview} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/student/professor/:id">
+        {() => <ProtectedRoute component={ProfessorProfile} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/student/classes">
+        {() => <ProtectedRoute component={StudentClasses} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/student/classes/:id">
+        {() => <ProtectedRoute component={StudentClassDetail} allowedRoles={["student"]} />}
+      </Route>
       <Route path="/student/mon-prof">
         {() => <ProtectedRoute component={MonProfEtude} allowedRoles={["student"]} />}
       </Route>
+      */}
 
       {/* Révision Étude+ Routes — most specific first */}
       <Route path="/revision/:subject/banque-de-questions/:topic">
@@ -200,7 +205,7 @@ function Router() {
         {() => <ProtectedRoute component={RevisionHub} allowedRoles={["student"]} />}
       </Route>
 
-      {/* Shared/Special Routes */}
+      {/* MVP: checkout/classroom suppressed — uncomment to restore
       <Route path="/checkout/:id">
         {() => <ProtectedRoute component={Checkout} allowedRoles={["student"]} />}
       </Route>
@@ -210,8 +215,9 @@ function Router() {
       <Route path="/classroom/:id">
         {() => <ProtectedRoute component={Classroom} />}
       </Route>
+      */}
 
-      {/* Professor Routes */}
+      {/* MVP: all professor routes suppressed — uncomment to restore
       <Route path="/professor/dashboard">
         {() => <ProtectedRoute component={ProfessorDashboard} allowedRoles={["professor"]} />}
       </Route>
@@ -242,6 +248,7 @@ function Router() {
       <Route path="/professor/qualifications">
         {() => <ProtectedRoute component={ProfessorQualifications} allowedRoles={["professor"]} />}
       </Route>
+      */}
 
       {/* Admin Routes */}
       <Route path="/admin/dashboard">
@@ -275,7 +282,7 @@ function Router() {
       </Route>
       {/* /admin/videos route disabled — shorts feature suppressed */}
 
-      {/* Redirect deprecated routes */}
+      {/* Redirect deprecated/suppressed routes to dashboard */}
       <Route path="/admin/professors">
         {() => <Redirect to="/admin/users" />}
       </Route>
@@ -284,6 +291,18 @@ function Router() {
       </Route>
       <Route path="/admin/transactions">
         {() => <Redirect to="/admin/finances" />}
+      </Route>
+      <Route path="/student/browse">
+        {() => <Redirect to="/student/dashboard" />}
+      </Route>
+      <Route path="/student/classes">
+        {() => <Redirect to="/student/dashboard" />}
+      </Route>
+      <Route path="/student/mon-prof">
+        {() => <Redirect to="/student/dashboard" />}
+      </Route>
+      <Route path="/professor/*">
+        {() => <Redirect to="/student/dashboard" />}
       </Route>
 
       <Route component={NotFound} />

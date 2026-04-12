@@ -4,11 +4,10 @@ const API_URL = import.meta.env.VITE_API_URL;
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import {
-  BookOpen, LayoutDashboard, Calendar, GraduationCap,
+  BookOpen, LayoutDashboard, GraduationCap,
   CreditCard, Bell, Settings, LogOut, Users, CheckSquare,
-  DollarSign, ScrollText, Crown,
-  TrendingUp, UserCog, ArrowLeftRight, BadgeCheck, AlertCircle, Clock, XCircle,
-  Sparkles, Play, BarChart2, Menu, X, BrainCircuit, ChevronDown,
+  ScrollText, Crown,
+  TrendingUp, UserCog, ArrowLeftRight, Sparkles, BarChart2, BarChart3, Menu, X, BrainCircuit, ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -68,24 +67,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const NAV_ITEMS: Record<string, NavItem[]> = {
     student: [
       { icon: LayoutDashboard, label: t("sidebar.student.dashboard"), href: "/student/dashboard" },
-      { icon: BookOpen,        label: t("sidebar.student.browse"),    href: "/student/browse" },
-      { icon: GraduationCap,  label: t("sidebar.student.classes"),   href: "/student/classes" },
       { icon: Sparkles,        label: "Révision Étude+",              href: "/revision", special: true },
-      { icon: Calendar,        label: t("sidebar.student.calendar"),  href: "/student/calendar" },
+      { icon: BarChart3,       label: "Ma progression",              href: "/student/progress" },
       { icon: CheckSquare,     label: t("sidebar.student.grades"),    href: "/student/grades" },
-      { icon: CreditCard,      label: t("sidebar.student.payments"),  href: "/student/payments" },
       { icon: Bell,            label: t("sidebar.student.notifications"), href: "/student/notifications" },
       { icon: Settings,        label: t("sidebar.student.settings"),  href: "/student/settings" },
     ],
-    professor: [
-      { icon: LayoutDashboard, label: t("sidebar.professor.dashboard"),      href: "/professor/dashboard" },
-      { icon: BookOpen,        label: t("sidebar.professor.classes"),        href: "/professor/classes" },
-      { icon: BadgeCheck,      label: t("sidebar.professor.qualifications"), href: "/professor/qualifications" },
-      { icon: Calendar,        label: t("sidebar.professor.calendar"),       href: "/professor/calendar" },
-      { icon: Users,           label: t("sidebar.professor.students"),       href: "/professor/students" },
-      { icon: DollarSign,      label: t("sidebar.professor.earnings"),       href: "/professor/earnings" },
-      { icon: Settings,        label: t("sidebar.professor.settings"),       href: "/professor/settings" },
-    ],
+    // MVP: professor nav suppressed — restore by adding professor: [...] back here
     admin: [
       { icon: LayoutDashboard, label: t("sidebar.admin.dashboard"), href: "/admin/dashboard" },
       { icon: Users,           label: t("sidebar.admin.users"),     href: "/admin/users" },
@@ -107,7 +95,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const roleLabel =
     isSuperAdmin ? t("sidebar.roles.super_admin") :
     user.role === "admin" ? t("sidebar.roles.admin") :
-    user.role === "professor" ? t("sidebar.roles.professor") :
     t("sidebar.roles.student");
 
   // ── Render a single nav item (handles regular links + the revision accordion) ─
@@ -246,8 +233,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
         {/* User profile */}
         <Link href={
-          isSuperAdmin || user.role === "admin" ? "/admin/settings" :
-          user.role === "professor" ? "/professor/settings" : "/student/settings"
+          isSuperAdmin || user.role === "admin" ? "/admin/settings" : "/student/settings"
         }>
           <div className="px-6 py-4 flex items-center gap-3 border-y border-sidebar-border/50 bg-sidebar-accent/30 hover:bg-sidebar-accent/50 transition-colors cursor-pointer group">
             <div className="w-10 h-10 rounded-full overflow-hidden border border-sidebar-primary/30 flex-shrink-0 bg-sidebar-primary/20">
@@ -378,46 +364,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        {/* KYC Status Banner — professor only */}
-        {user.role === "professor" && (() => {
-          const kycStatus = (user as any)?.professorProfile?.kycStatus ?? "not_submitted";
-          if (kycStatus === "approved") return null;
-          if (kycStatus === "not_submitted") {
-            return (
-              <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2 text-sm text-amber-800">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{t("kyc.notSubmitted")}</span>
-                </div>
-                <Link href="/professor/kyc" className="text-xs font-semibold text-amber-700 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
-                  {t("kyc.startVerification")}
-                </Link>
-              </div>
-            );
-          }
-          if (kycStatus === "pending") {
-            return (
-              <div className="bg-blue-50 border-b border-blue-200 px-6 py-3 flex items-center gap-2 text-sm text-blue-800">
-                <Clock className="w-4 h-4 flex-shrink-0" />
-                <span>{t("kyc.pending")}</span>
-              </div>
-            );
-          }
-          if (kycStatus === "rejected") {
-            return (
-              <div className="bg-red-50 border-b border-red-200 px-6 py-3 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2 text-sm text-red-800">
-                  <XCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{t("kyc.rejected")}</span>
-                </div>
-                <Link href="/professor/kyc" className="text-xs font-semibold text-red-700 bg-red-100 hover:bg-red-200 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
-                  {t("kyc.seeReasons")}
-                </Link>
-              </div>
-            );
-          }
-          return null;
-        })()}
+        {/* MVP: KYC banner suppressed (professor-only feature)
+        {user.role === "professor" && (() => { ... })()}
+        */}
+
         <div className="flex-1 p-6 sm:p-8 lg:p-10 max-w-7xl mx-auto w-full">
           {children}
         </div>
