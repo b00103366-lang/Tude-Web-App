@@ -102,7 +102,7 @@ export function StudentDashboard() {
               <div className="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center">
                 <BookOpen className="w-5 h-5 text-blue-600" />
               </div>
-              <p className="text-sm font-medium text-muted-foreground">Séances</p>
+              <p className="text-sm font-medium text-muted-foreground">Révisions</p>
             </div>
             {isLoading ? (
               <div className="h-9 w-16 bg-muted rounded-xl animate-pulse" />
@@ -153,7 +153,7 @@ export function StudentDashboard() {
           {/* ── Dernières séances ────────────────────────────────────────────── */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold">Dernières séances</h2>
+              <h2 className="text-lg font-bold">Dernières révisions</h2>
               <Link href="/student/progress" className="text-sm text-primary flex items-center gap-1 hover:underline">
                 Tout voir <ChevronRight className="w-4 h-4" />
               </Link>
@@ -167,10 +167,10 @@ export function StudentDashboard() {
               <Card className="p-8 text-center">
                 <BookOpen className="w-10 h-10 text-muted-foreground opacity-30 mx-auto mb-3" />
                 <p className="font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Aucune séance pour l'instant
+                  Aucune révision pour l'instant
                 </p>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Lance ta première séance de révision pour voir tes résultats ici.
+                  Lance ta première révision pour voir tes résultats ici.
                 </p>
                 <Link href="/revision">
                   <button className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
@@ -219,7 +219,7 @@ export function StudentDashboard() {
               </div>
             ) : !hasStats ? (
               <Card className="p-5 text-center">
-                <p className="text-sm text-muted-foreground">Les moyennes par matière apparaîtront ici après tes premières séances.</p>
+                <p className="text-sm text-muted-foreground">Les moyennes par matière apparaîtront ici après tes premières révisions.</p>
               </Card>
             ) : (
               <div className="space-y-2">
@@ -233,7 +233,7 @@ export function StudentDashboard() {
                         </p>
                       </div>
                       <GradeBar grade={sa.average} />
-                      <p className="text-xs text-muted-foreground mt-1">{sa.attempts} séance{sa.attempts > 1 ? "s" : ""}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{sa.attempts} révision{sa.attempts > 1 ? "s" : ""}</p>
                     </Card>
                   </Link>
                 ))}

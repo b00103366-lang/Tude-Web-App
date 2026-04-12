@@ -21,19 +21,13 @@ type StudentStep = SharedStep | "done";
 
 // ─── Step bar ─────────────────────────────────────────────────────────────────
 
-function StepBar({ current, role }: { current: string; role: "student" | "professor" }) {
+function StepBar({ current }: { current: string }) {
   const { t } = useTranslation();
-  const PROF_STEPS = [
+  const steps = [
     { id: "form",         label: t("register.stepProfile") },
     { id: "verify-email", label: t("register.stepEmail") },
     { id: "done",         label: t("register.stepDone") },
   ];
-  const STUDENT_STEPS = [
-    { id: "form",         label: t("register.stepProfile") },
-    { id: "verify-email", label: t("register.stepEmail") },
-    { id: "done",         label: t("register.stepDone") },
-  ];
-  const steps = role === "professor" ? PROF_STEPS : STUDENT_STEPS;
   const idx = steps.findIndex(s => s.id === current);
   return (
     <div className="flex items-center justify-center gap-0 mb-8">
@@ -198,7 +192,7 @@ export function Register() {
             <Home className="w-4 h-4" /> {t("common.home")}
           </Link>
         </div>
-        <StepBar current={step} role={role} />
+        <StepBar current={step} />
         {children}
       </FadeIn>
     </div>

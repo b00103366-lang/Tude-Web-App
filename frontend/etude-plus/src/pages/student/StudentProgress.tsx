@@ -144,7 +144,7 @@ export function StudentProgress() {
             <BookOpen className="w-12 h-12 text-muted-foreground opacity-30 mx-auto mb-4" />
             <h3 className="text-xl font-bold mb-2">Aucune donnée pour l'instant</h3>
             <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-              Complète tes premières séances de révision pour voir ta progression apparaître ici.
+              Complète tes premières révisions pour voir ta progression apparaître ici.
             </p>
             <Link href="/revision">
               <button className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
@@ -170,7 +170,7 @@ export function StudentProgress() {
                 )}
               </Card>
               <Card className="p-5">
-                <p className="text-sm text-muted-foreground mb-2">Séances totales</p>
+                <p className="text-sm text-muted-foreground mb-2">Révisions totales</p>
                 {loadingOverview ? <div className="h-9 bg-muted rounded-xl animate-pulse" /> : (
                   <p className="text-3xl font-bold">{overview?.totalAttempts ?? 0}</p>
                 )}
@@ -303,7 +303,7 @@ export function StudentProgress() {
                   </div>
                 ) : history.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">
-                    Aucune séance enregistrée{subjectFilter !== "all" ? " pour cette matière" : ""}.
+                    Aucune révision enregistrée{subjectFilter !== "all" ? " pour cette matière" : ""}.
                   </p>
                 ) : (
                   <div className="space-y-2 max-h-80 overflow-y-auto pr-1">

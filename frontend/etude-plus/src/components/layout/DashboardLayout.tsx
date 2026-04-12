@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 import { Link, useLocation } from "wouter";
@@ -7,29 +7,17 @@ import {
   BookOpen, LayoutDashboard, GraduationCap,
   CreditCard, Bell, Settings, LogOut, Users, CheckSquare,
   ScrollText, Crown,
-  TrendingUp, UserCog, ArrowLeftRight, Sparkles, BarChart2, BarChart3, Menu, X, BrainCircuit, ChevronDown,
+  TrendingUp, UserCog, ArrowLeftRight, Sparkles, BarChart2, BarChart3, Menu, X, BrainCircuit,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import {
-  getSubjectsForNiveauSection, isSectionLevel, subjectToSlug,
-} from "@/lib/educationConfig";
 
 type NavItem = {
   icon: any;
   label: string;
   href: string;
-  special?: boolean;
 };
-
-const REVISION_SECTIONS = [
-  { key: "banque-de-questions", label: "Banque de Questions" },
-  { key: "examens-blancs",      label: "Examens Blancs" },
-  { key: "notions-cles",        label: "Notions Clés" },
-  { key: "annales",             label: "Annales" },
-  { key: "flashcards",          label: "Flashcards" },
-];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logoutFn, impersonating, exitImpersonation } = useAuth();
@@ -37,38 +25,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // ── Revision accordion state ────────────────────────────────────────────────
-  const [revisionOpen, setRevisionOpen] = useState(() => location.startsWith("/revision"));
-  const [openSubject, setOpenSubject] = useState<string | null>(() => {
-    const parts = location.split("/");
-    return parts[1] === "revision" && parts[2] ? parts[2] : null;
-  });
-
-  // Sync accordion to external navigation (e.g., breadcrumb clicks)
-  useEffect(() => {
-    if (location.startsWith("/revision")) {
-      setRevisionOpen(true);
-      const parts = location.split("/");
-      if (parts[2]) setOpenSubject(parts[2]);
-    }
-  }, [location]);
-
   if (!user) return null;
 
   const isSuperAdmin = user.role === "super_admin";
   const isAdmin = user.role === "admin" || isSuperAdmin;
 
-  // Subjects list for the student's grade/section
-  const gradeLevel: string = user.role === "student" ? ((user as any)?.studentProfile?.gradeLevel ?? "") : "";
-  const educationSection: string | null = user.role === "student" ? ((user as any)?.studentProfile?.educationSection ?? null) : null;
-  const sectionKey = gradeLevel && isSectionLevel(gradeLevel) ? educationSection : null;
-  const revisionSubjects = gradeLevel ? (getSubjectsForNiveauSection(gradeLevel, sectionKey) as readonly string[]) : [];
-
   const NAV_ITEMS: Record<string, NavItem[]> = {
     student: [
       { icon: LayoutDashboard, label: t("sidebar.student.dashboard"), href: "/student/dashboard" },
-      { icon: Sparkles,        label: "Révision Étude+",              href: "/revision", special: true },
-      { icon: BarChart3,       label: "Ma progression",              href: "/student/progress" },
+      { icon: Sparkles,        label: "Révision Étude+",              href: "/revision" },
+      { icon: BarChart3,       label: "Ma progression",               href: "/student/progress" },
       { icon: CheckSquare,     label: t("sidebar.student.grades"),    href: "/student/grades" },
       { icon: Bell,            label: t("sidebar.student.notifications"), href: "/student/notifications" },
       { icon: Settings,        label: t("sidebar.student.settings"),  href: "/student/settings" },
@@ -97,115 +63,47 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     user.role === "admin" ? t("sidebar.roles.admin") :
     t("sidebar.roles.student");
 
-  // ── Render a single nav item (handles regular links + the revision accordion) ─
   function renderNavItem(item: NavItem, onLinkClick?: () => void) {
-    if (!item.special) {
-      const active = location === item.href || location.startsWith(item.href + "/");
+    // Special highlight for Révision Étude+
+    const isRevision = item.href === "/revision";
+    const active = isRevision
+      ? location.startsWith("/revision")
+      : location === item.href || location.startsWith(item.href + "/");
+
+    if (isRevision) {
       return (
         <Link
           key={item.href}
           href={item.href}
           onClick={onLinkClick}
           className={cn(
-            "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
-            active
-              ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/20"
-              : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          )}
-        >
-          <item.icon className="w-5 h-5 shrink-0" />
-          {item.label}
-        </Link>
-      );
-    }
-
-    // ── Two-level Révision Étude+ accordion ──────────────────────────────────
-    const isRevisionActive = location.startsWith("/revision");
-    const currentSlug = location.startsWith("/revision/") ? location.split("/")[2] : null;
-
-    return (
-      <div key="revision">
-        {/* Level 1: toggle */}
-        <button
-          type="button"
-          onClick={() => setRevisionOpen(o => !o)}
-          className={cn(
             "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium w-full",
-            isRevisionActive
+            active
               ? "bg-yellow-400/20 text-yellow-300 shadow-lg shadow-yellow-400/10"
               : "text-yellow-400/80 hover:bg-yellow-400/10 hover:text-yellow-300"
           )}
         >
           <Sparkles className="w-5 h-5 shrink-0 text-yellow-400" />
-          <span className="flex-1 text-left">Révision Étude+</span>
-          <ChevronDown className={cn(
-            "w-4 h-4 shrink-0 text-yellow-400/70 transition-transform duration-200",
-            revisionOpen && "rotate-180"
-          )} />
-        </button>
+          <span className="flex-1">Révision Étude+</span>
+        </Link>
+      );
+    }
 
-        {/* Level 2: subjects */}
-        {revisionOpen && (
-          <div className="ml-3 mt-1 space-y-0.5 border-l border-yellow-400/20 pl-2">
-            {revisionSubjects.length === 0 ? (
-              <p className="px-3 py-2 text-xs text-sidebar-foreground/40 italic">
-                Niveau non défini
-              </p>
-            ) : revisionSubjects.map(subject => {
-              const slug = subjectToSlug(subject);
-              const isSubjectActive = currentSlug === slug;
-              const isSubjectOpen = openSubject === slug;
-
-              return (
-                <div key={subject}>
-                  {/* Subject toggle */}
-                  <button
-                    type="button"
-                    onClick={() => setOpenSubject(isSubjectOpen ? null : slug)}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-lg transition-all w-full text-sm",
-                      isSubjectActive
-                        ? "text-yellow-300 bg-yellow-400/10 font-semibold"
-                        : "text-sidebar-foreground/60 hover:text-yellow-300/80 hover:bg-yellow-400/5 font-medium"
-                    )}
-                  >
-                    <span className="flex-1 text-left truncate">{subject}</span>
-                    <ChevronDown className={cn(
-                      "w-3.5 h-3.5 shrink-0 text-yellow-400/50 transition-transform duration-150",
-                      isSubjectOpen && "rotate-180"
-                    )} />
-                  </button>
-
-                  {/* Section links */}
-                  {isSubjectOpen && (
-                    <div className="ml-2 mt-0.5 mb-1 space-y-0.5 border-l border-yellow-400/15 pl-2">
-                      {REVISION_SECTIONS.map(section => {
-                        const href = `/revision/${slug}/${section.key}`;
-                        const sectionActive = location === href || location.startsWith(href + "/");
-                        return (
-                          <Link
-                            key={section.key}
-                            href={href}
-                            onClick={onLinkClick}
-                            className={cn(
-                              "flex items-center px-3 py-1.5 rounded-lg text-xs transition-colors",
-                              sectionActive
-                                ? "text-yellow-300 font-semibold bg-yellow-400/10"
-                                : "text-sidebar-foreground/45 hover:text-yellow-200/80 hover:bg-yellow-400/5"
-                            )}
-                          >
-                            {section.label}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={onLinkClick}
+        className={cn(
+          "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
+          active
+            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/20"
+            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         )}
-      </div>
+      >
+        <item.icon className="w-5 h-5 shrink-0" />
+        {item.label}
+      </Link>
     );
   }
 
@@ -364,9 +262,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        {/* MVP: KYC banner suppressed (professor-only feature)
-        {user.role === "professor" && (() => { ... })()}
-        */}
+        {/* MVP: KYC banner suppressed (professor-only feature) */}
 
         <div className="flex-1 p-6 sm:p-8 lg:p-10 max-w-7xl mx-auto w-full">
           {children}

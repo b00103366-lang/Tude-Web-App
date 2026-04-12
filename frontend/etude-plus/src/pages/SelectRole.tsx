@@ -1,61 +1,60 @@
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { Navbar } from "@/components/layout/Navbar";
-import { Button, Card, FadeIn } from "@/components/ui/Premium";
-import { GraduationCap, ArrowRight } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { Button, FadeIn } from "@/components/ui/Premium";
+import { BookOpen, BarChart3, Sparkles, ArrowRight, CheckCircle2 } from "lucide-react";
+
+const FEATURES = [
+  { icon: BookOpen,  text: "Banque de questions par matière et chapitre" },
+  { icon: Sparkles,  text: "Annales, flashcards et notions clés" },
+  { icon: BarChart3, text: "Suivi de ta progression en temps réel" },
+];
 
 export function SelectRole() {
-  const { t } = useTranslation();
-  const [, setLocation] = useLocation();
-
-  // MVP: professor option suppressed — redirect straight to student registration
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
       <div className="absolute inset-0 bg-math-pattern opacity-[0.03] pointer-events-none" />
       <Navbar />
 
-      <main className="flex-1 flex items-center justify-center pt-20 pb-12 px-4 relative z-10">
-        <div className="w-full max-w-2xl">
-          <FadeIn className="text-center mb-12">
-            <h1 className="text-4xl sm:text-5xl font-serif font-bold mb-4">{t("selectRole.title")}</h1>
-            <p className="text-xl text-muted-foreground">{t("selectRole.subtitle")}</p>
-          </FadeIn>
+      <main className="flex-1 flex items-center justify-center pt-20 pb-16 px-4 relative z-10">
+        <div className="w-full max-w-md text-center">
+          <FadeIn>
+            {/* Brand mark */}
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
+              <span className="font-serif font-bold text-3xl text-primary">É</span>
+            </div>
 
-          <FadeIn delay={0.1} className="max-w-md mx-auto">
-            <Card
-              className="p-8 cursor-pointer hover:border-primary transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col group relative overflow-hidden"
-              onClick={() => setLocation("/register?role=student")}
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -z-10 group-hover:bg-primary/10 transition-colors" />
+            <h1 className="text-3xl sm:text-4xl font-serif font-bold mb-3">
+              Bienvenue sur <span className="text-primary">Étude+</span>
+            </h1>
+            <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
+              La plateforme de révision pour les élèves tunisiens.
+              Commence à réviser intelligemment dès aujourd'hui.
+            </p>
 
-              <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 text-primary group-hover:scale-110 transition-transform">
-                <GraduationCap className="w-8 h-8" />
-              </div>
+            {/* Feature list */}
+            <ul className="space-y-3 mb-10 text-left">
+              {FEATURES.map(({ icon: Icon, text }) => (
+                <li key={text} className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Icon className="w-4 h-4 text-primary" />
+                  </div>
+                  <span className="text-sm text-muted-foreground">{text}</span>
+                </li>
+              ))}
+            </ul>
 
-              <h2 className="text-2xl font-bold mb-3">{t("selectRole.studentTitle")}</h2>
-              <p className="text-muted-foreground mb-8 flex-1">
-                {t("selectRole.studentDesc")}
-              </p>
+            {/* CTA */}
+            <Link href="/register">
+              <Button size="lg" className="w-full gap-2 text-base">
+                Créer mon compte gratuitement
+                <ArrowRight className="w-5 h-5" />
+              </Button>
+            </Link>
 
-              <div className="flex items-center text-primary font-semibold group-hover:translate-x-2 transition-transform">
-                {t("selectRole.createStudentAccount")} <ArrowRight className="w-5 h-5 ml-2" />
-              </div>
-            </Card>
-          </FadeIn>
-
-          {/* MVP: professor card suppressed
-          <FadeIn delay={0.2}>
-            <Card className="p-8 cursor-pointer ..." onClick={() => setLocation("/register?role=professor")}>
-              ...
-            </Card>
-          </FadeIn>
-          */}
-
-          <FadeIn delay={0.3} className="text-center mt-12">
-            <p className="text-muted-foreground">
-              {t("selectRole.alreadyAccount")}{' '}
+            <p className="mt-6 text-sm text-muted-foreground">
+              Déjà inscrit ?{" "}
               <Link href="/login" className="text-primary font-semibold hover:underline">
-                {t("selectRole.signIn")}
+                Se connecter
               </Link>
             </p>
           </FadeIn>
