@@ -74,7 +74,7 @@ const MARK_OPTIONS: { value: SelfMark; label: string; icon: any; color: string }
 ];
 
 export function Annales() {
-  const [, params] = useRoute("/revision/:subject/annales");
+  const [, params] = useRoute("/revision/:subject/examens-blancs");
   const subject = params?.subject ? (subjectFromSlug(params.subject) ?? decodeURIComponent(params.subject)) : "";
   const { user } = useAuth();
   const { toast } = useToast();
@@ -208,7 +208,7 @@ export function Annales() {
               onClick={() => { setView("list"); setSessionDone(false); }}
               className="px-5 py-2.5 border border-border rounded-xl text-sm font-semibold hover:bg-muted transition-colors"
             >
-              Retour aux annales
+              Retour aux examens blancs
             </button>
             <Link href="/student/progress">
               <button className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
@@ -236,7 +236,7 @@ export function Annales() {
               onClick={() => setView("list")}
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
             >
-              <ArrowLeft className="w-4 h-4" /> Retour aux annales
+              <ArrowLeft className="w-4 h-4" /> Retour aux examens blancs
             </button>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
@@ -413,9 +413,9 @@ export function Annales() {
             <ChevronRight className="w-3 h-3" />
             <Link href={`/revision/${subjectToSlug(subject)}`} className="hover:text-foreground transition-colors">{subject}</Link>
             <ChevronRight className="w-3 h-3" />
-            <span>Annales</span>
+            <span>Examens Blancs</span>
           </div>
-          <h1 className="text-2xl font-bold">Annales — {subject}</h1>
+          <h1 className="text-2xl font-bold">Examens Blancs — {subject}</h1>
           <p className="text-muted-foreground mt-1">
             Sujets d'examens des années précédentes. Réponds aux questions et reçois ta note sur 20.
           </p>

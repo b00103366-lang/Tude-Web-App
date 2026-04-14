@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, questionsTable, questionPartsTable, markSchemesTable } from "@workspace/db";
-import { eq, and, desc, inArray } from "drizzle-orm";
+import { eq, and, desc, inArray, count } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth";
 
 const router = Router();
@@ -231,6 +231,15 @@ router.get("/", async (req, res) => {
   const limitN = Math.min(parseInt(limit) || 50, 100);
   const offset = (parseInt(page) - 1) * limitN;
 
+  const conditions: ReturnType<typeof eq>[] = [];
+  if (gradeLevel) conditions.push(eq(questionsTable.gradeLevel, gradeLevel));
+  if (subject) conditions.push(eq(questionsTable.subject, subject));
+  if (filterStatus) conditions.push(eq(questionsTable.status, filterStatus));
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const [{ total }] = await db.select({ total: count() }).from(questionsTable).where(whereClause);
+
   const rows = await db
     .select({
       id: questionsTable.id,
@@ -246,18 +255,12 @@ router.get("/", async (req, res) => {
       createdAt: questionsTable.createdAt,
     })
     .from(questionsTable)
+    .where(whereClause)
     .orderBy(desc(questionsTable.createdAt))
     .limit(limitN)
     .offset(offset);
 
-  const filtered = rows.filter(r => {
-    if (gradeLevel && r.gradeLevel !== gradeLevel) return false;
-    if (subject && r.subject !== subject) return false;
-    if (filterStatus && r.status !== filterStatus) return false;
-    return true;
-  });
-
-  res.json({ questions: filtered });
+  res.json({ questions: rows, total, page: parseInt(page), limit: limitN });
 });
 
 // ── GET /api/admin/questions/:id ──────────────────────────────────────────────

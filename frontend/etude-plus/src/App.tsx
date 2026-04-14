@@ -29,9 +29,8 @@ import { RevisionHub } from "@/pages/revision/BanqueDeQuestions";
 import { RevisionSubject } from "@/pages/revision/RevisionSubject";
 import { BanqueDeQuestionsSubject } from "@/pages/revision/BanqueDeQuestionsSubject";
 import { BanqueDeQuestionsTopic } from "@/pages/revision/BanqueDeQuestionsTopic";
-import { ExamensBlancs } from "@/pages/revision/ExamensBlancs";
-import { NotionsCles } from "@/pages/revision/NotionsCles";
-import { Annales } from "@/pages/revision/Annales";
+import { Annales as ExamensBlancsPage } from "@/pages/revision/Annales";
+import { ExamensPratiques } from "@/pages/revision/ExamensPratiques";
 import { Flashcards } from "@/pages/revision/Flashcards";
 
 // MVP: professor pages suppressed — imports kept for easy restore
@@ -66,6 +65,7 @@ import { AdminAnalytics } from "@/pages/admin/AdminAnalytics";
 import { AdminQuestions } from "@/pages/admin/AdminQuestions";
 import { AdminQuestionsGenerate } from "@/pages/admin/AdminQuestionsGenerate";
 import { KnowledgeBase } from "@/pages/admin/KnowledgeBase";
+import { AdminKnowledgeBase } from "@/pages/admin/AdminKnowledgeBase";
 
 // Legal pages
 import { Terms } from "@/pages/Terms";
@@ -186,17 +186,23 @@ function Router() {
       <Route path="/revision/:subject/banque-de-questions">
         {() => <ProtectedRoute component={BanqueDeQuestionsSubject} allowedRoles={["student"]} />}
       </Route>
+      {/* Examens Blancs — backed by annales table via GET /api/revision/content/annales */}
       <Route path="/revision/:subject/examens-blancs">
-        {() => <ProtectedRoute component={ExamensBlancs} allowedRoles={["student"]} />}
+        {() => <ProtectedRoute component={ExamensBlancsPage} allowedRoles={["student"]} />}
       </Route>
-      <Route path="/revision/:subject/notions-cles">
-        {() => <ProtectedRoute component={NotionsCles} allowedRoles={["student"]} />}
-      </Route>
-      <Route path="/revision/:subject/annales">
-        {() => <ProtectedRoute component={Annales} allowedRoles={["student"]} />}
+      {/* Examens Pratiques — backed by questions table via GET /api/revision/content/questions */}
+      <Route path="/revision/:subject/examens-pratiques">
+        {() => <ProtectedRoute component={ExamensPratiques} allowedRoles={["student"]} />}
       </Route>
       <Route path="/revision/:subject/flashcards">
         {() => <ProtectedRoute component={Flashcards} allowedRoles={["student"]} />}
+      </Route>
+      {/* Legacy redirects — old routes that no longer have UI cards */}
+      <Route path="/revision/:subject/annales">
+        {() => <Redirect to="/revision" />}
+      </Route>
+      <Route path="/revision/:subject/notions-cles">
+        {() => <Redirect to="/revision" />}
       </Route>
       <Route path="/revision/:subject">
         {() => <ProtectedRoute component={RevisionSubject} allowedRoles={["student"]} />}
@@ -264,7 +270,12 @@ function Router() {
         {() => <ProtectedRoute component={AdminQuestions} allowedRoles={["admin", "super_admin"]} />}
       </Route>
 
-      {/* Hidden admin KB tool — no link in UI, accessed by typing /kb directly */}
+      {/* Knowledge Base folder manager — main admin content tool */}
+      <Route path="/admin/knowledge-base">
+        {() => <ProtectedRoute component={AdminKnowledgeBase} allowedRoles={["admin", "super_admin"]} />}
+      </Route>
+
+      {/* Hidden legacy KB tool — accessed by typing /kb directly */}
       <Route path="/kb" component={KnowledgeBase} />
 
       {/* Super Admin only routes */}

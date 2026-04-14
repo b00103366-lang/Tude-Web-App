@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, usersTable, studentProfilesTable, professorsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth";
 
 const router = Router();
@@ -12,12 +12,24 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
   const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
   const offset = (pageNum - 1) * limitNum;
 
-  const users = await db.select().from(usersTable).offset(offset).limit(limitNum);
-  const filtered = role ? users.filter(u => u.role === role) : users;
+  const VALID_ROLES = ["student", "professor", "admin", "super_admin"] as const;
+  type ValidRole = typeof VALID_ROLES[number];
+  const roleFilter = role && VALID_ROLES.includes(role as ValidRole) ? role as ValidRole : undefined;
+
+  const whereClause = roleFilter ? eq(usersTable.role, roleFilter) : undefined;
+
+  const [{ total }] = await db.select({ total: count() }).from(usersTable).where(whereClause);
+
+  const users = await db
+    .select()
+    .from(usersTable)
+    .where(whereClause)
+    .offset(offset)
+    .limit(limitNum);
 
   res.json({
-    users: filtered.map(u => ({ ...u, passwordHash: undefined })),
-    total: filtered.length,
+    users: users.map(u => ({ ...u, passwordHash: undefined })),
+    total,
     page: pageNum,
     limit: limitNum,
   });

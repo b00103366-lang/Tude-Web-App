@@ -7,7 +7,7 @@ import {
   BookOpen, LayoutDashboard, GraduationCap,
   CreditCard, Bell, Settings, LogOut, Users, CheckSquare,
   ScrollText, Crown,
-  TrendingUp, UserCog, ArrowLeftRight, Sparkles, BarChart2, BarChart3, Menu, X, BrainCircuit,
+  TrendingUp, UserCog, ArrowLeftRight, Sparkles, BarChart2, BarChart3, Menu, X, BrainCircuit, Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -41,18 +41,20 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     ],
     // MVP: professor nav suppressed — restore by adding professor: [...] back here
     admin: [
-      { icon: LayoutDashboard, label: t("sidebar.admin.dashboard"), href: "/admin/dashboard" },
-      { icon: Users,           label: t("sidebar.admin.users"),     href: "/admin/users" },
-      { icon: BrainCircuit,    label: "Gestion des Questions",      href: "/admin/questions" },
+      { icon: LayoutDashboard, label: t("sidebar.admin.dashboard"),    href: "/admin/dashboard" },
+      { icon: Users,           label: t("sidebar.admin.users"),        href: "/admin/users" },
+      { icon: Database,        label: "Base de Connaissances",         href: "/admin/knowledge-base" },
+      { icon: BrainCircuit,    label: "Gestion des Questions",         href: "/admin/questions" },
     ],
     super_admin: [
-      { icon: LayoutDashboard, label: t("sidebar.admin.dashboard"),  href: "/admin/dashboard" },
-      { icon: BarChart2,       label: "Analytiques",                 href: "/admin/analytics" },
-      { icon: Users,           label: t("sidebar.admin.users"),      href: "/admin/users" },
-      { icon: BrainCircuit,    label: "Gestion des Questions",       href: "/admin/questions" },
-      { icon: TrendingUp,      label: t("sidebar.admin.finances"),   href: "/admin/finances" },
-      { icon: ScrollText,      label: t("sidebar.admin.auditLogs"),  href: "/admin/audit-logs" },
-      { icon: Settings,        label: t("sidebar.admin.settings"),   href: "/admin/settings" },
+      { icon: LayoutDashboard, label: t("sidebar.admin.dashboard"),    href: "/admin/dashboard" },
+      { icon: BarChart2,       label: "Analytiques",                   href: "/admin/analytics" },
+      { icon: Users,           label: t("sidebar.admin.users"),        href: "/admin/users" },
+      { icon: Database,        label: "Base de Connaissances",         href: "/admin/knowledge-base" },
+      { icon: BrainCircuit,    label: "Gestion des Questions",         href: "/admin/questions" },
+      { icon: TrendingUp,      label: t("sidebar.admin.finances"),     href: "/admin/finances" },
+      { icon: ScrollText,      label: t("sidebar.admin.auditLogs"),    href: "/admin/audit-logs" },
+      { icon: Settings,        label: t("sidebar.admin.settings"),     href: "/admin/settings" },
     ],
   };
 

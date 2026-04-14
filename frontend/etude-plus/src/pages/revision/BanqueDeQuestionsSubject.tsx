@@ -1,15 +1,23 @@
-import { useState, useEffect } from "react";
+/**
+ * BanqueDeQuestionsSubject — student-facing question bank for a specific subject.
+ * Layout closely matches the reference design:
+ *   - Horizontal filter bar at top
+ *   - Large question card on the left
+ *   - Sticky action panel on the right
+ */
+
+import { useState, useEffect, useRef } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card } from "@/components/ui/Premium";
 import { Link, useRoute } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getToken } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
-import { subjectToSlug, subjectFromSlug } from "@/lib/educationConfig";
+import { subjectFromSlug, subjectToSlug } from "@/lib/educationConfig";
 import {
   BookOpen, ChevronRight, ChevronLeft, Eye, EyeOff,
-  CheckCircle2, XCircle, MinusCircle, Trophy, ArrowRight, Filter,
-  AlertCircle, ListFilter, BookMarked, Sparkles,
+  CheckCircle2, XCircle, MinusCircle, Trophy, ArrowRight,
+  AlertCircle, Calculator, BookMarked, Sparkles, Bookmark,
+  BookmarkCheck, Video, Maximize2, Hash,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -28,47 +36,496 @@ async function apiFetch(path: string) {
 
 type SelfMark = "correct" | "partial" | "incorrect" | null;
 
-const MARK_OPTIONS: { value: SelfMark; label: string; icon: any; color: string; activeColor: string }[] = [
-  {
-    value: "correct",
-    label: "Correct",
-    icon: CheckCircle2,
-    color: "border-green-200 text-green-700 dark:border-green-800 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20",
-    activeColor: "bg-green-500 border-green-500 text-white dark:bg-green-600 dark:border-green-600",
-  },
-  {
-    value: "partial",
-    label: "Partiel",
-    icon: MinusCircle,
-    color: "border-amber-200 text-amber-700 dark:border-amber-800 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20",
-    activeColor: "bg-amber-500 border-amber-500 text-white dark:bg-amber-600 dark:border-amber-600",
-  },
-  {
-    value: "incorrect",
-    label: "Incorrect",
-    icon: XCircle,
-    color: "border-red-200 text-red-700 dark:border-red-800 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20",
-    activeColor: "bg-red-500 border-red-500 text-white dark:bg-red-600 dark:border-red-600",
-  },
-];
+// ── Sub-components ──────────────────────────────────────────────────────────────
 
 function DifficultyBadge({ difficulty }: { difficulty: string }) {
-  const map: Record<string, string> = {
-    facile:    "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
-    moyen:     "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-    difficile: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
+  const styles: Record<string, string> = {
+    facile:    "bg-emerald-50 text-emerald-700 border border-emerald-200",
+    moyen:     "bg-amber-50 text-amber-700 border border-amber-200",
+    difficile: "bg-red-50 text-red-700 border border-red-200",
   };
-  const labels: Record<string, string> = { facile: "Facile", moyen: "Moyen", difficile: "Difficile" };
+  const labels: Record<string, string> = {
+    facile: "Facile", moyen: "Moyen", difficile: "Difficile",
+  };
   return (
-    <span className={cn("text-xs font-semibold px-2.5 py-0.5 rounded-full", map[difficulty] ?? map.moyen)}>
+    <span className={cn(
+      "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold",
+      styles[difficulty] ?? styles.moyen
+    )}>
       {labels[difficulty] ?? difficulty}
     </span>
   );
 }
 
+// ── Filter bar ──────────────────────────────────────────────────────────────────
+
+type Filters = {
+  topic: string;
+  type: string;
+  difficulty: string;
+};
+
+function FilterBar({
+  topics,
+  filters,
+  onChange,
+  totalCount,
+  currentIdx,
+  onGoTo,
+}: {
+  topics: string[];
+  filters: Filters;
+  onChange: (f: Partial<Filters>) => void;
+  totalCount: number;
+  currentIdx: number;
+  onGoTo: (n: number) => void;
+}) {
+  const [goInput, setGoInput] = useState("");
+
+  const selectClass =
+    "text-sm border border-border rounded-xl px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 h-9";
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 p-3 rounded-2xl bg-muted/40 border border-border">
+      {/* Question Type */}
+      <select
+        value={filters.type}
+        onChange={e => onChange({ type: e.target.value })}
+        className={selectClass}
+      >
+        <option value="">Type de question</option>
+        <option value="Exercice">Exercice</option>
+        <option value="Problème">Problème</option>
+        <option value="QCM">QCM</option>
+        <option value="Rédaction">Rédaction</option>
+      </select>
+
+      {/* Topic / Paper */}
+      {topics.length > 0 && (
+        <select
+          value={filters.topic}
+          onChange={e => onChange({ topic: e.target.value })}
+          className={selectClass}
+        >
+          <option value="">Tous les chapitres</option>
+          {topics.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+      )}
+
+      {/* Difficulty */}
+      <select
+        value={filters.difficulty}
+        onChange={e => onChange({ difficulty: e.target.value })}
+        className={selectClass}
+      >
+        <option value="">Difficulté</option>
+        <option value="facile">Facile</option>
+        <option value="moyen">Moyen</option>
+        <option value="difficile">Difficile</option>
+      </select>
+
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Question count */}
+      {totalCount > 0 && (
+        <span className="text-xs text-muted-foreground font-medium hidden sm:block">
+          {totalCount} question{totalCount > 1 ? "s" : ""}
+        </span>
+      )}
+
+      {/* Go to Question */}
+      <div className="flex items-center gap-1.5">
+        <Hash className="w-3.5 h-3.5 text-muted-foreground" />
+        <input
+          type="number"
+          min={1}
+          max={totalCount || 1}
+          value={goInput}
+          onChange={e => setGoInput(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === "Enter") {
+              const n = parseInt(goInput, 10);
+              if (!isNaN(n) && n >= 1 && n <= totalCount) {
+                onGoTo(n - 1);
+                setGoInput("");
+              }
+            }
+          }}
+          placeholder="Aller à..."
+          className="w-24 text-sm border border-border rounded-xl px-3 py-2 h-9 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── Right action panel ──────────────────────────────────────────────────────────
+
+function ActionPanel({
+  question,
+  selfMark,
+  onMark,
+  bookmarked,
+  onBookmark,
+  showMarkScheme,
+  onToggleMarkScheme,
+  onFinish,
+  markedCount,
+  totalCount,
+  isPending,
+}: {
+  question: any;
+  selfMark: SelfMark;
+  onMark: (v: SelfMark) => void;
+  bookmarked: boolean;
+  onBookmark: () => void;
+  showMarkScheme: boolean;
+  onToggleMarkScheme: () => void;
+  onFinish: () => void;
+  markedCount: number;
+  totalCount: number;
+  isPending: boolean;
+}) {
+  return (
+    <div className="space-y-3">
+
+      {/* Bookmark + Complete row */}
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          onClick={onBookmark}
+          className={cn(
+            "flex flex-col items-center gap-1.5 p-3 rounded-xl border text-xs font-semibold transition-all",
+            bookmarked
+              ? "bg-primary/10 border-primary/30 text-primary"
+              : "border-border hover:bg-muted text-muted-foreground"
+          )}
+        >
+          {bookmarked
+            ? <BookmarkCheck className="w-5 h-5" />
+            : <Bookmark className="w-5 h-5" />}
+          {bookmarked ? "Sauvegardé" : "Sauvegarder"}
+        </button>
+        <button
+          onClick={() => {
+            if (selfMark === "correct") onMark(null);
+            else onMark("correct");
+          }}
+          className={cn(
+            "flex flex-col items-center gap-1.5 p-3 rounded-xl border text-xs font-semibold transition-all",
+            selfMark === "correct"
+              ? "bg-emerald-500 border-emerald-500 text-white"
+              : "border-border hover:bg-muted text-muted-foreground"
+          )}
+        >
+          <CheckCircle2 className="w-5 h-5" />
+          {selfMark === "correct" ? "Correct ✓" : "Complet"}
+        </button>
+      </div>
+
+      {/* Self-assessment */}
+      <div className="rounded-2xl border border-border bg-background p-4 space-y-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          Auto-évaluation
+        </p>
+        <div className="space-y-2">
+          {([
+            { value: "correct" as SelfMark,   label: "Correct",   icon: CheckCircle2, active: "bg-emerald-500 border-emerald-500 text-white", base: "text-emerald-700 border-emerald-200 hover:bg-emerald-50" },
+            { value: "partial" as SelfMark,   label: "Partiel",   icon: MinusCircle,  active: "bg-amber-500 border-amber-500 text-white",   base: "text-amber-700 border-amber-200 hover:bg-amber-50" },
+            { value: "incorrect" as SelfMark, label: "Incorrect", icon: XCircle,      active: "bg-red-500 border-red-500 text-white",       base: "text-red-700 border-red-200 hover:bg-red-50" },
+          ] as const).map(opt => {
+            const Icon = opt.icon;
+            return (
+              <button
+                key={opt.value}
+                onClick={() => onMark(selfMark === opt.value ? null : opt.value)}
+                className={cn(
+                  "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-sm font-semibold transition-all",
+                  selfMark === opt.value ? opt.active : cn("bg-background", opt.base)
+                )}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Mark Scheme */}
+      <button
+        onClick={onToggleMarkScheme}
+        className={cn(
+          "w-full flex items-center gap-3 px-4 py-3 rounded-2xl border text-sm font-semibold transition-all",
+          showMarkScheme
+            ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300"
+            : "border-border hover:bg-muted text-foreground"
+        )}
+      >
+        <BookMarked className="w-4 h-4 shrink-0" />
+        <span className="flex-1 text-left">Corrigé / Barème</span>
+        {showMarkScheme ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+      </button>
+
+      {/* Video Solution */}
+      <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-border bg-muted/30 text-sm font-semibold text-muted-foreground">
+        <Video className="w-4 h-4 shrink-0" />
+        <span className="flex-1">Correction vidéo</span>
+        <span className="text-[10px] font-bold uppercase tracking-wider bg-muted px-2 py-0.5 rounded-full">
+          Bientôt
+        </span>
+      </div>
+
+      {/* AI Feedback */}
+      <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-border bg-muted/30 text-sm font-semibold text-muted-foreground">
+        <Sparkles className="w-4 h-4 shrink-0 text-yellow-500" />
+        <span className="flex-1">Feedback IA</span>
+        <span className="text-[10px] font-bold uppercase tracking-wider bg-muted px-2 py-0.5 rounded-full">
+          Bientôt
+        </span>
+      </div>
+
+      {/* Progress + Finish */}
+      <div className="rounded-2xl border border-border bg-background p-4 space-y-3">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-semibold text-muted-foreground">Progression</span>
+          <span className="font-bold text-primary">{markedCount}/{totalCount}</span>
+        </div>
+        <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary rounded-full transition-all duration-500"
+            style={{ width: totalCount > 0 ? `${(markedCount / totalCount) * 100}%` : "0%" }}
+          />
+        </div>
+        <button
+          onClick={onFinish}
+          disabled={markedCount === 0 || isPending}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          {isPending ? "Enregistrement..." : "Terminer la révision"}
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Main question card ──────────────────────────────────────────────────────────
+
+function QuestionCard({
+  question,
+  index,
+  selfMark,
+  showMarkScheme,
+}: {
+  question: any;
+  index: number;
+  selfMark: SelfMark;
+  showMarkScheme: boolean;
+}) {
+  const markBorder =
+    selfMark === "correct"   ? "ring-2 ring-emerald-400 dark:ring-emerald-600" :
+    selfMark === "partial"   ? "ring-2 ring-amber-400 dark:ring-amber-600" :
+    selfMark === "incorrect" ? "ring-2 ring-red-400 dark:ring-red-600" :
+    "";
+
+  return (
+    <div className={cn(
+      "bg-background rounded-2xl border border-border shadow-sm overflow-hidden transition-all",
+      markBorder
+    )}>
+      {/* Card header */}
+      <div className="px-6 py-4 border-b border-border bg-muted/20 flex items-center gap-3 flex-wrap">
+        {/* Calculator */}
+        <div className={cn(
+          "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border",
+          question.requiresCalculator
+            ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800"
+            : "bg-muted text-muted-foreground border-border"
+        )}>
+          <Calculator className="w-3 h-3" />
+          {question.requiresCalculator ? "Calculatrice" : "Sans calculatrice"}
+        </div>
+
+        <DifficultyBadge difficulty={question.difficulty} />
+
+        {question.totalMarks && (
+          <span className="text-xs text-muted-foreground font-medium">
+            {question.totalMarks} pt{question.totalMarks > 1 ? "s" : ""}
+          </span>
+        )}
+
+        {question.topic && (
+          <span className="text-xs text-muted-foreground hidden sm:block">
+            {question.topic}
+          </span>
+        )}
+
+        {question.estimatedTimeMinutes && (
+          <span className="text-xs text-muted-foreground ml-auto">
+            ~{question.estimatedTimeMinutes} min
+          </span>
+        )}
+      </div>
+
+      {/* Card body */}
+      <div className="px-6 py-8 space-y-6">
+
+        {/* Context / stimulus */}
+        {question.context && (
+          <div
+            className="text-sm bg-muted/40 rounded-xl p-4 border border-border leading-relaxed prose prose-sm dark:prose-invert max-w-none"
+            dangerouslySetInnerHTML={{ __html: question.context }}
+          />
+        )}
+
+        {/* Main question text */}
+        <p className="text-base font-medium text-foreground leading-relaxed whitespace-pre-wrap">
+          {question.questionText}
+        </p>
+
+        {/* Parts */}
+        {question.parts?.length > 0 && (
+          <div className="space-y-4 pt-2">
+            {question.parts.map((part: any, i: number) => (
+              <div key={part.id ?? i} className="flex gap-4">
+                <div className="shrink-0 mt-0.5">
+                  <span className="inline-flex w-7 h-7 rounded-full bg-primary/10 items-center justify-center text-xs font-bold text-primary">
+                    {part.label}
+                  </span>
+                </div>
+                <div className="flex-1 space-y-0.5">
+                  <p className="text-sm text-foreground leading-relaxed">{part.text}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {part.marks} pt{part.marks > 1 ? "s" : ""}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Mark Scheme (inline, toggled from right panel) */}
+        {showMarkScheme && (
+          <div className="mt-6 rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <BookMarked className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
+                Corrigé / Barème
+              </p>
+            </div>
+            {question.markScheme?.length > 0 ? (
+              <div className="space-y-3">
+                {question.markScheme.map((ms: any, i: number) => (
+                  <div key={ms.id ?? i} className="flex gap-3">
+                    {ms.partLabel && (
+                      <span className="shrink-0 inline-flex w-5 h-5 rounded-full bg-emerald-200 dark:bg-emerald-800 items-center justify-center text-xs font-bold text-emerald-700 dark:text-emerald-300 mt-0.5">
+                        {ms.partLabel}
+                      </span>
+                    )}
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium text-emerald-900 dark:text-emerald-200 whitespace-pre-wrap">
+                        {ms.answer}
+                      </p>
+                      {ms.marksBreakdown && (
+                        <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                          {ms.marksBreakdown}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-emerald-700 dark:text-emerald-400">
+                Corrigé non disponible pour cette question.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Result screen ───────────────────────────────────────────────────────────────
+
+function ResultScreen({
+  grade,
+  selfMarks,
+  subject,
+  onRetry,
+}: {
+  grade: number | null;
+  selfMarks: Record<number, SelfMark>;
+  subject: string;
+  onRetry: () => void;
+}) {
+  const correctC  = Object.values(selfMarks).filter(m => m === "correct").length;
+  const partialC  = Object.values(selfMarks).filter(m => m === "partial").length;
+  const incorrectC = Object.values(selfMarks).filter(m => m === "incorrect").length;
+  const gradeColor =
+    grade !== null
+      ? grade >= 15 ? "text-emerald-600 dark:text-emerald-400"
+      : grade >= 10 ? "text-amber-600 dark:text-amber-400"
+      : "text-red-600 dark:text-red-400"
+      : "text-foreground";
+
+  return (
+    <DashboardLayout>
+      <div className="max-w-lg mx-auto py-20 text-center space-y-6">
+        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+          <Trophy className="w-10 h-10 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold mb-1">Révision terminée !</h1>
+          <p className="text-muted-foreground">{subject}</p>
+        </div>
+        {grade !== null && (
+          <div className="py-4">
+            <p className={cn("text-6xl font-bold", gradeColor)}>{grade.toFixed(1)}</p>
+            <p className="text-xl text-muted-foreground mt-1">/20</p>
+          </div>
+        )}
+        <div className="flex justify-center gap-8 text-sm">
+          {[
+            { count: correctC,   label: "Correcte",   color: "text-emerald-600" },
+            { count: partialC,   label: "Partielle",  color: "text-amber-600" },
+            { count: incorrectC, label: "Incorrecte", color: "text-red-600" },
+          ].map(({ count, label, color }) => (
+            <div key={label} className="text-center">
+              <p className={cn("text-2xl font-bold", color)}>{count}</p>
+              <p className="text-muted-foreground text-xs mt-0.5">
+                {label}{count > 1 ? "s" : ""}
+              </p>
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+          <button
+            onClick={onRetry}
+            className="px-5 py-2.5 border border-border rounded-xl text-sm font-semibold hover:bg-muted transition-colors"
+          >
+            Nouvelle révision
+          </button>
+          <Link href="/student/progress">
+            <button className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
+              Voir ma progression <ArrowRight className="w-4 h-4" />
+            </button>
+          </Link>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}
+
+// ── Root component ──────────────────────────────────────────────────────────────
+
 export function BanqueDeQuestionsSubject() {
   const [, params] = useRoute("/revision/:subject/banque-de-questions");
-  const subject = params?.subject ? (subjectFromSlug(params.subject) ?? decodeURIComponent(params.subject)) : "";
+  const subject = params?.subject
+    ? (subjectFromSlug(params.subject) ?? decodeURIComponent(params.subject))
+    : "";
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -76,45 +533,55 @@ export function BanqueDeQuestionsSubject() {
   const gradeLevel: string = (user as any)?.studentProfile?.gradeLevel ?? "";
   const sectionKey: string | null = (user as any)?.studentProfile?.educationSection ?? null;
 
-  const [selectedTopic, setSelectedTopic]         = useState<string | null>(null);
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all");
-  const [currentIdx, setCurrentIdx]               = useState(0);
-  const [showCorrection, setShowCorrection]       = useState(false);
-  const [selfMarks, setSelfMarks]                 = useState<Record<number, SelfMark>>({});
-  const [sessionDone, setSessionDone]             = useState(false);
+  // Filters
+  const [filters, setFilters] = useState<Filters>({ topic: "", type: "", difficulty: "" });
+  const updateFilters = (f: Partial<Filters>) => {
+    setFilters(prev => ({ ...prev, ...f }));
+    setCurrentIdx(0);
+    setShowMarkScheme(false);
+  };
 
-  // Fetch available topics
+  // Viewer state
+  const [currentIdx, setCurrentIdx]       = useState(0);
+  const [showMarkScheme, setShowMarkScheme] = useState(false);
+  const [selfMarks, setSelfMarks]           = useState<Record<number, SelfMark>>({});
+  const [bookmarks, setBookmarks]           = useState<Set<number>>(new Set());
+  const [sessionDone, setSessionDone]       = useState(false);
+
+  // Fetch topics
   const { data: topics = [] } = useQuery<string[]>({
     queryKey: ["revision-topics", subject, gradeLevel, sectionKey],
-    queryFn: () => apiFetch(
-      `/api/revision/content/topics?subject=${encodeURIComponent(subject)}&gradeLevel=${encodeURIComponent(gradeLevel)}${sectionKey ? `&sectionKey=${encodeURIComponent(sectionKey)}` : ""}`
-    ),
+    queryFn: () =>
+      apiFetch(
+        `/api/revision/content/topics?subject=${encodeURIComponent(subject)}&gradeLevel=${encodeURIComponent(gradeLevel)}${sectionKey ? `&sectionKey=${encodeURIComponent(sectionKey)}` : ""}`
+      ),
     enabled: !!subject && !!gradeLevel,
   });
 
-  // Fetch questions
+  // Build query params
   const queryParams = new URLSearchParams({
     subject,
     gradeLevel,
     ...(sectionKey && { sectionKey }),
-    ...(selectedTopic && { topic: selectedTopic }),
-    ...(selectedDifficulty !== "all" && { difficulty: selectedDifficulty }),
-    limit: "15",
+    ...(filters.topic && { topic: filters.topic }),
+    ...(filters.difficulty && { difficulty: filters.difficulty }),
+    ...(filters.type && { type: filters.type }),
+    limit: "20",
   });
 
   const { data: questions = [] as any[], isLoading } = useQuery<any[]>({
-    queryKey: ["revision-questions", subject, gradeLevel, sectionKey, selectedTopic, selectedDifficulty],
+    queryKey: ["revision-questions", subject, gradeLevel, sectionKey, filters],
     queryFn: () => apiFetch(`/api/revision/content/questions?${queryParams}`),
     enabled: !!subject && !!gradeLevel,
   });
 
-  // Reset viewer when the question set changes
+  // Reset on filter change
   useEffect(() => {
     setCurrentIdx(0);
-    setShowCorrection(false);
-  }, [selectedTopic, selectedDifficulty]);
+    setShowMarkScheme(false);
+  }, [filters]);
 
-  // Save attempt mutation
+  // Save attempt
   const saveAttempt = useMutation({
     mutationFn: async (body: any) => {
       const token = getToken();
@@ -143,439 +610,229 @@ export function BanqueDeQuestionsSubject() {
   });
 
   const currentQuestion = questions[currentIdx] ?? null;
-  const mark = currentQuestion ? selfMarks[currentQuestion.id] : null;
-  const markedCount = Object.keys(selfMarks).length;
-  const totalQuestions = questions.length;
+  const selfMark        = currentQuestion ? (selfMarks[currentQuestion.id] ?? null) : null;
+  const markedCount     = Object.keys(selfMarks).length;
+  const totalQuestions  = questions.length;
 
   function goTo(idx: number) {
-    setCurrentIdx(idx);
-    setShowCorrection(false);
+    const clamped = Math.max(0, Math.min(idx, totalQuestions - 1));
+    setCurrentIdx(clamped);
+    setShowMarkScheme(false);
   }
 
-  function setMark(qId: number, value: SelfMark) {
-    setSelfMarks(prev => ({ ...prev, [qId]: value }));
+  function toggleBookmark(id: number) {
+    setBookmarks(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   }
 
   function handleFinishSession() {
-    const markedQuestions = questions.filter((q: any) => selfMarks[q.id]);
-    if (markedQuestions.length === 0) {
+    const marked = questions.filter((q: any) => selfMarks[q.id]);
+    if (marked.length === 0) {
       toast({ title: "Aucune question évaluée", description: "Évalue au moins une question avant de terminer." });
       return;
     }
-    const totalMarks = markedQuestions.reduce((sum: number, q: any) => sum + (q.totalMarks ?? 1), 0);
-    const marksAwarded = markedQuestions.reduce((sum: number, q: any) => {
+    const totalMarks  = marked.reduce((s: number, q: any) => s + (q.totalMarks ?? 1), 0);
+    const marksAwarded = marked.reduce((s: number, q: any) => {
       const m = selfMarks[q.id];
       const qm = q.totalMarks ?? 1;
-      if (m === "correct") return sum + qm;
-      if (m === "partial") return sum + Math.floor(qm / 2);
-      return sum;
+      return m === "correct" ? s + qm : m === "partial" ? s + Math.floor(qm / 2) : s;
     }, 0);
     const correctCount = Object.values(selfMarks).filter(m => m === "correct").length;
-    const answers = markedQuestions.map((q: any) => ({
-      questionId: q.id,
+    const answers = marked.map((q: any) => ({
+      questionId:      q.id,
       subject,
-      topic: q.topic,
-      isCorrect: selfMarks[q.id] === "correct",
-      marksAwarded: selfMarks[q.id] === "correct" ? (q.totalMarks ?? 1) :
-        selfMarks[q.id] === "partial" ? Math.floor((q.totalMarks ?? 1) / 2) : 0,
-      marksAvailable: q.totalMarks ?? 1,
+      topic:           q.topic,
+      isCorrect:       selfMarks[q.id] === "correct",
+      marksAwarded:    selfMarks[q.id] === "correct" ? (q.totalMarks ?? 1)
+                     : selfMarks[q.id] === "partial"  ? Math.floor((q.totalMarks ?? 1) / 2) : 0,
+      marksAvailable:  q.totalMarks ?? 1,
     }));
     saveAttempt.mutate({
       type: "practice", subject, gradeLevel, sectionKey,
-      topic: selectedTopic ?? undefined,
-      totalMarks, marksAwarded, questionsCount: markedQuestions.length, correctCount, answers,
+      topic: filters.topic || undefined,
+      totalMarks, marksAwarded,
+      questionsCount: marked.length, correctCount, answers,
     });
     setSessionDone(true);
   }
 
-  // ── Result screen ────────────────────────────────────────────────────────────
+  // ── Result screen ──────────────────────────────────────────────────────────
   if (sessionDone && saveAttempt.data) {
-    const grade = saveAttempt.data.gradeOutOf20;
-    const gradeColor = grade >= 15 ? "text-green-600 dark:text-green-400" : grade >= 10 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400";
-    const correctC = Object.values(selfMarks).filter(m => m === "correct").length;
-    const partialC = Object.values(selfMarks).filter(m => m === "partial").length;
-    const incorrectC = Object.values(selfMarks).filter(m => m === "incorrect").length;
     return (
-      <DashboardLayout>
-        <div className="max-w-lg mx-auto py-20 text-center space-y-6">
-          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-            <Trophy className="w-10 h-10 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold mb-1">Révision terminée !</h1>
-            <p className="text-muted-foreground">{subject}</p>
-          </div>
-          {grade !== null && (
-            <div className="py-4">
-              <p className={cn("text-6xl font-bold", gradeColor)}>{grade.toFixed(1)}</p>
-              <p className="text-xl text-muted-foreground">/20</p>
-            </div>
-          )}
-          <div className="flex justify-center gap-6 text-sm">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">{correctC}</p>
-              <p className="text-muted-foreground">Correcte{correctC > 1 ? "s" : ""}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-amber-600">{partialC}</p>
-              <p className="text-muted-foreground">Partielle{partialC > 1 ? "s" : ""}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-red-600">{incorrectC}</p>
-              <p className="text-muted-foreground">Incorrecte{incorrectC > 1 ? "s" : ""}</p>
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-            <button
-              onClick={() => { setSelfMarks({}); setShowCorrection(false); setSessionDone(false); setCurrentIdx(0); }}
-              className="px-5 py-2.5 border border-border rounded-xl text-sm font-semibold hover:bg-muted transition-colors"
-            >
-              Nouvelle révision
-            </button>
-            <Link href="/student/progress">
-              <button className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
-                Voir ma progression <ArrowRight className="w-4 h-4" />
-              </button>
-            </Link>
-          </div>
-        </div>
-      </DashboardLayout>
+      <ResultScreen
+        grade={saveAttempt.data.gradeOutOf20}
+        selfMarks={selfMarks}
+        subject={subject}
+        onRetry={() => {
+          setSelfMarks({}); setBookmarks(new Set());
+          setShowMarkScheme(false); setSessionDone(false); setCurrentIdx(0);
+        }}
+      />
     );
   }
 
-  // ── Main layout ──────────────────────────────────────────────────────────────
+  // ── Main render ────────────────────────────────────────────────────────────
   return (
     <DashboardLayout>
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-5">
 
-        {/* ── Header ──────────────────────────────────────────────────────────── */}
+        {/* ── Breadcrumb + title ─────────────────────────────────────── */}
         <div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1.5 flex-wrap">
             <BookOpen className="w-4 h-4" />
             <Link href="/revision" className="hover:text-foreground transition-colors">Révision Étude+</Link>
             <ChevronRight className="w-3 h-3" />
-            <Link href={`/revision/${subjectToSlug(subject)}`} className="hover:text-foreground transition-colors">{subject}</Link>
+            <Link href={`/revision/${subjectToSlug(subject)}`} className="hover:text-foreground transition-colors">
+              {subject}
+            </Link>
             <ChevronRight className="w-3 h-3" />
             <span className="text-foreground font-medium">Banque de Questions</span>
           </div>
           <h1 className="text-2xl font-bold">{subject} — Banque de Questions</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Lis chaque question, essaie de répondre, puis révèle le corrigé et évalue ta réponse.
+          <p className="text-sm text-muted-foreground mt-1">
+            Lis chaque question, essaie de répondre, révèle le corrigé et auto-évalue ta réponse.
           </p>
         </div>
 
-        {/* ── No level configured ───────────────────────────────────────────── */}
+        {/* ── Level not configured ───────────────────────────────────── */}
         {!gradeLevel && (
-          <Card className="p-5 border-amber-200 bg-amber-50 dark:bg-amber-900/20">
-            <div className="flex gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-amber-800 dark:text-amber-300">Niveau non défini</p>
-                <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
-                  <Link href="/student/settings" className="underline">Configure ton niveau scolaire</Link> pour voir les questions adaptées.
-                </p>
-              </div>
+          <div className="flex gap-3 p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">Niveau non défini</p>
+              <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
+                <Link href="/student/settings" className="underline">Configure ton niveau scolaire</Link> pour voir les questions adaptées.
+              </p>
             </div>
-          </Card>
+          </div>
         )}
 
-        {/* ── Filter bar ────────────────────────────────────────────────────── */}
-        <div className="flex flex-wrap gap-3 items-center p-4 rounded-2xl bg-muted/40 border border-border">
-          <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-            <ListFilter className="w-4 h-4" />
-            <span>Filtres</span>
-          </div>
+        {/* ── Filter bar ─────────────────────────────────────────────── */}
+        <FilterBar
+          topics={topics}
+          filters={filters}
+          onChange={updateFilters}
+          totalCount={totalQuestions}
+          currentIdx={currentIdx}
+          onGoTo={goTo}
+        />
 
-          {topics.length > 0 && (
-            <select
-              value={selectedTopic ?? ""}
-              onChange={e => { setSelectedTopic(e.target.value || null); setCurrentIdx(0); setShowCorrection(false); }}
-              className="text-sm border border-border rounded-xl px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 min-w-[160px]"
-            >
-              <option value="">Tous les chapitres</option>
-              {topics.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-          )}
-
-          <select
-            value={selectedDifficulty}
-            onChange={e => { setSelectedDifficulty(e.target.value); setCurrentIdx(0); setShowCorrection(false); }}
-            className="text-sm border border-border rounded-xl px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
-          >
-            <option value="all">Toutes les difficultés</option>
-            <option value="facile">Facile</option>
-            <option value="moyen">Moyen</option>
-            <option value="difficile">Difficile</option>
-          </select>
-
-          {totalQuestions > 0 && (
-            <span className="ml-auto text-sm text-muted-foreground">
-              {totalQuestions} question{totalQuestions > 1 ? "s" : ""}
-            </span>
-          )}
-        </div>
-
-        {/* ── Loading ───────────────────────────────────────────────────────── */}
+        {/* ── Loading ────────────────────────────────────────────────── */}
         {isLoading && (
-          <div className="grid lg:grid-cols-[1fr_340px] gap-6">
-            <div className="h-72 bg-muted rounded-2xl animate-pulse" />
-            <div className="h-72 bg-muted rounded-2xl animate-pulse" />
+          <div className="grid lg:grid-cols-[1fr_300px] gap-5">
+            <div className="space-y-4">
+              <div className="h-8 w-40 bg-muted rounded-xl animate-pulse" />
+              <div className="h-80 bg-muted rounded-2xl animate-pulse" />
+            </div>
+            <div className="h-96 bg-muted rounded-2xl animate-pulse" />
           </div>
         )}
 
-        {/* ── Empty state ───────────────────────────────────────────────────── */}
+        {/* ── Empty state ────────────────────────────────────────────── */}
         {!isLoading && questions.length === 0 && gradeLevel && (
-          <Card className="p-16 text-center">
-            <BookOpen className="w-12 h-12 text-muted-foreground opacity-30 mx-auto mb-4" />
-            <h3 className="text-lg font-bold mb-2">Aucune question disponible</h3>
-            <p className="text-muted-foreground max-w-sm mx-auto text-sm">
-              Le contenu pour <strong>{subject}</strong>
-              {selectedTopic ? ` (${selectedTopic})` : ""} sera disponible très bientôt.
-            </p>
-          </Card>
+          <div className="flex flex-col items-center justify-center py-24 text-center space-y-4 rounded-2xl border border-dashed border-border">
+            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
+              <BookOpen className="w-8 h-8 text-muted-foreground opacity-40" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold">Aucune question disponible</h3>
+              <p className="text-muted-foreground text-sm mt-1 max-w-xs mx-auto">
+                Le contenu pour <strong>{subject}</strong>
+                {filters.topic ? ` (${filters.topic})` : ""} sera disponible très bientôt.
+              </p>
+            </div>
+          </div>
         )}
 
-        {/* ── Two-panel viewer ─────────────────────────────────────────────── */}
+        {/* ── Two-panel viewer ───────────────────────────────────────── */}
         {!isLoading && questions.length > 0 && currentQuestion && (
-          <div className="grid lg:grid-cols-[1fr_320px] gap-6 items-start">
+          <div className="grid lg:grid-cols-[1fr_300px] gap-5 items-start">
 
-            {/* ── Left: question navigator + content ───────────────────────── */}
+            {/* ── Left: question ──────────────────────────────────────── */}
             <div className="space-y-4">
-              {/* Question navigator dots */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {questions.map((q: any, i: number) => {
-                  const m = selfMarks[q.id];
-                  return (
-                    <button
-                      key={q.id}
-                      onClick={() => goTo(i)}
-                      title={`Question ${i + 1}`}
-                      className={cn(
-                        "w-8 h-8 rounded-full text-xs font-bold transition-all border-2",
-                        i === currentIdx
-                          ? "bg-primary border-primary text-primary-foreground scale-110 shadow-md"
-                          : m === "correct"   ? "bg-green-500 border-green-500 text-white"
-                          : m === "partial"   ? "bg-amber-500 border-amber-500 text-white"
-                          : m === "incorrect" ? "bg-red-500 border-red-500 text-white"
-                          : "bg-background border-border text-muted-foreground hover:border-primary/50"
-                      )}
-                    >
-                      {i + 1}
-                    </button>
-                  );
-                })}
-              </div>
 
-              {/* Question card */}
-              <Card className={cn(
-                "overflow-hidden transition-all",
-                mark === "correct"   && "border-green-300 dark:border-green-800",
-                mark === "partial"   && "border-amber-300 dark:border-amber-800",
-                mark === "incorrect" && "border-red-300 dark:border-red-800",
-              )}>
-                {/* Card header */}
-                <div className="px-6 py-4 border-b border-border bg-muted/30 flex items-center gap-3 flex-wrap">
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold shrink-0">
-                    {currentIdx + 1}
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap flex-1">
-                    <DifficultyBadge difficulty={currentQuestion.difficulty} />
-                    {currentQuestion.topic && (
-                      <span className="text-xs text-muted-foreground font-medium">{currentQuestion.topic}</span>
-                    )}
-                    {currentQuestion.totalMarks && (
-                      <span className="text-xs text-muted-foreground">
-                        {currentQuestion.totalMarks} pt{currentQuestion.totalMarks > 1 ? "s" : ""}
-                      </span>
-                    )}
-                  </div>
-                  {mark && (
-                    <span className={cn(
-                      "text-xs font-bold px-2.5 py-1 rounded-full",
-                      mark === "correct"   ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-                      : mark === "partial" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-                      :                     "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                    )}>
-                      {mark === "correct" ? "✓ Correct" : mark === "partial" ? "~ Partiel" : "✗ Incorrect"}
-                    </span>
-                  )}
-                </div>
-
-                {/* Card body */}
-                <div className="px-6 py-6 space-y-5">
-                  {/* Context / stimulus */}
-                  {currentQuestion.context && (
-                    <div
-                      className="text-sm bg-muted/50 rounded-xl p-4 prose prose-sm dark:prose-invert max-w-none border border-border"
-                      dangerouslySetInnerHTML={{ __html: currentQuestion.context }}
-                    />
-                  )}
-
-                  {/* Question stem */}
-                  <p className="text-base font-medium text-gray-900 dark:text-gray-100 leading-relaxed whitespace-pre-wrap">
-                    {currentQuestion.questionText}
-                  </p>
-
-                  {/* Sub-parts */}
-                  {currentQuestion.parts?.length > 0 && (
-                    <div className="space-y-3 pl-1">
-                      {currentQuestion.parts.map((part: any) => (
-                        <div key={part.id} className="flex gap-3">
-                          <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0 mt-0.5">
-                            {part.label}
-                          </span>
-                          <div className="flex-1">
-                            <p className="text-sm text-gray-800 dark:text-gray-200">{part.text}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">{part.marks} pt{part.marks > 1 ? "s" : ""}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Correction panel (inline) */}
-                  {showCorrection && (
-                    <div className="rounded-xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-5 space-y-3">
-                      <p className="text-sm font-bold text-green-800 dark:text-green-300 flex items-center gap-2">
-                        <BookMarked className="w-4 h-4" /> Corrigé
-                      </p>
-                      {currentQuestion.markScheme?.length > 0 ? (
-                        currentQuestion.markScheme.map((ms: any) => (
-                          <div key={ms.id} className="flex gap-3">
-                            {ms.partLabel && (
-                              <span className="w-5 h-5 rounded-full bg-green-200 dark:bg-green-800 flex items-center justify-center text-xs font-bold text-green-700 dark:text-green-300 shrink-0 mt-0.5">
-                                {ms.partLabel}
-                              </span>
-                            )}
-                            <div className="flex-1 text-sm text-green-900 dark:text-green-200">
-                              <p className="font-medium">{ms.answer}</p>
-                              {ms.marksBreakdown && (
-                                <p className="text-xs text-green-700 dark:text-green-400 mt-1">{ms.marksBreakdown}</p>
-                              )}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-sm text-green-700 dark:text-green-400">Corrigé non disponible pour cette question.</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </Card>
-
-              {/* Prev / Next navigation */}
-              <div className="flex items-center justify-between">
+              {/* Navigation dots + heading */}
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Prev */}
                 <button
                   onClick={() => goTo(currentIdx - 1)}
                   disabled={currentIdx === 0}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-sm font-semibold hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-border text-xs font-semibold hover:bg-muted disabled:opacity-30 transition-colors"
                 >
-                  <ChevronLeft className="w-4 h-4" /> Précédente
+                  <ChevronLeft className="w-3.5 h-3.5" /> Préc.
                 </button>
-                <span className="text-sm text-muted-foreground font-medium">
-                  {currentIdx + 1} / {totalQuestions}
-                </span>
-                <button
-                  onClick={() => goTo(currentIdx + 1)}
-                  disabled={currentIdx === totalQuestions - 1}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-sm font-semibold hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  Suivante <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
 
-            {/* ── Right: action panel ───────────────────────────────────────── */}
-            <div className="space-y-4 lg:sticky lg:top-6">
-              {/* Corrigé toggle */}
-              <Card className="p-5 space-y-4">
-                <div className="flex items-center gap-2">
-                  <BookMarked className="w-4 h-4 text-muted-foreground" />
-                  <h3 className="font-bold text-sm">Corrigé</h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowCorrection(v => !v)}
-                  className={cn(
-                    "w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all",
-                    showCorrection
-                      ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300"
-                      : "border-border hover:bg-muted text-foreground"
-                  )}
-                >
-                  {showCorrection ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  {showCorrection ? "Masquer le corrigé" : "Voir le corrigé"}
-                </button>
-              </Card>
-
-              {/* Self-assessment */}
-              <Card className="p-5 space-y-4">
-                <div>
-                  <h3 className="font-bold text-sm">Auto-évaluation</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">Comment as-tu répondu à cette question ?</p>
-                </div>
-                <div className="space-y-2">
-                  {MARK_OPTIONS.map(opt => {
-                    const Icon = opt.icon;
-                    const selected = mark === opt.value;
+                {/* Dots */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {questions.map((q: any, i: number) => {
+                    const m = selfMarks[q.id];
                     return (
                       <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setMark(currentQuestion.id, opt.value)}
+                        key={q.id}
+                        onClick={() => goTo(i)}
+                        title={`Question ${i + 1}`}
                         className={cn(
-                          "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all",
-                          selected ? opt.activeColor : cn("bg-background", opt.color)
+                          "w-7 h-7 rounded-full text-[11px] font-bold transition-all border-2",
+                          i === currentIdx
+                            ? "bg-primary border-primary text-primary-foreground scale-110 shadow"
+                            : m === "correct"   ? "bg-emerald-500 border-emerald-500 text-white"
+                            : m === "partial"   ? "bg-amber-500 border-amber-500 text-white"
+                            : m === "incorrect" ? "bg-red-500 border-red-500 text-white"
+                            : "bg-background border-border text-muted-foreground hover:border-primary/50"
                         )}
                       >
-                        <Icon className="w-4 h-4 shrink-0" />
-                        {opt.label}
+                        {i + 1}
                       </button>
                     );
                   })}
                 </div>
-              </Card>
 
-              {/* AI feedback (coming soon) */}
-              <Card className="p-5 space-y-3 opacity-60">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-yellow-500" />
-                  <h3 className="font-bold text-sm">Feedback IA</h3>
-                  <span className="ml-auto text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                    Bientôt
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Analyse détaillée de ta réponse et conseils personnalisés basés sur l'IA.
-                </p>
-              </Card>
-
-              {/* Session progress + finish */}
-              <Card className="p-5 space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <h3 className="font-bold text-sm">Progression</h3>
-                    <span className="text-sm font-bold text-primary">{markedCount}/{totalQuestions}</span>
-                  </div>
-                  <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full transition-all duration-300"
-                      style={{ width: totalQuestions > 0 ? `${(markedCount / totalQuestions) * 100}%` : "0%" }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1.5">
-                    {markedCount} question{markedCount > 1 ? "s" : ""} évaluée{markedCount > 1 ? "s" : ""}
-                  </p>
-                </div>
+                {/* Next */}
                 <button
-                  onClick={handleFinishSession}
-                  disabled={markedCount === 0 || saveAttempt.isPending}
-                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  onClick={() => goTo(currentIdx + 1)}
+                  disabled={currentIdx === totalQuestions - 1}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-border text-xs font-semibold hover:bg-muted disabled:opacity-30 transition-colors"
                 >
-                  {saveAttempt.isPending ? "Enregistrement..." : "Terminer la révision"}
-                  <ArrowRight className="w-4 h-4" />
+                  Suiv. <ChevronRight className="w-3.5 h-3.5" />
                 </button>
-              </Card>
+
+                <span className="ml-auto text-sm text-muted-foreground font-medium">
+                  {currentIdx + 1} / {totalQuestions}
+                </span>
+              </div>
+
+              {/* "Question N" heading */}
+              <h2 className="text-2xl font-bold tracking-tight">
+                Question {currentIdx + 1}
+              </h2>
+
+              {/* Question card */}
+              <QuestionCard
+                question={currentQuestion}
+                index={currentIdx}
+                selfMark={selfMark}
+                showMarkScheme={showMarkScheme}
+              />
+            </div>
+
+            {/* ── Right: action panel ─────────────────────────────────── */}
+            <div className="lg:sticky lg:top-6">
+              <ActionPanel
+                question={currentQuestion}
+                selfMark={selfMark}
+                onMark={v => setSelfMarks(prev => ({ ...prev, [currentQuestion.id]: v }))}
+                bookmarked={bookmarks.has(currentQuestion.id)}
+                onBookmark={() => toggleBookmark(currentQuestion.id)}
+                showMarkScheme={showMarkScheme}
+                onToggleMarkScheme={() => setShowMarkScheme(v => !v)}
+                onFinish={handleFinishSession}
+                markedCount={markedCount}
+                totalCount={totalQuestions}
+                isPending={saveAttempt.isPending}
+              />
             </div>
           </div>
         )}

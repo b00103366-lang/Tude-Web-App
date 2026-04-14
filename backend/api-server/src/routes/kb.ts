@@ -16,7 +16,7 @@ import {
   questionPartsTable,
   markSchemesTable,
 } from "@workspace/db";
-import { eq, and, desc, inArray } from "drizzle-orm";
+import { eq, and, desc, inArray, sql } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth";
 import { saveBufferToStorage } from "../lib/objectStorage";
 import { processUpload } from "../services/knowledgeBaseProcessor";
@@ -139,13 +139,41 @@ router.post("/upload", upload.array("files", 20), async (req, res) => {
 });
 
 // ── GET /api/kb/files ─────────────────────────────────────────────────────────
-router.get("/files", async (_req, res) => {
+// Optional query params: gradeLevel, sectionKey, subject
+router.get("/files", async (req, res) => {
+  const { gradeLevel, sectionKey, subject } = req.query as Record<string, string | undefined>;
+  const conditions = [];
+  if (gradeLevel) conditions.push(eq(knowledgeBaseFilesTable.gradeLevel, gradeLevel));
+  if (sectionKey)  conditions.push(eq(knowledgeBaseFilesTable.sectionKey, sectionKey));
+  if (subject)     conditions.push(eq(knowledgeBaseFilesTable.subject, subject));
+
   const files = await db
     .select()
     .from(knowledgeBaseFilesTable)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(knowledgeBaseFilesTable.createdAt))
-    .limit(100);
+    .limit(200);
   res.json(files);
+});
+
+// ── GET /api/kb/folder-summary ────────────────────────────────────────────────
+// Returns count of files per gradeLevel+sectionKey+subject — powers the folder UI
+router.get("/folder-summary", async (_req, res) => {
+  const rows = await db
+    .select({
+      gradeLevel: knowledgeBaseFilesTable.gradeLevel,
+      sectionKey: knowledgeBaseFilesTable.sectionKey,
+      subject:    knowledgeBaseFilesTable.subject,
+      total:      sql<number>`count(*)::int`,
+      processed:  sql<number>`count(*) filter (where ${knowledgeBaseFilesTable.status} = 'processed')::int`,
+    })
+    .from(knowledgeBaseFilesTable)
+    .groupBy(
+      knowledgeBaseFilesTable.gradeLevel,
+      knowledgeBaseFilesTable.sectionKey,
+      knowledgeBaseFilesTable.subject,
+    );
+  res.json(rows);
 });
 
 // ── GET /api/kb/files/status?ids=1,2,3 ───────────────────────────────────────
