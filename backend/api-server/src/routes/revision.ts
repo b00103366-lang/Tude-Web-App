@@ -22,6 +22,23 @@ import { processUpload, type ProcessUploadParams } from "../services/knowledgeBa
 export const revisionRouter = Router();
 
 /**
+ * GET /api/revision/ping
+ * Unauthenticated health check — confirms the revision router is mounted and reachable.
+ * Visit this URL directly in a browser to verify backend connectivity.
+ */
+revisionRouter.get("/ping", (_req, res) => {
+  res.json({
+    ok: true,
+    routes: [
+      "GET /api/revision/content/questions",
+      "GET /api/revision/content/topics",
+      "GET /api/revision/content/annales",
+      "GET /api/revision/content/flashcards",
+    ],
+  });
+});
+
+/**
  * POST /api/revision/process-upload
  * Internal trigger — fires background processing for a specific uploaded file.
  * Admin-only so it can also be called manually for re-processing.

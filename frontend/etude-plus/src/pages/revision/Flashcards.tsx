@@ -9,15 +9,19 @@ import { subjectToSlug, subjectFromSlug } from "@/lib/educationConfig";
 import { BookOpen, ChevronRight, RotateCcw, ChevronLeft, ChevronDown, Layers, Construction } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "";
+const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
 async function apiFetch(path: string) {
   const token = getToken();
-  const res = await fetch(`${API_URL}${path}`, {
+  const fullUrl = `${API_URL}${path}`;
+  const res = await fetch(fullUrl, {
     credentials: "include",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) {
+    console.error(`[Flashcards] ${res.status} ${res.statusText} — ${fullUrl}`);
+    throw new Error(`HTTP ${res.status} — ${fullUrl}`);
+  }
   return res.json();
 }
 

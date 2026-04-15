@@ -22,15 +22,20 @@ import {
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "";
+// Strip trailing slash so VITE_API_URL="https://backend.com/" doesn't create "//api/..."
+const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
 async function apiFetch(path: string) {
   const token = getToken();
-  const res = await fetch(`${API_URL}${path}`, {
+  const fullUrl = `${API_URL}${path}`;
+  const res = await fetch(fullUrl, {
     credentials: "include",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) {
+    console.error(`[BdQ] ${res.status} ${res.statusText} — ${fullUrl}`);
+    throw new Error(`HTTP ${res.status} — ${fullUrl}`);
+  }
   return res.json();
 }
 
@@ -548,13 +553,13 @@ export function BanqueDeQuestionsSubject() {
   const [bookmarks, setBookmarks]           = useState<Set<number>>(new Set());
   const [sessionDone, setSessionDone]       = useState(false);
 
+  // Build the topics URL so it can be shown in error messages
+  const topicsUrl = `/api/revision/content/topics?subject=${encodeURIComponent(subject)}&gradeLevel=${encodeURIComponent(gradeLevel)}${sectionKey ? `&sectionKey=${encodeURIComponent(sectionKey)}` : ""}`;
+
   // Fetch topics
-  const { data: topics = [], isError: topicsError } = useQuery<string[]>({
+  const { data: topics = [], isError: topicsError, error: topicsErrorObj } = useQuery<string[]>({
     queryKey: ["revision-topics", subject, gradeLevel, sectionKey],
-    queryFn: () =>
-      apiFetch(
-        `/api/revision/content/topics?subject=${encodeURIComponent(subject)}&gradeLevel=${encodeURIComponent(gradeLevel)}${sectionKey ? `&sectionKey=${encodeURIComponent(sectionKey)}` : ""}`
-      ),
+    queryFn: () => apiFetch(topicsUrl),
     enabled: !!subject && !!gradeLevel,
   });
 
@@ -569,9 +574,10 @@ export function BanqueDeQuestionsSubject() {
     limit: "20",
   });
 
-  const { data: questions = [] as any[], isLoading, isError: questionsError } = useQuery<any[]>({
+  const questionsUrl = `/api/revision/content/questions?${queryParams}`;
+  const { data: questions = [] as any[], isLoading, isError: questionsError, error: questionsErrorObj } = useQuery<any[]>({
     queryKey: ["revision-questions", subject, gradeLevel, sectionKey, filters],
-    queryFn: () => apiFetch(`/api/revision/content/questions?${queryParams}`),
+    queryFn: () => apiFetch(questionsUrl),
     enabled: !!subject && !!gradeLevel,
   });
 
@@ -733,14 +739,17 @@ export function BanqueDeQuestionsSubject() {
 
         {/* ── Error state ─────────────────────────────────────────────── */}
         {!isLoading && (questionsError || topicsError) && (
-          <div className="flex flex-col items-center justify-center py-24 text-center space-y-4 rounded-2xl border border-dashed border-red-200 dark:border-red-900">
+          <div className="flex flex-col items-center justify-center py-16 text-center space-y-4 rounded-2xl border border-dashed border-red-200 dark:border-red-900">
             <div className="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
               <AlertCircle className="w-8 h-8 text-red-500 opacity-70" />
             </div>
-            <div>
+            <div className="max-w-md">
               <h3 className="text-lg font-bold">Impossible de charger les questions</h3>
-              <p className="text-muted-foreground text-sm mt-1 max-w-xs mx-auto">
-                Une erreur s'est produite lors du chargement. Vérifie ta connexion ou réessaie dans quelques instants.
+              <p className="text-muted-foreground text-sm mt-1">
+                {(questionsErrorObj as any)?.message || (topicsErrorObj as any)?.message || "Erreur de chargement"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-3 font-mono bg-muted px-3 py-1.5 rounded-lg break-all">
+                {API_URL || window.location.origin}{questionsError ? questionsUrl : topicsUrl}
               </p>
               <button
                 onClick={() => window.location.reload()}

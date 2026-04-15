@@ -22,15 +22,19 @@ import {
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "";
+const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
 async function apiFetch(path: string) {
   const token = getToken();
-  const res = await fetch(`${API_URL}${path}`, {
+  const fullUrl = `${API_URL}${path}`;
+  const res = await fetch(fullUrl, {
     credentials: "include",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) {
+    console.error(`[ExamensPratiques] ${res.status} ${res.statusText} — ${fullUrl}`);
+    throw new Error(`HTTP ${res.status} — ${fullUrl}`);
+  }
   return res.json();
 }
 

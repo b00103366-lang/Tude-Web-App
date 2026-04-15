@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getToken } from "@workspace/api-client-react";
 import { subjectToSlug } from "@/lib/educationConfig";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "";
+const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
 async function fetchOverview() {
   const token = getToken();
