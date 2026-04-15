@@ -65,7 +65,7 @@ revisionRouter.post("/process-upload", requireAuth, requireAdmin, async (req, re
  * Query params: subject, gradeLevel, sectionKey?, topic?, limit?, difficulty?
  */
 revisionRouter.get("/content/questions", requireAuth, async (req, res) => {
-  const { subject, gradeLevel, sectionKey, topic, difficulty } = req.query;
+  const { subject, gradeLevel, sectionKey, topic, difficulty, type } = req.query;
   const limit = Math.min(Number(req.query.limit) || 20, 100);
 
   if (!subject || !gradeLevel) {
@@ -81,6 +81,7 @@ revisionRouter.get("/content/questions", requireAuth, async (req, res) => {
   if (sectionKey) conditions.push(eq(questionsTable.sectionKey, String(sectionKey)));
   if (topic) conditions.push(eq(questionsTable.topic, String(topic)));
   if (difficulty) conditions.push(eq(questionsTable.difficulty, String(difficulty)));
+  if (type) conditions.push(eq(questionsTable.type, String(type)));
 
   const questions = await db
     .select()

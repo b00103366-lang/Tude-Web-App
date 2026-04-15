@@ -549,7 +549,7 @@ export function BanqueDeQuestionsSubject() {
   const [sessionDone, setSessionDone]       = useState(false);
 
   // Fetch topics
-  const { data: topics = [] } = useQuery<string[]>({
+  const { data: topics = [], isError: topicsError } = useQuery<string[]>({
     queryKey: ["revision-topics", subject, gradeLevel, sectionKey],
     queryFn: () =>
       apiFetch(
@@ -569,7 +569,7 @@ export function BanqueDeQuestionsSubject() {
     limit: "20",
   });
 
-  const { data: questions = [] as any[], isLoading } = useQuery<any[]>({
+  const { data: questions = [] as any[], isLoading, isError: questionsError } = useQuery<any[]>({
     queryKey: ["revision-questions", subject, gradeLevel, sectionKey, filters],
     queryFn: () => apiFetch(`/api/revision/content/questions?${queryParams}`),
     enabled: !!subject && !!gradeLevel,
@@ -731,8 +731,29 @@ export function BanqueDeQuestionsSubject() {
           </div>
         )}
 
+        {/* ── Error state ─────────────────────────────────────────────── */}
+        {!isLoading && (questionsError || topicsError) && (
+          <div className="flex flex-col items-center justify-center py-24 text-center space-y-4 rounded-2xl border border-dashed border-red-200 dark:border-red-900">
+            <div className="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
+              <AlertCircle className="w-8 h-8 text-red-500 opacity-70" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold">Impossible de charger les questions</h3>
+              <p className="text-muted-foreground text-sm mt-1 max-w-xs mx-auto">
+                Une erreur s'est produite lors du chargement. Vérifie ta connexion ou réessaie dans quelques instants.
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
+              >
+                Réessayer
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ── Empty state ────────────────────────────────────────────── */}
-        {!isLoading && questions.length === 0 && gradeLevel && (
+        {!isLoading && !questionsError && questions.length === 0 && gradeLevel && (
           <div className="flex flex-col items-center justify-center py-24 text-center space-y-4 rounded-2xl border border-dashed border-border">
             <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
               <BookOpen className="w-8 h-8 text-muted-foreground opacity-40" />
