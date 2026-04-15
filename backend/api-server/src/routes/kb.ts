@@ -4,7 +4,7 @@
  * No link to this anywhere in the UI — accessed by typing /kb directly.
  */
 
-import { createRequire } from "module";
+import multer from "multer";
 import { Router } from "express";
 import {
   db,
@@ -21,11 +21,7 @@ import { requireAuth, requireAdmin } from "../lib/auth";
 import { saveBufferToStorage } from "../lib/objectStorage";
 import { processUpload } from "../services/knowledgeBaseProcessor";
 
-const _require = createRequire(import.meta.url);
-
 // ── Multer setup (memory storage, 25MB limit) ─────────────────────────────────
-
-const multer = _require("multer");
 
 const ALLOWED_MIMES = new Set([
   "application/pdf",

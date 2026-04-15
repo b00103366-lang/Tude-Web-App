@@ -3,12 +3,9 @@
  * raw text for AI processing. Runs entirely server-side; no professor interaction.
  */
 
-import { createRequire } from "module";
 import { join } from "path";
 import { readFile } from "fs/promises";
 import { ObjectStorageService } from "../lib/objectStorage";
-
-const _require = createRequire(import.meta.url);
 const LOCAL_UPLOAD_DIR = join(process.cwd(), "local-uploads");
 const storageService = new ObjectStorageService();
 
@@ -34,7 +31,7 @@ async function getFileBuffer(fileUrl: string): Promise<Buffer> {
 // ── PDF ───────────────────────────────────────────────────────────────────────
 
 async function extractPdf(fileUrl: string): Promise<string> {
-  const pdfParse = _require("pdf-parse");
+  const { default: pdfParse } = await import("pdf-parse") as any;
   const buffer = await getFileBuffer(fileUrl);
   const result = await pdfParse(buffer);
   return (result.text as string).trim();
@@ -43,7 +40,7 @@ async function extractPdf(fileUrl: string): Promise<string> {
 // ── DOCX ─────────────────────────────────────────────────────────────────────
 
 async function extractDocx(fileUrl: string): Promise<string> {
-  const mammoth = _require("mammoth");
+  const { default: mammoth } = await import("mammoth") as any;
   const buffer = await getFileBuffer(fileUrl);
   const result = await mammoth.extractRawText({ buffer });
   return (result.value as string).trim();
@@ -52,7 +49,7 @@ async function extractDocx(fileUrl: string): Promise<string> {
 // ── PPTX ─────────────────────────────────────────────────────────────────────
 
 async function extractPptx(fileUrl: string): Promise<string> {
-  const officeParser = _require("officeparser");
+  const { default: officeParser } = await import("officeparser") as any;
   const buffer = await getFileBuffer(fileUrl);
   const text: string = await officeParser.parseOfficeAsync(buffer, {
     outputErrorToConsole: false,
