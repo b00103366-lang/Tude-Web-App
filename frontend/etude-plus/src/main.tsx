@@ -9,9 +9,4 @@ Sentry.init({
   sendDefaultPii: true,
 });
 
-// TEMPORARY: startup probe so you can confirm the DSN is reachable.
-// Remove after seeing the event in the Sentry dashboard and Network tab.
-Sentry.captureException(new Error("Etude+ Sentry startup probe"));
-void Sentry.flush(3000);
-
 createRoot(document.getElementById("root")!).render(<App />);
