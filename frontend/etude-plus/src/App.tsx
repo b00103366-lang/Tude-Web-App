@@ -62,8 +62,6 @@ import { AdminSettings } from "@/pages/admin/AdminSettings";
 import { AdminAuditLogs } from "@/pages/admin/AdminAuditLogs";
 // import { AdminVideos } from "@/pages/admin/AdminVideos"; // shorts feature disabled
 import { AdminAnalytics } from "@/pages/admin/AdminAnalytics";
-import { AdminQuestions } from "@/pages/admin/AdminQuestions";
-import { AdminQuestionsGenerate } from "@/pages/admin/AdminQuestionsGenerate";
 import { KnowledgeBase } from "@/pages/admin/KnowledgeBase";
 import { AdminKnowledgeBase } from "@/pages/admin/AdminKnowledgeBase";
 
@@ -263,13 +261,6 @@ function Router() {
       <Route path="/admin/users">
         {() => <ProtectedRoute component={AdminUsers} allowedRoles={["admin", "super_admin"]} />}
       </Route>
-      <Route path="/admin/questions/generate">
-        {() => <ProtectedRoute component={AdminQuestionsGenerate} allowedRoles={["admin", "super_admin"]} />}
-      </Route>
-      <Route path="/admin/questions">
-        {() => <ProtectedRoute component={AdminQuestions} allowedRoles={["admin", "super_admin"]} />}
-      </Route>
-
       {/* Knowledge Base folder manager — main admin content tool */}
       <Route path="/admin/knowledge-base">
         {() => <ProtectedRoute component={AdminKnowledgeBase} allowedRoles={["admin", "super_admin"]} />}

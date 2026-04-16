@@ -7,7 +7,7 @@ import {
   BookOpen, LayoutDashboard, GraduationCap,
   CreditCard, Bell, Settings, LogOut, Users, CheckSquare,
   ScrollText, Crown,
-  TrendingUp, UserCog, ArrowLeftRight, Sparkles, BarChart2, BarChart3, Menu, X, BrainCircuit, Database,
+  TrendingUp, UserCog, ArrowLeftRight, Sparkles, BarChart2, BarChart3, Menu, X, Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
