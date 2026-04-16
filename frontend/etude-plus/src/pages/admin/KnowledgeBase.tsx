@@ -70,31 +70,33 @@ interface SelectedFile {
   ignoredup: boolean;
 }
 
+// Drizzle returns camelCase keys matching the schema column names
 interface KBFileRecord {
   id:              number;
-  file_name:       string;
-  file_type:       string | null;
+  fileName:        string;
+  fileType:        string | null;
   subject:         string;
-  grade_level:     string;
+  gradeLevel:      string;
   topic:           string;
-  content_type:    string;
+  contentType:     string;
   status:          "processing" | "processed" | "error";
-  error_message:   string | null;
-  questions_count: number;
-  flashcards_count: number;
-  notions_count:   number;
-  created_at:      string;
-  processed_at:    string | null;
+  errorMessage:    string | null;
+  questionsCount:  number;
+  flashcardsCount: number;
+  notionsCount:    number;
+  createdAt:       string;
+  processedAt:     string | null;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-function fileIcon(name: string, mime: string) {
-  const ext = name.split(".").pop()?.toLowerCase() ?? "";
-  if (mime.includes("pdf") || ext === "pdf")  return "📄";
+function fileIcon(name: string | null | undefined, mime: string | null | undefined) {
+  const ext  = (name ?? "").split(".").pop()?.toLowerCase() ?? "";
+  const type = mime ?? "";
+  if (type.includes("pdf") || ext === "pdf")  return "📄";
   if (ext === "txt")                           return "📝";
   if (ext === "pptx")                          return "📊";
-  if (mime.includes("image") || ["jpg","jpeg","png"].includes(ext)) return "🖼️";
+  if (type.includes("image") || ["jpg","jpeg","png"].includes(ext)) return "🖼️";
   return "📎";
 }
 
@@ -464,16 +466,16 @@ function KBPage({ userId }: { userId: number }) {
             <h2 className="text-base font-semibold">Dernier envoi</h2>
             {uploadedBatch.map(f => (
               <div key={f.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
-                <span className="text-xl">{fileIcon(f.file_name, f.file_type ?? "")}</span>
+                <span className="text-xl">{fileIcon(f.fileName, f.fileType ?? "")}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{f.file_name}</p>
+                  <p className="text-sm font-medium truncate">{f.fileName}</p>
                   {f.status === "processed" && (
                     <p className="text-xs text-gray-500 mt-0.5">
-                      {f.questions_count} questions · {f.flashcards_count} flashcards · {f.notions_count} notions
+                      {f.questionsCount} questions · {f.flashcardsCount} flashcards · {f.notionsCount} notions
                     </p>
                   )}
-                  {f.status === "error" && f.error_message && (
-                    <p className="text-xs text-red-600 mt-0.5">{f.error_message}</p>
+                  {f.status === "error" && f.errorMessage && (
+                    <p className="text-xs text-red-600 mt-0.5">{f.errorMessage}</p>
                   )}
                 </div>
                 {statusBadge(f.status)}
@@ -515,22 +517,22 @@ function KBPage({ userId }: { userId: number }) {
                       >
                         <td className="px-4 py-3 max-w-[180px]">
                           <div className="flex items-center gap-2">
-                            <span>{fileIcon(f.file_name, f.file_type ?? "")}</span>
-                            <span className="truncate font-medium">{f.file_name}</span>
+                            <span>{fileIcon(f.fileName, f.fileType ?? "")}</span>
+                            <span className="truncate font-medium">{f.fileName}</span>
                           </div>
                           <p className="text-xs text-gray-400 ml-6 truncate">{f.topic}</p>
                         </td>
                         <td className="px-4 py-3 text-gray-600">{f.subject}</td>
-                        <td className="px-4 py-3 text-gray-600">{f.grade_level}</td>
+                        <td className="px-4 py-3 text-gray-600">{f.gradeLevel}</td>
                         <td className="px-4 py-3">{statusBadge(f.status)}</td>
                         <td className="px-4 py-3 text-gray-500 text-xs">
                           {f.status === "processed"
-                            ? `${f.questions_count} q · ${f.flashcards_count} fc · ${f.notions_count} n`
+                            ? `${f.questionsCount} q · ${f.flashcardsCount} fc · ${f.notionsCount} n`
                             : f.status === "error" ? <span className="text-red-500">Erreur</span>
                             : "—"}
                         </td>
                         <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">
-                          {new Date(f.created_at).toLocaleDateString("fr-TN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          {new Date(f.createdAt).toLocaleDateString("fr-TN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <button

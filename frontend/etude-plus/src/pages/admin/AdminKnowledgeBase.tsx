@@ -102,8 +102,8 @@ const CONTENT_TYPES = [
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function fileIcon(name: string, mime?: string | null) {
-  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+function fileIcon(name: string | null | undefined, mime?: string | null) {
+  const ext = (name ?? "").split(".").pop()?.toLowerCase() ?? "";
   if (mime?.includes("pdf") || ext === "pdf")   return <FileText className="w-4 h-4 text-red-500" />;
   if (ext === "txt")                             return <FileText className="w-4 h-4 text-gray-500" />;
   if (ext === "pptx")                            return <FileText className="w-4 h-4 text-orange-500" />;
