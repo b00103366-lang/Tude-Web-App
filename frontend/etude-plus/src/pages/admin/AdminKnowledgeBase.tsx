@@ -21,15 +21,9 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { apiFetch, apiFetchArray } from "@/lib/api";
 
 const API = import.meta.env.VITE_API_URL ?? "";
-
-// ── Auth helper ──────────────────────────────────────────────────────────────
-
-function authHeader(): Record<string, string> {
-  const token = localStorage.getItem("token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -185,12 +179,8 @@ function UploadModal({
     if (notes) fd.append("notes", notes);
 
     try {
-      const res = await fetch(`${API}/api/kb/upload`, {
-        method: "POST",
-        headers: authHeader(),
-        body: fd,
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const result = await apiFetch(`${API}/api/kb/upload`, { method: "POST", body: fd as any });
+      if (result === null) throw new Error("Envoi échoué — vérifiez votre connexion");
       onUploaded();
       onClose();
     } catch (err: any) {
@@ -329,12 +319,10 @@ export function AdminKnowledgeBase() {
   const [pollingIds, setPollingIds]   = useState<number[]>([]);
   const [refresh, setRefresh]         = useState(0);
 
-  // Load folder summary
+  // Load folder summary — always results in an array; never reaches .filter() as non-array
   useEffect(() => {
-    fetch(`${API}/api/kb/folder-summary`, { headers: authHeader() })
-      .then(r => r.json())
-      .then(setSummary)
-      .catch(console.error);
+    apiFetchArray<FolderSummaryRow>(`${API}/api/kb/folder-summary`)
+      .then(data => setSummary(Array.isArray(data) ? data : []));
   }, [refresh]);
 
   // Load files when inside a subject
@@ -346,14 +334,12 @@ export function AdminKnowledgeBase() {
       subject:    selSubject,
       ...(selGrade.sectionKey ? { sectionKey: selGrade.sectionKey } : {}),
     });
-    fetch(`${API}/api/kb/files?${params}`, { headers: authHeader() })
-      .then(r => r.json())
-      .then((data: KBFile[]) => {
-        setFiles(data);
-        const processing = data.filter(f => f.status === "processing").map(f => f.id);
-        setPollingIds(processing);
+    apiFetchArray<KBFile>(`${API}/api/kb/files?${params}`)
+      .then(data => {
+        const safeData = Array.isArray(data) ? data : [];
+        setFiles(safeData);
+        setPollingIds(safeData.filter(f => f.status === "processing").map(f => f.id));
       })
-      .catch(console.error)
       .finally(() => setFilesLoading(false));
   }, [selGrade, selSubject, refresh]);
 
@@ -361,15 +347,11 @@ export function AdminKnowledgeBase() {
   useEffect(() => {
     if (pollingIds.length === 0) return;
     const interval = setInterval(async () => {
-      const data: KBFile[] = await fetch(
+      const raw = await apiFetchArray<KBFile>(
         `${API}/api/kb/files/status?ids=${pollingIds.join(",")}`,
-        { headers: authHeader() }
-      ).then(r => r.json()).catch(() => []);
-
-      setFiles(prev => prev.map(f => {
-        const updated = data.find(d => d.id === f.id);
-        return updated ?? f;
-      }));
+      );
+      const data = Array.isArray(raw) ? raw : [];
+      setFiles(prev => (Array.isArray(prev) ? prev : []).map(f => data.find(d => d.id === f.id) ?? f));
       const still = data.filter(d => d.status === "processing").map(d => d.id);
       setPollingIds(still);
       if (still.length === 0) setRefresh(r => r + 1);
@@ -380,13 +362,15 @@ export function AdminKnowledgeBase() {
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   function countForGrade(g: GradeFolder) {
-    return summary.filter(
+    const safe = Array.isArray(summary) ? summary : [];
+    return safe.filter(
       r => r.gradeLevel === g.gradeLevel && r.sectionKey === g.sectionKey
     ).reduce((s, r) => s + r.total, 0);
   }
 
   function countForSubject(g: GradeFolder, sub: string) {
-    return summary.find(
+    const safe = Array.isArray(summary) ? summary : [];
+    return safe.find(
       r => r.gradeLevel === g.gradeLevel && r.sectionKey === g.sectionKey && r.subject === sub
     )?.total ?? 0;
   }
@@ -397,7 +381,7 @@ export function AdminKnowledgeBase() {
 
   async function deleteFile(id: number) {
     if (!confirm("Supprimer ce fichier et tout son contenu généré ?")) return;
-    await fetch(`${API}/api/kb/files/${id}`, { method: "DELETE", headers: authHeader() });
+    await apiFetch(`${API}/api/kb/files/${id}`, { method: "DELETE" });
     setFiles(prev => prev.filter(f => f.id !== id));
     setRefresh(r => r + 1);
   }
@@ -529,6 +513,8 @@ export function AdminKnowledgeBase() {
 
   function FilesLevel() {
     if (!selGrade || !selSubject) return null;
+    // Hard guard: never pass a non-array into .filter() / .map()
+    const safeFiles = Array.isArray(files) ? files : [];
 
     return (
       <div className="space-y-5">
@@ -560,12 +546,12 @@ export function AdminKnowledgeBase() {
         </div>
 
         {/* Stats row */}
-        {files.length > 0 && (
+        {safeFiles.length > 0 && (
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: "Fichiers",    value: files.length },
-              { label: "Traités",     value: files.filter(f => f.status === "processed").length },
-              { label: "Erreurs",     value: files.filter(f => f.status === "error").length },
+              { label: "Fichiers",    value: safeFiles.length },
+              { label: "Traités",     value: safeFiles.filter(f => f.status === "processed").length },
+              { label: "Erreurs",     value: safeFiles.filter(f => f.status === "error").length },
             ].map(({ label, value }) => (
               <div key={label} className="rounded-2xl border border-border bg-muted/20 p-4 text-center">
                 <p className="text-2xl font-bold">{value}</p>
@@ -580,7 +566,7 @@ export function AdminKnowledgeBase() {
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
           </div>
-        ) : files.length === 0 ? (
+        ) : safeFiles.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed border-border space-y-4">
             <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
               <FolderOpen className="w-8 h-8 text-muted-foreground opacity-40" />
@@ -613,7 +599,7 @@ export function AdminKnowledgeBase() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {files.map(f => (
+                {safeFiles.map(f => (
                   <tr key={f.id} className="hover:bg-muted/20 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">

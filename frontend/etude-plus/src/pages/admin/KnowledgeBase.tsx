@@ -8,6 +8,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { SIMPLE_LEVELS, SECTION_LEVELS } from "@/lib/educationConfig";
+import { apiFetch, apiFetchArray } from "@/lib/api";
 
 const API = import.meta.env.VITE_API_URL ?? "";
 
@@ -115,10 +116,7 @@ function statusBadge(status: KBFileRecord["status"]) {
   );
 }
 
-function authHeader(): Record<string, string> {
-  const token = localStorage.getItem("token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
+// authHeader removed — all fetches now use the shared apiFetch/apiFetchArray utility
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
@@ -173,10 +171,8 @@ function KBPage({ userId }: { userId: number }) {
 
   // Load history on mount
   useEffect(() => {
-    fetch(`${API}/api/kb/files`, { headers: authHeader() })
-      .then(r => r.json())
-      .then(setHistory)
-      .catch(console.error)
+    apiFetchArray<KBFileRecord>(`${API}/api/kb/files`)
+      .then(data => setHistory(Array.isArray(data) ? data : []))
       .finally(() => setHistoryLoading(false));
   }, []);
 
@@ -184,28 +180,25 @@ function KBPage({ userId }: { userId: number }) {
   useEffect(() => {
     if (pollingIds.length === 0) return;
     const interval = setInterval(async () => {
-      const data: KBFileRecord[] = await fetch(
+      const raw = await apiFetchArray<KBFileRecord>(
         `${API}/api/kb/files/status?ids=${pollingIds.join(",")}`,
-        { headers: authHeader() }
-      ).then(r => r.json()).catch(() => []);
+      );
+      const data = Array.isArray(raw) ? raw : [];
 
-      // Update batch display
       setUploadedBatch(prev =>
-        prev.map(f => {
+        (Array.isArray(prev) ? prev : []).map(f => {
           const updated = data.find(d => d.id === f.id);
           return updated ?? f;
         })
       );
 
-      // Update history
       setHistory(prev =>
-        prev.map(f => {
+        (Array.isArray(prev) ? prev : []).map(f => {
           const updated = data.find(d => d.id === f.id);
           return updated ?? f;
         })
       );
 
-      // Stop polling if all done
       const stillProcessing = data.filter(d => d.status === "processing").map(d => d.id);
       setPollingIds(stillProcessing);
     }, 3000);
@@ -252,9 +245,10 @@ function KBPage({ userId }: { userId: number }) {
           subject,
           grade_level: gradeKey.value,
         });
-        const res = await fetch(`${API}/api/kb/check-duplicate?${params}`, { headers: authHeader() });
-        const data = await res.json();
-        return { ...sf, dupWarning: data.duplicate, dupExisting: data.existing ?? null };
+        const data = await apiFetch<{ duplicate: boolean; existing?: any }>(
+          `${API}/api/kb/check-duplicate?${params}`,
+        );
+        return { ...sf, dupWarning: data?.duplicate ?? false, dupExisting: data?.existing ?? null };
       })
     );
     setSelectedFiles(updated);
@@ -282,15 +276,14 @@ function KBPage({ userId }: { userId: number }) {
     if (notes) formData.append("notes", notes);
 
     try {
-      const res = await fetch(`${API}/api/kb/upload`, {
+      const result = await apiFetch<KBFileRecord[]>(`${API}/api/kb/upload`, {
         method: "POST",
-        headers: authHeader(),
-        body:    formData,
+        body:   formData as any,
       });
-      const created: KBFileRecord[] = await res.json();
+      const created = Array.isArray(result) ? result : [];
       setUploadedBatch(created);
       setPollingIds(created.filter(f => f.status === "processing").map(f => f.id));
-      setHistory(prev => [...created, ...prev]);
+      setHistory(prev => [...created, ...(Array.isArray(prev) ? prev : [])]);
       setSelectedFiles([]);
     } catch (err) {
       console.error(err);
@@ -303,9 +296,9 @@ function KBPage({ userId }: { userId: number }) {
 
   const deleteFile = async (id: number) => {
     if (!confirm("Supprimer ce fichier et tout le contenu généré ?")) return;
-    await fetch(`${API}/api/kb/files/${id}`, { method: "DELETE", headers: authHeader() });
-    setHistory(prev => prev.filter(f => f.id !== id));
-    setUploadedBatch(prev => prev.filter(f => f.id !== id));
+    await apiFetch(`${API}/api/kb/files/${id}`, { method: "DELETE" });
+    setHistory(prev => (Array.isArray(prev) ? prev : []).filter(f => f.id !== id));
+    setUploadedBatch(prev => (Array.isArray(prev) ? prev : []).filter(f => f.id !== id));
     if (expandedRow === id) { setExpandedRow(null); setExpandedData(null); }
   };
 
@@ -315,8 +308,8 @@ function KBPage({ userId }: { userId: number }) {
     if (expandedRow === id) { setExpandedRow(null); setExpandedData(null); return; }
     setExpandedRow(id);
     setExpandedData(null);
-    const data = await fetch(`${API}/api/kb/files/${id}`, { headers: authHeader() }).then(r => r.json());
-    setExpandedData(data);
+    const data = await apiFetch(`${API}/api/kb/files/${id}`);
+    setExpandedData(data ?? null);
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -496,7 +489,7 @@ function KBPage({ userId }: { userId: number }) {
           </div>
           {historyLoading ? (
             <div className="p-8 text-center text-sm text-gray-400">Chargement...</div>
-          ) : history.length === 0 ? (
+          ) : !Array.isArray(history) || history.length === 0 ? (
             <div className="p-8 text-center text-sm text-gray-400">Aucun fichier importé pour l'instant.</div>
           ) : (
             <div className="overflow-x-auto">

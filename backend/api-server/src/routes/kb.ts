@@ -44,6 +44,31 @@ const upload = multer({
 
 const router = Router();
 
+// ── GET /api/kb/ping ──────────────────────────────────────────────────────────
+// Public health check — no auth required.
+// Confirms the /api/kb router is mounted and reachable from the frontend.
+// Use this to rule out routing / CORS / base-URL issues before debugging auth.
+router.get("/ping", (_req, res) => {
+  res.json({ ok: true, route: "/api/kb" });
+});
+
+// ── Auth debug middleware ─────────────────────────────────────────────────────
+// Logs exactly what every KB request carries so Railway logs show the root
+// cause of any 401.  Safe to keep in production — never logs token values,
+// only their presence/absence and the first 20 chars of the Authorization
+// header (enough to confirm "Bearer " prefix without leaking the secret).
+router.use((req, _res, next) => {
+  const authHeader  = req.headers.authorization ?? null;
+  const cookieName  = "etude_session";
+  const cookieRaw   = (req as any).cookies?.[cookieName];
+  console.log(
+    `[kb] ${req.method} ${req.path}`,
+    `| auth-header: ${authHeader ? authHeader.slice(0, 20) + "…" : "none"}`,
+    `| cookie(${cookieName}): ${cookieRaw ? "present" : "absent"}`,
+  );
+  next();
+});
+
 // All KB routes require admin
 router.use(requireAuth, requireAdmin);
 

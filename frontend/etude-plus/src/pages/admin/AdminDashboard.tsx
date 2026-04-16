@@ -1,4 +1,5 @@
 import { useState } from "react";
+import * as Sentry from "@sentry/react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Button, Badge } from "@/components/ui/Premium";
 import {
@@ -118,6 +119,17 @@ export function AdminDashboard() {
   return (
     <DashboardLayout>
       <FadeIn>
+        {/* ── TEMPORARY Sentry verification button — remove after confirming events appear ── */}
+        <div style={{ marginBottom: 16 }}>
+          <button
+            onClick={() => { throw new Error("Sentry verification test"); }}
+            style={{ padding: "6px 14px", background: "#c53030", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13 }}
+          >
+            [TEST] Throw Sentry error
+          </button>
+        </div>
+        {/* ── END TEMPORARY ── */}
+
         <PageHeader
           title={t("admin.dashboard.title")}
           description={t("admin.dashboard.description")}
