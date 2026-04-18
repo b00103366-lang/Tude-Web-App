@@ -18,7 +18,7 @@ import {
   Folder, FolderOpen, ChevronRight, ChevronLeft,
   Upload, FileText, FileImage, Trash2, X, Plus,
   BookOpen, AlertCircle, CheckCircle2, Loader2, ExternalLink,
-  RefreshCw, Eye, SendHorizonal, RotateCcw, Hash, Layers,
+  RefreshCw, Eye, SendHorizonal, RotateCcw, Hash, Layers, Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch, apiFetchArray } from "@/lib/api";
@@ -698,14 +698,54 @@ export function AdminKnowledgeBase() {
   // ── Level 1: Grade cards ─────────────────────────────────────────────────
 
   function GradeLevel() {
+    const [aiRunning, setAiRunning] = useState(false);
+    const [aiMsg,     setAiMsg]     = useState<string | null>(null);
+
+    const errorCount = (Array.isArray(summary) ? summary : []).length === 0
+      ? 0
+      : (summary as any[]).reduce((n: number) => n, 0); // placeholder — we show the button always
+
+    async function launchAi() {
+      if (!confirm("Lancer le traitement IA sur tous les fichiers en attente ? Cela peut prendre plusieurs minutes.")) return;
+      setAiRunning(true);
+      setAiMsg(null);
+      try {
+        const res = await apiFetch(`${API}/api/kb/reprocess-all`, { method: "POST" });
+        const data = await res.json() as { queued: number; message?: string };
+        if (data.queued === 0) {
+          setAiMsg("Aucun fichier en attente — tout est déjà traité ou en cours.");
+        } else {
+          setAiMsg(`${data.queued} fichier(s) mis en file d'attente. Le traitement démarre en arrière-plan (env. ${data.queued * 8} secondes).`);
+          setTimeout(() => setRefresh(r => r + 1), data.queued * 8000 + 5000);
+        }
+      } catch {
+        setAiMsg("Erreur lors du lancement du traitement IA.");
+      } finally {
+        setAiRunning(false);
+      }
+    }
+
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Base de Connaissances</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Sélectionner un niveau pour gérer son contenu.
-          </p>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold">Base de Connaissances</h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Sélectionner un niveau pour gérer son contenu.
+            </p>
+          </div>
+          <button
+            onClick={launchAi}
+            disabled={aiRunning}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-60 transition-colors"
+          >
+            <Zap className="w-4 h-4" />
+            {aiRunning ? "Traitement en cours…" : "Générer avec l'IA"}
+          </button>
         </div>
+        {aiMsg && (
+          <p className="text-sm px-4 py-3 rounded-xl bg-muted border border-border text-muted-foreground">{aiMsg}</p>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {GRADE_FOLDERS.map(g => {
             const count = countForGrade(g);
@@ -733,6 +773,7 @@ export function AdminKnowledgeBase() {
       </div>
     );
   }
+
 
   // ── Level 2: Subject folders ─────────────────────────────────────────────
 

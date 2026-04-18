@@ -22,6 +22,7 @@ import { eq, and, desc, inArray, sql } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth";
 import { saveBufferToStorage, writeFileDataToDb } from "../lib/objectStorage";
 import { processUpload } from "../services/knowledgeBaseProcessor";
+import { reprocessAllErrorFiles } from "../lib/aiReprocessor";
 
 // ── Multer setup (memory storage, 25MB limit) ─────────────────────────────────
 
@@ -418,6 +419,14 @@ router.post("/files/:id/reprocess", async (req, res) => {
         .where(eq(knowledgeBaseFilesTable.id, id));
     });
   });
+});
+
+// ── POST /api/kb/reprocess-all ───────────────────────────────────────────────
+// Queue all files in 'error' or 'pending_ai' state for AI reprocessing.
+// Safe to call multiple times — only targets non-processing files.
+router.post("/reprocess-all", async (_req, res) => {
+  const result = await reprocessAllErrorFiles();
+  res.json({ queued: result.queued, ids: result.ids, message: result.queued === 0 ? "No files need reprocessing" : `Queued ${result.queued} file(s)` });
 });
 
 export default router;
