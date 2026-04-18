@@ -39,12 +39,19 @@ if (IS_PROD_STARTUP) {
   }
 }
 
-console.log("Running startup migrations...");
-await runStartupMigrations();
+async function main() {
+  console.log("Running startup migrations...");
+  await runStartupMigrations();
 
-console.log("Starting HTTP listener...");
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
-  console.log("Server ready.");
-  // startSessionScheduler(); // MVP: suppressed
+  console.log("Starting HTTP listener...");
+  app.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
+    console.log("Server ready.");
+    // startSessionScheduler(); // MVP: suppressed
+  });
+}
+
+main().catch((err) => {
+  console.error("Fatal startup error:", err);
+  process.exit(1);
 });
