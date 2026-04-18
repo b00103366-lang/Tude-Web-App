@@ -13,8 +13,9 @@ import {
   notionsTable,
   annalesTable,
   processingErrorsTable,
+  curriculumChaptersTable,
 } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { extractText } from "./contentExtractor";
 
 // ── Tunisian Curriculum Chapter Map ──────────────────────────────────────────
@@ -223,6 +224,11 @@ interface GeneratedKnowledgeBase {
   detected_topic: string;
 }
 
+interface GeneratedExamVariant {
+  title:     string;
+  questions: GeneratedQuestion[];
+}
+
 const GRADE_LABELS: Record<string, string> = {
   "7eme":             "7ème année de base",
   "8eme":             "8ème année de base",
@@ -233,6 +239,60 @@ const GRADE_LABELS: Record<string, string> = {
   "bac":              "Baccalauréat",
 };
 
+/**
+ * AI text generation — uses Gemini if GEMINI_API_KEY is set, Anthropic otherwise.
+ * Both providers receive the same system + user prompt and must return valid JSON.
+ */
+async function callAIText(systemPrompt: string, userPrompt: string, maxTokens = 16000): Promise<string> {
+  if (process.env["GEMINI_API_KEY"]) {
+    const apiKey = process.env["GEMINI_API_KEY"]!;
+    console.log("[kb/ai] Using Gemini for generation");
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+          generationConfig: { maxOutputTokens: maxTokens, temperature: 0.4, responseMimeType: "application/json" },
+        }),
+        signal: AbortSignal.timeout(120_000),
+      },
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(`Gemini API error ${response.status}: ${(err as any).error?.message ?? JSON.stringify(err)}`);
+    }
+    const data = await response.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+    return (data.candidates?.[0]?.content?.parts?.[0]?.text ?? "").trim();
+  }
+
+  if (process.env["ANTHROPIC_API_KEY"]) {
+    const apiKey = process.env["ANTHROPIC_API_KEY"]!;
+    console.log("[kb/ai] Using Anthropic for generation");
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userPrompt }],
+      }),
+      signal: AbortSignal.timeout(120_000),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(`Anthropic API error ${response.status}: ${(err as any).error?.message ?? ""}`);
+    }
+    const data = await response.json() as { content: { text: string }[] };
+    return (data.content?.[0]?.text ?? "").trim();
+  }
+
+  throw new Error("No AI API key set — add GEMINI_API_KEY or ANTHROPIC_API_KEY to use content generation");
+}
+
 async function callGenerationApi(
   extractedText:   string,
   subject:         string,
@@ -241,9 +301,6 @@ async function callGenerationApi(
   topic:           string,
   matchedChapters: string[],
 ): Promise<GeneratedKnowledgeBase> {
-  const apiKey = process.env["ANTHROPIC_API_KEY"];
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set");
-
   const gradeLabel    = GRADE_LABELS[gradeLevel] ?? gradeLevel;
   const sectionNote   = sectionKey ? ` (section: ${sectionKey.replace(/_/g, " ")})` : "";
   const chaptersNote  = matchedChapters.length > 0
@@ -276,6 +333,13 @@ Always output valid JSON only. No markdown, no preamble, no explanation.`;
 
 Content:
 ${snippet}
+
+IMPORTANT GENERATION RULES:
+- If the source content is a SINGLE question or a short exercise: treat it as a template and generate 15 NEW variations inspired by the same topic, skill, and style — with different numbers, contexts, or sub-questions each time.
+- If the source is a FULL EXAM PAPER: extract all its questions AND generate additional new questions in the same style to reach 15 total.
+- If the source is a LESSON or NOTES: generate 15 practice questions covering the key concepts.
+- ALWAYS generate exactly 15 questions, no matter the source length or type.
+- Every question must have a complete mark scheme with step-by-step model answers.
 
 Generate the following in one JSON response:
 {
@@ -313,34 +377,11 @@ Generate the following in one JSON response:
   "detected_topic": "Best matching chapter name from the curriculum"
 }
 
-Generate: 5 questions (2 Facile, 2 Moyen, 1 Difficile), 10 flashcards, 5 notions.
-If is_exam_paper is true, also structure it as an annale.`;
+Generate: 15 questions (4 Facile, 7 Moyen, 4 Difficile), 15 flashcards, 8 notions.
+Set is_exam_paper=true if the source looks like an exam paper or annale.`;
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 8192,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
-    }),
-    signal: AbortSignal.timeout(120_000),
-  });
+  const rawText = await callAIText(systemPrompt, userPrompt, 16000);
 
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(`Anthropic API error ${response.status}: ${(err as any).error?.message ?? ""}`);
-  }
-
-  const data    = await response.json() as { content: { text: string }[] };
-  const rawText = data.content?.[0]?.text ?? "";
-
-  // Strip markdown fences if model adds them despite instruction
   const jsonText = rawText
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```\s*$/, "")
@@ -349,9 +390,140 @@ If is_exam_paper is true, also structure it as an annale.`;
   return JSON.parse(jsonText) as GeneratedKnowledgeBase;
 }
 
+// ── Exam Variant Generation ───────────────────────────────────────────────────
+
+/**
+ * Given the original questions from a detected exam paper, generate 3 new full
+ * exam variants in the same style. Each variant has 5 questions with full mark schemes.
+ * These are saved both as annales AND their questions go into the question bank.
+ */
+async function callExamVariantsApi(
+  sourceQuestions: GeneratedQuestion[],
+  subject:    string,
+  gradeLevel: string,
+  sectionKey: string | null,
+  topic:      string,
+): Promise<GeneratedExamVariant[]> {
+  const gradeLabel  = GRADE_LABELS[gradeLevel] ?? gradeLevel;
+  const sectionNote = sectionKey ? ` (section: ${sectionKey.replace(/_/g, " ")})` : "";
+
+  const sourcePreview = sourceQuestions.slice(0, 5).map((q, i) =>
+    `Q${i + 1} [${q.difficulty}, ${q.max_marks}pts]: ${q.text.slice(0, 120)}`
+  ).join("\n");
+
+  const systemPrompt = `You are an expert in the Tunisian national curriculum. You generate complete exam papers that closely follow the style, difficulty distribution, and mark allocation of real Tunisian school exams.
+
+Always output valid JSON only. No markdown, no preamble.`;
+
+  const userPrompt = `Generate 3 DIFFERENT complete exam variants for:
+- Subject: ${subject}
+- Grade: ${gradeLabel}${sectionNote}
+- Topic/Chapter: ${topic}
+
+Source exam style reference (do NOT copy these — generate NEW questions in the same style):
+${sourcePreview}
+
+Each variant must:
+- Have exactly 5 questions (1 Facile, 2 Moyen, 2 Difficile)
+- Use different numbers, contexts, and scenarios than the source and each other
+- Have realistic Tunisian exam mark allocations (questions worth 2–6 points each, total ≈ 20 pts)
+- Include full mark schemes for every part
+
+Output format:
+{
+  "variants": [
+    {
+      "title": "Devoir de Contrôle N°1 — ${subject}",
+      "questions": [
+        {
+          "text": "...",
+          "type": "Exercice",
+          "difficulty": "Moyen",
+          "max_marks": 4,
+          "requires_calculator": false,
+          "parts": [{ "label": "a", "text": "...", "marks": 2 }],
+          "mark_scheme": [{ "label": "a", "answer": "...", "marks_breakdown": "..." }]
+        }
+      ]
+    }
+  ]
+}`;
+
+  const rawText  = await callAIText(systemPrompt, userPrompt, 16000);
+  const jsonText = rawText
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```\s*$/, "")
+    .trim();
+
+  const parsed = JSON.parse(jsonText) as { variants: GeneratedExamVariant[] };
+  return parsed.variants ?? [];
+}
+
 // ── Save to DB ────────────────────────────────────────────────────────────────
 
-interface SaveCounts { questions: number; flashcards: number; notions: number; }
+interface SaveCounts { questions: number; flashcards: number; notions: number; annales: number; }
+
+/**
+ * Upsert a curriculum chapter row so chapter cards always appear in the student UI
+ * even before any content is live.  Skips if a chapter with that name already exists.
+ */
+async function ensureCurriculumChapter(
+  levelCode:  string,
+  sectionKey: string | null,
+  subject:    string,
+  topicName:  string,
+): Promise<void> {
+  try {
+    // Check whether a chapter with this name already exists for this level/subject
+    const existing = await db
+      .select({ id: curriculumChaptersTable.id })
+      .from(curriculumChaptersTable)
+      .where(
+        and(
+          eq(curriculumChaptersTable.levelCode,  levelCode),
+          eq(curriculumChaptersTable.subject,    subject),
+          eq(curriculumChaptersTable.name,       topicName),
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) return;  // already exists — nothing to do
+
+    // Get the next orderIndex for this level/subject
+    const [maxRow] = await db
+      .select({ maxIdx: sql<number>`coalesce(max(order_index), -1)` })
+      .from(curriculumChaptersTable)
+      .where(
+        and(
+          eq(curriculumChaptersTable.levelCode, levelCode),
+          eq(curriculumChaptersTable.subject,   subject),
+        )
+      );
+    const nextIdx = (maxRow?.maxIdx ?? -1) + 1;
+
+    const slug = topicName
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")  // strip diacritics
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "")
+      .slice(0, 80);
+
+    await db.insert(curriculumChaptersTable).values({
+      levelCode,
+      sectionKey:  sectionKey ?? null,
+      subject,
+      name:        topicName,
+      shortName:   null,
+      slug:        slug || `chapter-${nextIdx}`,
+      orderIndex:  nextIdx,
+      isActive:    true,
+    });
+  } catch (err: any) {
+    // Non-fatal — chapter seeding is best-effort
+    console.error("[kb/ensureCurriculumChapter] failed:", err.message);
+  }
+}
 
 async function saveToKnowledgeBase(
   generated:   GeneratedKnowledgeBase,
@@ -361,16 +533,19 @@ async function saveToKnowledgeBase(
   subject:     string,
   topicHint:   string,
   kbFileId:    number | null = null,
+  annaleTitle: string | null = null,
 ): Promise<SaveCounts> {
   const topic = generated.detected_topic || topicHint || subject;
 
-  // --- Questions (status = 'published', no createdBy for AI-sourced) ---
+  // --- Questions ---
+  // Saved as 'draft' so admin can review before they go live.
+  // The admin /api/kb/files/:id/publish endpoint flips them to 'published'.
   for (const q of generated.questions) {
     const [inserted] = await db.insert(questionsTable).values({
       sourceFileId:        fileId || null,
       kbFileId:            kbFileId ?? null,
       createdBy:           null,
-      status:              "published",
+      status:              "draft",          // ← review-first: admin must publish
       gradeLevel,
       sectionKey:          sectionKey ?? null,
       subject,
@@ -408,7 +583,7 @@ async function saveToKnowledgeBase(
     }
   }
 
-  // --- Flashcards ---
+  // --- Flashcards (live immediately — lower-risk content) ---
   for (const fc of generated.flashcards) {
     await db.insert(flashcardsTable).values({
       sourceFileId: fileId || null,
@@ -423,7 +598,7 @@ async function saveToKnowledgeBase(
     });
   }
 
-  // --- Notions ---
+  // --- Notions (live immediately) ---
   for (const n of generated.notions) {
     await db.insert(notionsTable).values({
       sourceFileId: fileId || null,
@@ -440,25 +615,43 @@ async function saveToKnowledgeBase(
   }
 
   // --- Annale (if detected as exam paper, or content_type forces it) ---
+  let annalesCreated = 0;
   if (generated.is_exam_paper) {
+    // Store questions in a structure the Annales.tsx page can parse.
+    // The page expects: content = JSON array of { question, parts?, totalMarks? }
+    const annaleContent = generated.questions.map(q => ({
+      question:   q.text,
+      parts:      q.parts.map(p => ({ label: p.label, text: p.text, marks: p.marks })),
+      totalMarks: q.max_marks,
+    }));
+    // Solution: array of { label, answer, marks_breakdown }
+    const annaleSolution = generated.questions.flatMap(q => q.mark_scheme);
+
     await db.insert(annalesTable).values({
       sourceFileId: fileId || null,
       kbFileId:     kbFileId ?? null,
       gradeLevel,
       sectionKey:  sectionKey ?? null,
       subject,
-      topic,
+      topic:       annaleTitle ?? topic,
       year:        null,
-      content:     JSON.stringify(generated.questions),
-      solution:    JSON.stringify(generated.questions.flatMap(q => q.mark_scheme)),
+      content:     JSON.stringify(annaleContent),
+      solution:    JSON.stringify(annaleSolution),
       status:      "live",
     });
+    annalesCreated = 1;
+  }
+
+  // --- Seed curriculum chapter for this topic so chapter cards always appear ---
+  if (topic) {
+    await ensureCurriculumChapter(gradeLevel, sectionKey, subject, topic);
   }
 
   return {
     questions:  generated.questions.length,
     flashcards: generated.flashcards.length,
     notions:    generated.notions.length,
+    annales:    annalesCreated,
   };
 }
 
@@ -483,10 +676,12 @@ async function logProcessingError(
   errorMessage: string,
   errorStage:   string,
   retryCount:   number,
+  kbFileId?:    number | null,
 ): Promise<void> {
   try {
     await db.insert(processingErrorsTable).values({
-      fileId,
+      fileId:       fileId || null,
+      kbFileId:     kbFileId ?? null,
       fileUrl,
       subject,
       gradeLevel,
@@ -518,6 +713,7 @@ export interface ProcessUploadResult {
   questions:  number;
   flashcards: number;
   notions:    number;
+  annales:    number;
 }
 
 /**
@@ -547,7 +743,7 @@ export async function processUpload(params: ProcessUploadParams): Promise<Proces
     console.log(`[kb] Extracted ${extractedText.length} chars from ${label}`);
   } catch (err: any) {
     console.error(`[kb] Extraction failed for ${label}:`, err.message);
-    await logProcessingError(fileId, fileUrl, subject, gradeLevel, err.message, "extraction", 0);
+    await logProcessingError(fileId, fileUrl, subject, gradeLevel, err.message, "extraction", 0, kbFileId);
     return null;
   }
 
@@ -570,21 +766,54 @@ export async function processUpload(params: ProcessUploadParams): Promise<Proces
       attempt++;
       console.error(`[kb] Generation attempt ${attempt} failed for ${label}:`, err.message);
       if (attempt >= 2) {
-        await logProcessingError(fileId, fileUrl, subject, gradeLevel, err.message, "generation", attempt);
+        await logProcessingError(fileId, fileUrl, subject, gradeLevel, err.message, "generation", attempt, kbFileId);
         return null;
       }
       await new Promise(r => setTimeout(r, 3000));
     }
   }
 
-  // Stage: save to DB
+  // Stage: save base content to DB
+  let counts: SaveCounts;
   try {
-    const counts = await saveToKnowledgeBase(generated!, fileId, gradeLevel, sectionKey, subject, topic, kbFileId);
+    counts = await saveToKnowledgeBase(generated!, fileId, gradeLevel, sectionKey, subject, topic, kbFileId);
     console.log(`[kb] Saved for ${label}:`, counts);
-    return counts;
   } catch (err: any) {
     console.error(`[kb] Save failed for ${label}:`, err.message);
-    await logProcessingError(fileId, fileUrl, subject, gradeLevel, err.message, "save", attempt);
+    await logProcessingError(fileId, fileUrl, subject, gradeLevel, err.message, "save", attempt, kbFileId);
     return null;
   }
+
+  // Stage: exam variants — if source is an exam paper, generate 3 additional full exam variants.
+  // Each variant's questions are saved to the question bank AND as a separate annale entry.
+  if (generated!.is_exam_paper && generated!.questions.length > 0) {
+    console.log(`[kb] Generating exam variants for ${label}…`);
+    try {
+      const variants = await callExamVariantsApi(
+        generated!.questions, subject, gradeLevel, sectionKey, topic,
+      );
+      for (const variant of variants) {
+        // Wrap variant as a GeneratedKnowledgeBase so we can reuse saveToKnowledgeBase
+        const variantAsKB: GeneratedKnowledgeBase = {
+          questions:      variant.questions,
+          flashcards:     [],
+          notions:        [],
+          is_exam_paper:  true,
+          detected_topic: generated!.detected_topic,
+        };
+        const variantCounts = await saveToKnowledgeBase(
+          variantAsKB, fileId, gradeLevel, sectionKey, subject, topic, kbFileId,
+          variant.title,
+        );
+        counts.questions += variantCounts.questions;
+        counts.annales   += variantCounts.annales;
+      }
+      console.log(`[kb] Saved ${variants.length} exam variants for ${label}`);
+    } catch (err: any) {
+      // Variant generation failure is non-fatal — base content is already saved
+      console.error(`[kb] Exam variant generation failed for ${label}:`, err.message);
+    }
+  }
+
+  return counts;
 }

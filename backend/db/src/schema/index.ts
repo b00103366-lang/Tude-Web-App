@@ -26,3 +26,4 @@ export * from "./questions";
 export * from "./knowledgeBase";
 export * from "./knowledgeBaseFiles";
 export * from "./revisionAttempts";
+export * from "./curriculum";

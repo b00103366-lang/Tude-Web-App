@@ -18,11 +18,17 @@ export const knowledgeBaseFilesTable = pgTable("knowledge_base_files", {
   contentType:     text("content_type").notNull(), // 'cours' | 'examen' | 'exercices' | 'annale' | 'resume' | 'manuel'
   notes:           text("notes"),
   uploadedBy:      integer("uploaded_by").references(() => usersTable.id, { onDelete: "set null" }),
-  status:          text("status").notNull().default("processing"), // 'processing' | 'processed' | 'error'
+  // Status lifecycle:
+  //   'processing' → AI extraction running
+  //   'ready'      → AI done, content saved as draft — awaiting admin review/publish
+  //   'processed'  → admin published all generated content
+  //   'error'      → processing failed (see error_message)
+  status:          text("status").notNull().default("processing"),
   errorMessage:    text("error_message"),
   questionsCount:  integer("questions_count").notNull().default(0),
   flashcardsCount: integer("flashcards_count").notNull().default(0),
   notionsCount:    integer("notions_count").notNull().default(0),
+  annalesCount:    integer("annales_count").notNull().default(0),
   createdAt:       timestamp("created_at").defaultNow().notNull(),
   processedAt:     timestamp("processed_at"),
 });

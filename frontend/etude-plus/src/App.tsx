@@ -32,6 +32,7 @@ import { BanqueDeQuestionsTopic } from "@/pages/revision/BanqueDeQuestionsTopic"
 import { Annales as ExamensBlancsPage } from "@/pages/revision/Annales";
 import { ExamensPratiques } from "@/pages/revision/ExamensPratiques";
 import { Flashcards } from "@/pages/revision/Flashcards";
+import { FlashcardsTopic } from "@/pages/revision/FlashcardsTopic";
 
 // MVP: professor pages suppressed — imports kept for easy restore
 // import { BrowseClasses } from "@/pages/student/BrowseClasses";
@@ -191,6 +192,9 @@ function Router() {
       {/* Examens Pratiques — backed by questions table via GET /api/revision/content/questions */}
       <Route path="/revision/:subject/examens-pratiques">
         {() => <ProtectedRoute component={ExamensPratiques} allowedRoles={["student"]} />}
+      </Route>
+      <Route path="/revision/:subject/flashcards/:topic">
+        {() => <ProtectedRoute component={FlashcardsTopic} allowedRoles={["student"]} />}
       </Route>
       <Route path="/revision/:subject/flashcards">
         {() => <ProtectedRoute component={Flashcards} allowedRoles={["student"]} />}

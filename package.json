@@ -13,5 +13,9 @@
   "devDependencies": {
     "prettier": "^3.8.1",
     "typescript": "~5.9.2"
+  },
+  "dependencies": {
+    "lightningcss": "^1.32.0",
+    "lightningcss-darwin-arm64": "^1.32.0"
   }
 }

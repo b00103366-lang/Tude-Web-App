@@ -18,12 +18,54 @@ import {
   Folder, FolderOpen, ChevronRight, ChevronLeft,
   Upload, FileText, FileImage, Trash2, X, Plus,
   BookOpen, AlertCircle, CheckCircle2, Loader2, ExternalLink,
-  RefreshCw,
+  RefreshCw, Eye, SendHorizonal, RotateCcw, Hash, Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch, apiFetchArray } from "@/lib/api";
 
-const API = import.meta.env.VITE_API_URL ?? "";
+const API = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+
+/**
+ * Convert a raw storage path stored in the DB to a URL that the browser can open.
+ *
+ *   /local/uuid.pdf        → {API}/storage/local/uuid.pdf
+ *   /objects/path/file     → {API}/storage/objects/path/file
+ *   https://…              → returned as-is (GCS signed URL or CDN)
+ *
+ * Auth: the session cookie is SameSite=None in prod (included cross-origin) and
+ * SameSite=Lax in dev (included for top-level navigation).  Opening via a
+ * Blob URL avoids any cross-origin cookie concern entirely.
+ */
+async function openStorageFile(fileUrl: string): Promise<void> {
+  let apiUrl: string;
+
+  if (fileUrl.startsWith("/local/")) {
+    const filename = fileUrl.slice("/local/".length);
+    apiUrl = `${API}/api/storage/local/${encodeURIComponent(filename)}`;
+  } else if (fileUrl.startsWith("/objects/")) {
+    const path = fileUrl.slice("/objects/".length);
+    apiUrl = `${API}/api/storage/objects/${path}`;
+  } else {
+    // Already an absolute URL (GCS signed URL, CDN, etc.) — open directly
+    window.open(fileUrl, "_blank", "noopener,noreferrer");
+    return;
+  }
+
+  try {
+    const res = await fetch(apiUrl, { credentials: "include" });
+    if (!res.ok) {
+      alert(`Impossible d'ouvrir le fichier (${res.status})`);
+      return;
+    }
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    window.open(blobUrl, "_blank", "noopener,noreferrer");
+    // Revoke after a short delay so the new tab has time to start loading it
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 30_000);
+  } catch {
+    alert("Impossible d'ouvrir le fichier — vérifiez votre connexion");
+  }
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -45,11 +87,17 @@ type KBFile = {
   sectionKey: string | null;
   topic: string;
   contentType: string;
-  status: "processing" | "processed" | "error";
+  // Status lifecycle:
+  //   processing → AI extraction running
+  //   ready      → AI done, questions are draft — admin must publish
+  //   processed  → admin published all content
+  //   error      → processing failed
+  status: "processing" | "ready" | "processed" | "error";
   errorMessage: string | null;
   questionsCount: number;
   flashcardsCount: number;
   notionsCount: number;
+  annalesCount: number;
   createdAt: string;
   processedAt: string | null;
 };
@@ -118,9 +166,14 @@ function StatusBadge({ status }: { status: KBFile["status"] }) {
       <Loader2 className="w-3 h-3 animate-spin" /> En traitement
     </span>
   );
+  if (status === "ready") return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+      <Eye className="w-3 h-3" /> À réviser
+    </span>
+  );
   if (status === "processed") return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-      <CheckCircle2 className="w-3 h-3" /> Traité
+      <CheckCircle2 className="w-3 h-3" /> Publié
     </span>
   );
   return (
@@ -306,6 +359,218 @@ function UploadModal({
   );
 }
 
+// ── Review & Publish Modal ───────────────────────────────────────────────────
+
+type KBFileDetail = {
+  file: KBFile;
+  questions: { id: number; questionText: string; difficulty: string; type: string; topic: string; totalMarks: number | null; status: string }[];
+  flashcards: { id: number; front: string; back: string }[];
+  notions: { id: number; title: string }[];
+  annales: { id: number; topic: string; year: number | null }[];
+};
+
+function ReviewModal({
+  file,
+  onClose,
+  onPublished,
+}: {
+  file: KBFile;
+  onClose: () => void;
+  onPublished: () => void;
+}) {
+  const [detail, setDetail]       = useState<KBFileDetail | null>(null);
+  const [loading, setLoading]     = useState(true);
+  const [publishing, setPublishing] = useState(false);
+  const [error, setError]         = useState("");
+
+  useEffect(() => {
+    apiFetch(`${API}/api/kb/files/${file.id}`)
+      .then((d: any) => setDetail(d))
+      .catch(() => setError("Impossible de charger le contenu"))
+      .finally(() => setLoading(false));
+  }, [file.id]);
+
+  const handlePublish = async () => {
+    setPublishing(true);
+    setError("");
+    try {
+      const result = await apiFetch(`${API}/api/kb/files/${file.id}/publish`, { method: "POST" });
+      if (result === null) throw new Error("Échec de la publication");
+      onPublished();
+      onClose();
+    } catch (err: any) {
+      setError(err.message ?? "Erreur lors de la publication");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const draftCount = detail?.questions.filter(q => q.status === "draft").length ?? 0;
+  const pubCount   = detail?.questions.filter(q => q.status === "published").length ?? 0;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-background rounded-2xl border border-border shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-start justify-between p-6 border-b border-border shrink-0">
+          <div>
+            <h2 className="text-base font-bold">Révision du contenu généré</h2>
+            <p className="text-sm text-muted-foreground mt-0.5 truncate max-w-sm">{file.fileName}</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-muted transition-colors ml-3">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          {loading && (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          )}
+
+          {!loading && detail && (
+            <>
+              {/* Summary row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: "Questions",   value: detail.questions.length, icon: Hash },
+                  { label: "Flashcards",  value: detail.flashcards.length, icon: Layers },
+                  { label: "Notions",     value: detail.notions.length, icon: BookOpen },
+                  { label: "Annales",     value: detail.annales.length, icon: FileText },
+                ].map(({ label, value, icon: Icon }) => (
+                  <div key={label} className="rounded-2xl border border-border bg-muted/20 p-4 text-center">
+                    <Icon className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
+                    <p className="text-2xl font-bold">{value}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Draft / published status */}
+              {(draftCount > 0 || pubCount > 0) && (
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-sm">
+                  <Eye className="w-4 h-4 text-blue-600 shrink-0" />
+                  <div>
+                    <span className="font-semibold text-blue-800 dark:text-blue-300">
+                      {draftCount > 0
+                        ? `${draftCount} question${draftCount > 1 ? "s" : ""} en attente de publication`
+                        : `${pubCount} question${pubCount > 1 ? "s" : ""} déjà publiée${pubCount > 1 ? "s" : ""}`}
+                    </span>
+                    {draftCount > 0 && (
+                      <p className="text-xs text-blue-700 dark:text-blue-400 mt-0.5">
+                        Les flashcards et notions sont déjà visibles par les élèves.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Questions preview */}
+              {detail.questions.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                    Aperçu des questions ({detail.questions.length})
+                  </p>
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    {detail.questions.slice(0, 20).map((q, i) => (
+                      <div key={q.id} className="flex items-start gap-3 p-3 rounded-xl border border-border bg-muted/20 text-sm">
+                        <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                          {i + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-foreground line-clamp-2">{q.questionText}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={cn(
+                              "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                              q.difficulty === "facile"    ? "bg-green-100 text-green-700" :
+                              q.difficulty === "moyen"     ? "bg-amber-100 text-amber-700" :
+                                                             "bg-red-100 text-red-700"
+                            )}>
+                              {q.difficulty}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">{q.type}</span>
+                            {q.totalMarks && (
+                              <span className="text-[10px] text-muted-foreground">{q.totalMarks} pt{q.totalMarks > 1 ? "s" : ""}</span>
+                            )}
+                            <span className={cn(
+                              "text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-auto",
+                              q.status === "published"
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-blue-100 text-blue-700"
+                            )}>
+                              {q.status === "published" ? "Publié" : "Brouillon"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {detail.questions.length > 20 && (
+                      <p className="text-xs text-muted-foreground text-center py-2">
+                        … et {detail.questions.length - 20} autres questions
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Annales preview */}
+              {detail.annales.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                    Examens / Annales générés ({detail.annales.length})
+                  </p>
+                  <div className="space-y-1.5">
+                    {detail.annales.map(a => (
+                      <div key={a.id} className="flex items-center gap-2 p-2.5 rounded-xl border border-border bg-muted/20 text-sm">
+                        <FileText className="w-4 h-4 text-orange-500 shrink-0" />
+                        <span className="flex-1 truncate">{a.topic}</span>
+                        {a.year && <span className="text-xs text-muted-foreground">{a.year}</span>}
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Publié</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {error && (
+            <p className="text-xs text-red-600 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-xl">{error}</p>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 border-t border-border shrink-0 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl border border-border text-sm font-semibold hover:bg-muted transition-colors"
+          >
+            Fermer
+          </button>
+          {draftCount > 0 && (
+            <button
+              onClick={handlePublish}
+              disabled={publishing}
+              className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-40 transition-colors flex items-center justify-center gap-2"
+            >
+              {publishing
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Publication...</>
+                : <><SendHorizonal className="w-4 h-4" /> Publier {draftCount} question{draftCount > 1 ? "s" : ""}</>}
+            </button>
+          )}
+          {draftCount === 0 && pubCount > 0 && (
+            <div className="flex-1 py-2.5 rounded-xl bg-emerald-100 text-emerald-700 text-sm font-semibold text-center flex items-center justify-center gap-2">
+              <CheckCircle2 className="w-4 h-4" /> Tout est publié
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function AdminKnowledgeBase() {
@@ -316,6 +581,7 @@ export function AdminKnowledgeBase() {
   const [files, setFiles]             = useState<KBFile[]>([]);
   const [filesLoading, setFilesLoading] = useState(false);
   const [showUpload, setShowUpload]   = useState(false);
+  const [reviewFile, setReviewFile]   = useState<KBFile | null>(null);
   const [pollingIds, setPollingIds]   = useState<number[]>([]);
   const [refresh, setRefresh]         = useState(0);
 
@@ -338,6 +604,7 @@ export function AdminKnowledgeBase() {
       .then(data => {
         const safeData = Array.isArray(data) ? data : [];
         setFiles(safeData);
+        // Poll until no files are actively processing
         setPollingIds(safeData.filter(f => f.status === "processing").map(f => f.id));
       })
       .finally(() => setFilesLoading(false));
@@ -384,6 +651,13 @@ export function AdminKnowledgeBase() {
     await apiFetch(`${API}/api/kb/files/${id}`, { method: "DELETE" });
     setFiles(prev => prev.filter(f => f.id !== id));
     setRefresh(r => r + 1);
+  }
+
+  async function reprocessFile(id: number) {
+    if (!confirm("Relancer le traitement IA pour ce fichier ? Le contenu généré précédemment sera supprimé.")) return;
+    await apiFetch(`${API}/api/kb/files/${id}/reprocess`, { method: "POST" });
+    setFiles(prev => prev.map(f => f.id === id ? { ...f, status: "processing" as const } : f));
+    setPollingIds(prev => prev.includes(id) ? prev : [...prev, id]);
   }
 
   // ── Breadcrumb ───────────────────────────────────────────────────────────
@@ -617,8 +891,13 @@ export function AdminKnowledgeBase() {
                     </td>
                     <td className="px-4 py-3"><StatusBadge status={f.status} /></td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {f.status === "processed"
-                        ? `${f.questionsCount}q · ${f.flashcardsCount}fc · ${f.notionsCount}n`
+                      {(f.status === "ready" || f.status === "processed")
+                        ? (
+                          <span>
+                            {f.questionsCount}q · {f.flashcardsCount}fc · {f.notionsCount}n
+                            {f.annalesCount > 0 ? ` · ${f.annalesCount} ann.` : ""}
+                          </span>
+                        )
                         : f.status === "error"
                         ? <span className="text-red-500 text-xs">{f.errorMessage?.slice(0, 40) ?? "Erreur"}</span>
                         : "—"}
@@ -628,16 +907,44 @@ export function AdminKnowledgeBase() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        {/* Review & Publish — shown for 'ready' files */}
+                        {f.status === "ready" && (
+                          <button
+                            onClick={() => setReviewFile(f)}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 transition-colors"
+                            title="Réviser et publier"
+                          >
+                            <Eye className="w-3 h-3" /> Réviser
+                          </button>
+                        )}
+                        {/* View content — shown for published files */}
+                        {f.status === "processed" && (
+                          <button
+                            onClick={() => setReviewFile(f)}
+                            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                            title="Voir le contenu généré"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {/* Reprocess — shown for error files */}
+                        {f.status === "error" && (
+                          <button
+                            onClick={() => reprocessFile(f.id)}
+                            className="p-1.5 rounded-lg text-muted-foreground hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+                            title="Relancer le traitement"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         {f.fileUrl && (
-                          <a
-                            href={f.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            onClick={() => openStorageFile(f.fileUrl)}
                             className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                             title="Ouvrir le fichier"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
+                          </button>
                         )}
                         <button
                           onClick={() => deleteFile(f.id)}
@@ -679,6 +986,15 @@ export function AdminKnowledgeBase() {
           subject={selSubject}
           onClose={() => setShowUpload(false)}
           onUploaded={() => { setRefresh(r => r + 1); }}
+        />
+      )}
+
+      {/* Review & Publish modal */}
+      {reviewFile && (
+        <ReviewModal
+          file={reviewFile}
+          onClose={() => setReviewFile(null)}
+          onPublished={() => { setReviewFile(null); setRefresh(r => r + 1); }}
         />
       )}
     </DashboardLayout>

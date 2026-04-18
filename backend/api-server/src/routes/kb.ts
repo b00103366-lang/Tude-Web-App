@@ -15,7 +15,9 @@ import {
   questionsTable,
   questionPartsTable,
   markSchemesTable,
+  processingErrorsTable,
 } from "@workspace/db";
+// Note: curriculumChaptersTable seeding is handled inside knowledgeBaseProcessor
 import { eq, and, desc, inArray, sql } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth";
 import { saveBufferToStorage } from "../lib/objectStorage";
@@ -129,18 +131,30 @@ router.post("/upload", upload.array("files", 20), async (req, res) => {
           forceIsExamPaper,
         }).then(async counts => {
           if (counts) {
+            // Status 'ready' = processing done, content saved as draft — admin must review & publish
             await db.update(knowledgeBaseFilesTable)
               .set({
-                status:          "processed",
+                status:          "ready",
                 questionsCount:  counts.questions,
                 flashcardsCount: counts.flashcards,
                 notionsCount:    counts.notions,
+                annalesCount:    counts.annales,
                 processedAt:     new Date(),
               })
               .where(eq(knowledgeBaseFilesTable.id, kbFile.id));
           } else {
+            // Fetch the real error from processing_errors so admin can diagnose it
+            const [latestErr] = await db
+              .select({ errorMessage: processingErrorsTable.errorMessage, errorStage: processingErrorsTable.errorStage })
+              .from(processingErrorsTable)
+              .where(eq(processingErrorsTable.kbFileId, kbFile.id))
+              .orderBy(desc(processingErrorsTable.attemptedAt))
+              .limit(1);
+            const errorMsg = latestErr
+              ? `[${latestErr.errorStage ?? "?"}] ${latestErr.errorMessage}`
+              : "Traitement échoué — voir les logs";
             await db.update(knowledgeBaseFilesTable)
-              .set({ status: "error", errorMessage: "Traitement échoué — voir les logs" })
+              .set({ status: "error", errorMessage: errorMsg.slice(0, 500) })
               .where(eq(knowledgeBaseFilesTable.id, kbFile.id));
           }
         }).catch(async err => {
@@ -269,6 +283,136 @@ router.get("/check-duplicate", async (req, res) => {
     .limit(1);
 
   res.json({ duplicate: !!existing, existing: existing ?? null });
+});
+
+// ── POST /api/kb/files/:id/publish ────────────────────────────────────────────
+// Publishes all draft content (questions) generated from this KB file.
+// Flashcards and notions are already live; annales are already live.
+// Questions go from 'draft' → 'published' so students can access them.
+router.post("/files/:id/publish", async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const [file] = await db
+    .select()
+    .from(knowledgeBaseFilesTable)
+    .where(eq(knowledgeBaseFilesTable.id, id));
+
+  if (!file) { res.status(404).json({ error: "Fichier introuvable" }); return; }
+  if (file.status === "processing") {
+    res.status(409).json({ error: "Le traitement est encore en cours" });
+    return;
+  }
+
+  // Publish all draft questions linked to this KB file
+  const result = await db
+    .update(questionsTable)
+    .set({ status: "published", updatedAt: new Date() })
+    .where(and(
+      eq(questionsTable.kbFileId, id),
+      eq(questionsTable.status, "draft"),
+    ))
+    .returning({ id: questionsTable.id });
+
+  // Mark the KB file as fully processed / published
+  await db
+    .update(knowledgeBaseFilesTable)
+    .set({ status: "processed" })
+    .where(eq(knowledgeBaseFilesTable.id, id));
+
+  res.json({ published: result.length });
+});
+
+// ── POST /api/kb/files/:id/reprocess ─────────────────────────────────────────
+// Re-triggers AI processing for a file that previously failed or needs a refresh.
+// Deletes all previously generated content first, then re-runs the pipeline.
+router.post("/files/:id/reprocess", async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const [file] = await db
+    .select()
+    .from(knowledgeBaseFilesTable)
+    .where(eq(knowledgeBaseFilesTable.id, id));
+
+  if (!file) { res.status(404).json({ error: "Fichier introuvable" }); return; }
+  if (file.status === "processing") {
+    res.status(409).json({ error: "Le traitement est déjà en cours" });
+    return;
+  }
+
+  // Delete previously generated content
+  const qs = await db
+    .select({ id: questionsTable.id })
+    .from(questionsTable)
+    .where(eq(questionsTable.kbFileId, id));
+  if (qs.length > 0) {
+    const qIds = qs.map(q => q.id);
+    await db.delete(questionPartsTable).where(inArray(questionPartsTable.questionId, qIds));
+    await db.delete(markSchemesTable).where(inArray(markSchemesTable.questionId, qIds));
+    await db.delete(questionsTable).where(eq(questionsTable.kbFileId, id));
+  }
+  await db.delete(flashcardsTable).where(eq(flashcardsTable.kbFileId, id));
+  await db.delete(notionsTable).where(eq(notionsTable.kbFileId, id));
+  await db.delete(annalesTable).where(eq(annalesTable.kbFileId, id));
+
+  // Reset status to processing
+  await db.update(knowledgeBaseFilesTable)
+    .set({
+      status:          "processing",
+      errorMessage:    null,
+      questionsCount:  0,
+      flashcardsCount: 0,
+      notionsCount:    0,
+      annalesCount:    0,
+      processedAt:     null,
+    })
+    .where(eq(knowledgeBaseFilesTable.id, id));
+
+  // Acknowledge immediately — processing runs in background
+  res.json({ queued: true });
+
+  const forceIsExamPaper = ["examen", "annale"].includes(file.contentType);
+  setImmediate(() => {
+    processUpload({
+      fileId:           0,
+      fileUrl:          file.fileUrl,
+      fileType:         file.fileType,
+      subject:          file.subject,
+      gradeLevel:       file.gradeLevel,
+      sectionKey:       file.sectionKey,
+      topic:            file.topic,
+      kbFileId:         file.id,
+      forceIsExamPaper,
+    }).then(async counts => {
+      if (counts) {
+        await db.update(knowledgeBaseFilesTable)
+          .set({
+            status:          "ready",
+            questionsCount:  counts.questions,
+            flashcardsCount: counts.flashcards,
+            notionsCount:    counts.notions,
+            annalesCount:    counts.annales,
+            processedAt:     new Date(),
+          })
+          .where(eq(knowledgeBaseFilesTable.id, id));
+      } else {
+        // Fetch the real error from processing_errors so admin can diagnose it
+        const [latestErr] = await db
+          .select({ errorMessage: processingErrorsTable.errorMessage, errorStage: processingErrorsTable.errorStage })
+          .from(processingErrorsTable)
+          .where(eq(processingErrorsTable.kbFileId, id))
+          .orderBy(desc(processingErrorsTable.attemptedAt))
+          .limit(1);
+        const errorMsg = latestErr
+          ? `[${latestErr.errorStage ?? "?"}] ${latestErr.errorMessage}`
+          : "Retraitement échoué — voir les logs";
+        await db.update(knowledgeBaseFilesTable)
+          .set({ status: "error", errorMessage: errorMsg.slice(0, 500) })
+          .where(eq(knowledgeBaseFilesTable.id, id));
+      }
+    }).catch(async err => {
+      await db.update(knowledgeBaseFilesTable)
+        .set({ status: "error", errorMessage: String(err.message ?? err).slice(0, 500) })
+        .where(eq(knowledgeBaseFilesTable.id, id));
+    });
+  });
 });
 
 export default router;

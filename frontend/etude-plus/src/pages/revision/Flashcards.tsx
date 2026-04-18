@@ -1,204 +1,208 @@
-import { useState } from "react";
+/**
+ * Flashcards — chapter list for a subject.
+ *
+ * Fetches chapters from /api/curriculum/chapters (includes flashcard counts).
+ * Chapters always render even when flashcardCount = 0 — the curriculum drives
+ * the UI, not the content tables.
+ *
+ * Clicking a chapter navigates to FlashcardsTopic for the actual flashcard session.
+ */
+
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card } from "@/components/ui/Premium";
 import { Link, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { getToken } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
-import { subjectToSlug, subjectFromSlug } from "@/lib/educationConfig";
-import { BookOpen, ChevronRight, RotateCcw, ChevronLeft, ChevronDown, Layers, Construction } from "lucide-react";
+import { subjectFromSlug, subjectToSlug } from "@/lib/educationConfig";
+import { BookOpen, ChevronRight, Layers, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { CurriculumChapter } from "@/types/curriculum";
 
 const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
-async function apiFetch(path: string) {
+async function fetchChapters(
+  levelCode: string,
+  sectionKey: string | null,
+  subject: string,
+): Promise<CurriculumChapter[]> {
   const token = getToken();
-  const fullUrl = `${API_URL}${path}`;
-  const res = await fetch(fullUrl, {
+  const params = new URLSearchParams({ levelCode, subject });
+  if (sectionKey) params.set("sectionKey", sectionKey);
+
+  const res = await fetch(`${API_URL}/api/curriculum/chapters?${params}`, {
     credentials: "include",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-  if (!res.ok) {
-    console.error(`[Flashcards] ${res.status} ${res.statusText} — ${fullUrl}`);
-    throw new Error(`HTTP ${res.status} — ${fullUrl}`);
-  }
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 export function Flashcards() {
   const [, params] = useRoute("/revision/:subject/flashcards");
-  const subject = params?.subject ? (subjectFromSlug(params.subject) ?? decodeURIComponent(params.subject)) : "";
+  const subject = params?.subject
+    ? (subjectFromSlug(params.subject) ?? decodeURIComponent(params.subject))
+    : "";
+  const slug = subjectToSlug(subject);
   const { user } = useAuth();
 
-  const gradeLevel: string = (user as any)?.studentProfile?.gradeLevel ?? "";
+  const levelCode  = (user as any)?.studentProfile?.gradeLevel ?? "";
   const sectionKey: string | null = (user as any)?.studentProfile?.educationSection ?? null;
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [flipped, setFlipped] = useState(false);
-  const [mode, setMode] = useState<"browse" | "deck">("browse");
-
-  const { data: flashcards = [], isLoading } = useQuery<any[]>({
-    queryKey: ["flashcards", subject, gradeLevel, sectionKey],
-    queryFn: () => apiFetch(
-      `/api/revision/content/flashcards?subject=${encodeURIComponent(subject)}&gradeLevel=${encodeURIComponent(gradeLevel)}${sectionKey ? `&sectionKey=${encodeURIComponent(sectionKey)}` : ""}`
-    ),
-    enabled: !!subject && !!gradeLevel,
+  const { data: chapters = [], isLoading, isError } = useQuery<CurriculumChapter[]>({
+    queryKey: ["curriculum-chapters", levelCode, sectionKey, subject],
+    queryFn: () => fetchChapters(levelCode, sectionKey, subject),
+    enabled: !!levelCode && !!subject,
   });
-
-  const current = flashcards[currentIndex];
-
-  function next() {
-    setFlipped(false);
-    setTimeout(() => setCurrentIndex(i => Math.min(i + 1, flashcards.length - 1)), 150);
-  }
-
-  function prev() {
-    setFlipped(false);
-    setTimeout(() => setCurrentIndex(i => Math.max(i - 1, 0)), 150);
-  }
-
-  function restart() {
-    setFlipped(false);
-    setCurrentIndex(0);
-  }
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-5xl mx-auto space-y-6">
+
+        {/* Breadcrumb */}
         <div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1 flex-wrap">
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1.5 flex-wrap">
             <BookOpen className="w-4 h-4" />
             <Link href="/revision" className="hover:text-foreground transition-colors">Révision Étude+</Link>
             <ChevronRight className="w-3 h-3" />
-            <Link href={`/revision/${subjectToSlug(subject)}`} className="hover:text-foreground transition-colors">{subject}</Link>
+            <Link href={`/revision/${slug}`} className="hover:text-foreground transition-colors">{subject}</Link>
             <ChevronRight className="w-3 h-3" />
-            <span>Flashcards</span>
+            <span className="text-foreground font-medium">Flashcards</span>
           </div>
-          <h1 className="text-2xl font-bold">Flashcards — {subject}</h1>
-          <p className="text-muted-foreground mt-1">Mémorise les définitions, formules et concepts essentiels.</p>
+          <h1 className="text-2xl font-bold">{subject} — Flashcards</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Sélectionne un chapitre pour réviser avec les flashcards.
+          </p>
         </div>
 
-        {isLoading && (
-          <div className="space-y-4">
-            {[1, 2].map(i => <div key={i} className="h-40 bg-muted rounded-2xl animate-pulse" />)}
+        {/* Level not configured */}
+        {!levelCode && (
+          <div className="flex gap-3 p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">Niveau non défini</p>
+              <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
+                <Link href="/student/settings" className="underline">Configure ton niveau scolaire</Link> pour voir les chapitres adaptés.
+              </p>
+            </div>
           </div>
         )}
 
-        {!isLoading && flashcards.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-              <Construction className="w-8 h-8 text-amber-500" />
-            </div>
-            <h2 className="text-lg font-bold">En cours de préparation</h2>
-            <p className="text-muted-foreground max-w-sm">
-              Les flashcards pour <strong>{subject}</strong> avec répétition espacée arrivent bientôt !
+        {/* Loading */}
+        {isLoading && (
+          <div className="grid sm:grid-cols-2 gap-4">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="h-28 bg-muted rounded-2xl animate-pulse" />
+            ))}
+          </div>
+        )}
+
+        {/* Error */}
+        {isError && !isLoading && (
+          <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl border border-dashed border-red-200 dark:border-red-900">
+            <AlertCircle className="w-10 h-10 text-red-400 mb-3 opacity-60" />
+            <p className="font-semibold">Impossible de charger les chapitres</p>
+            <button onClick={() => window.location.reload()} className="mt-3 text-sm text-primary underline">
+              Réessayer
+            </button>
+          </div>
+        )}
+
+        {/* Empty */}
+        {!isLoading && !isError && chapters.length === 0 && levelCode && (
+          <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed border-border">
+            <BookOpen className="w-10 h-10 text-muted-foreground opacity-30 mb-4" />
+            <p className="font-semibold">Chapitres bientôt disponibles</p>
+            <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+              Le contenu pour <strong>{subject}</strong> est en cours de préparation.
             </p>
           </div>
         )}
 
-        {!isLoading && flashcards.length > 0 && (
-          <>
-            {/* Mode toggle */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setMode("deck")}
-                className={cn("px-4 py-2 rounded-xl text-sm font-semibold border transition-colors",
-                  mode === "deck" ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border text-muted-foreground hover:bg-muted/80"
-                )}
-              >
-                Mode carte
-              </button>
-              <button
-                onClick={() => setMode("browse")}
-                className={cn("px-4 py-2 rounded-xl text-sm font-semibold border transition-colors",
-                  mode === "browse" ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border text-muted-foreground hover:bg-muted/80"
-                )}
-              >
-                Toutes les cartes
-              </button>
-            </div>
-
-            {/* Deck mode */}
-            {mode === "deck" && current && (
-              <div className="flex flex-col items-center gap-6">
-                <p className="text-sm text-muted-foreground">
-                  {currentIndex + 1} / {flashcards.length}
-                </p>
-
-                {/* Flip card */}
-                <div
-                  className={cn(
-                    "w-full max-w-lg min-h-56 rounded-3xl border-2 p-8 flex items-center justify-center text-center cursor-pointer transition-all duration-300 select-none",
-                    flipped
-                      ? "bg-primary text-primary-foreground border-primary shadow-xl shadow-primary/20"
-                      : "bg-card border-border hover:border-primary/40 hover:shadow-md"
-                  )}
-                  onClick={() => setFlipped(f => !f)}
-                >
-                  <div>
-                    {!flipped ? (
-                      <>
-                        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Question</p>
-                        <p className="text-lg font-semibold">{current.front}</p>
-                        <p className="text-xs text-muted-foreground mt-4">Cliquer pour voir la réponse</p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-xs font-bold uppercase tracking-widest text-primary-foreground/60 mb-3">Réponse</p>
-                        <p className="text-lg font-semibold">{current.back}</p>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {current.topic && (
-                  <p className="text-xs text-muted-foreground">Chapitre : {current.topic}</p>
-                )}
-
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={prev}
-                    disabled={currentIndex === 0}
-                    className="p-2 rounded-xl border border-border hover:bg-muted disabled:opacity-40 transition-colors"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={restart}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border hover:bg-muted transition-colors text-sm font-medium"
-                  >
-                    <RotateCcw className="w-4 h-4" /> Recommencer
-                  </button>
-                  <button
-                    onClick={next}
-                    disabled={currentIndex === flashcards.length - 1}
-                    className="p-2 rounded-xl border border-border hover:bg-muted disabled:opacity-40 transition-colors"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Browse mode */}
-            {mode === "browse" && (
-              <div className="grid sm:grid-cols-2 gap-4">
-                {flashcards.map((card: any, i: number) => (
-                  <Card key={card.id} className="p-5">
-                    {card.topic && (
-                      <p className="text-xs text-muted-foreground mb-2">{card.topic}</p>
-                    )}
-                    <p className="font-semibold text-sm mb-3">{card.front}</p>
-                    <div className="rounded-xl bg-primary/5 dark:bg-primary/10 p-3 border border-primary/20">
-                      <p className="text-sm text-primary font-medium">{card.back}</p>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </>
+        {/* Chapter grid */}
+        {!isLoading && chapters.length > 0 && (
+          <div className="grid sm:grid-cols-2 gap-4">
+            {chapters.map((chapter, i) => (
+              <FlashcardChapterCard
+                key={chapter.id}
+                chapter={chapter}
+                index={i}
+                href={`/revision/${slug}/flashcards/${encodeURIComponent(chapter.name)}`}
+              />
+            ))}
+          </div>
         )}
       </div>
     </DashboardLayout>
+  );
+}
+
+// ── Chapter card ──────────────────────────────────────────────────────────────
+
+function FlashcardChapterCard({
+  chapter,
+  index,
+  href,
+}: {
+  chapter: CurriculumChapter;
+  index:   number;
+  href:    string;
+}) {
+  const hasContent = chapter.flashcardCount > 0;
+
+  return (
+    <Link href={href}>
+      <div className={cn(
+        "group flex flex-col gap-3 p-5 rounded-2xl border-2 transition-all duration-200 cursor-pointer",
+        "hover:shadow-md hover:-translate-y-0.5",
+        hasContent
+          ? "border-border hover:border-violet-400/60 bg-card"
+          : "border-border/60 bg-muted/30 hover:border-border hover:bg-muted/50"
+      )}>
+        {/* Row: number + flashcard count badge */}
+        <div className="flex items-center justify-between">
+          <span className="inline-flex w-7 h-7 rounded-full bg-violet-100 dark:bg-violet-900/30 items-center justify-center text-xs font-bold text-violet-600 dark:text-violet-400 shrink-0">
+            {index + 1}
+          </span>
+          <div className="flex items-center gap-1.5">
+            {hasContent ? (
+              <span className="flex items-center gap-1 text-xs font-semibold text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/30 px-2 py-0.5 rounded-full">
+                <Layers className="w-3 h-3" />
+                {chapter.flashcardCount} carte{chapter.flashcardCount > 1 ? "s" : ""}
+              </span>
+            ) : (
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                Bientôt
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Chapter name */}
+        <div className="flex-1">
+          <p className={cn(
+            "font-semibold text-sm leading-snug transition-colors",
+            hasContent
+              ? "text-foreground group-hover:text-violet-600 dark:group-hover:text-violet-400"
+              : "text-muted-foreground group-hover:text-foreground"
+          )}>
+            {chapter.name}
+          </p>
+          {chapter.shortName && (
+            <p className="text-xs text-muted-foreground mt-0.5">{chapter.shortName}</p>
+          )}
+        </div>
+
+        {/* CTA */}
+        <div className={cn(
+          "flex items-center gap-1 text-xs font-semibold transition-colors",
+          hasContent
+            ? "text-muted-foreground group-hover:text-violet-600 dark:group-hover:text-violet-400"
+            : "text-muted-foreground"
+        )}>
+          <span>{hasContent ? "Commencer" : "Voir le chapitre"}</span>
+          <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+        </div>
+      </div>
+    </Link>
   );
 }

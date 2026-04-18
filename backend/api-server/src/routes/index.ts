@@ -25,6 +25,7 @@ import adminQuestionsRouter from "./adminQuestions";
 import { revisionRouter, adminKBRouter } from "./revision";
 import kbRouter from "./kb";
 import progressRouter from "./progress";
+import curriculumRouter from "./curriculum";
 
 const router: IRouter = Router();
 
@@ -57,5 +58,6 @@ router.use("/revision", revisionRouter);
 router.use("/admin/knowledge-base", adminKBRouter);
 router.use("/kb", kbRouter);
 router.use("/progress", progressRouter);
+router.use("/curriculum", curriculumRouter);
 
 export default router;

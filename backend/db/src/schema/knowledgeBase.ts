@@ -60,7 +60,8 @@ export const annalesTable = pgTable("annales", {
 // Professor is never notified. No FK so entries survive material deletion.
 export const processingErrorsTable = pgTable("processing_errors", {
   id:           serial("id").primaryKey(),
-  fileId:       integer("file_id"),                // soft ref to materialsTable.id
+  fileId:       integer("file_id"),                // soft ref to materialsTable.id (professor uploads)
+  kbFileId:     integer("kb_file_id"),             // soft ref to knowledge_base_files.id (admin KB uploads)
   fileUrl:      text("file_url"),
   subject:      text("subject"),
   gradeLevel:   text("grade_level"),

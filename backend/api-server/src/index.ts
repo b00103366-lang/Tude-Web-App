@@ -10,6 +10,7 @@ process.on("uncaughtException", (error) => {
 
 console.log("Loading app...");
 import app from "./app.js";
+import { runStartupMigrations } from "./lib/startupMigrations.js";
 // MVP: live sessions suppressed — scheduler disabled
 // import { startSessionScheduler } from "./services/sessionScheduler.js";
 
@@ -37,6 +38,9 @@ if (IS_PROD_STARTUP) {
     console.warn("WARNING: IP_HASH_SALT is not set. Falling back to default salt — set a random secret to strengthen IP pseudonymisation.");
   }
 }
+
+console.log("Running startup migrations...");
+await runStartupMigrations();
 
 console.log("Starting HTTP listener...");
 app.listen(port, () => {

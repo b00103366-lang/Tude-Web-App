@@ -186,7 +186,7 @@ revisionRouter.get("/content/annales", requireAuth, async (req, res) => {
  * Returns published flashcards for a given subject/gradeLevel.
  */
 revisionRouter.get("/content/flashcards", requireAuth, async (req, res) => {
-  const { subject, gradeLevel, sectionKey } = req.query;
+  const { subject, gradeLevel, sectionKey, topic } = req.query;
   if (!subject || !gradeLevel) {
     res.status(400).json({ error: "subject and gradeLevel are required" });
     return;
@@ -198,6 +198,7 @@ revisionRouter.get("/content/flashcards", requireAuth, async (req, res) => {
     eq(flashcardsTable.gradeLevel, String(gradeLevel)),
   ];
   if (sectionKey) conditions.push(eq(flashcardsTable.sectionKey, String(sectionKey)));
+  if (topic)      conditions.push(eq(flashcardsTable.topic,      String(topic)));
 
   const cards = await db
     .select()
