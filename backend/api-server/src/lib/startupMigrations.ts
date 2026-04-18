@@ -29,6 +29,12 @@ export async function runStartupMigrations(): Promise<void> {
         WHERE kb_file_id IS NOT NULL;
     `);
 
+    // ── 0004: file_data bytea for Neon-backed file storage ───────────────────
+    await client.query(`
+      ALTER TABLE knowledge_base_files
+        ADD COLUMN IF NOT EXISTS file_data bytea;
+    `);
+
     console.log("[startup] Schema migrations applied successfully.");
   } catch (err: any) {
     // Log but don't crash — the missing columns will cause individual query

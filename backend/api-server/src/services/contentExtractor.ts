@@ -27,6 +27,21 @@ async function getFileBuffer(fileUrl: string): Promise<Buffer> {
     const [buffer] = await file.download();
     return buffer as Buffer;
   }
+  if (fileUrl.startsWith("/neon/")) {
+    // File bytes stored in Neon's file_data bytea column
+    const { pool } = await import("@workspace/db");
+    const client = await pool.connect();
+    try {
+      const { rows } = await client.query<{ file_data: Buffer }>(
+        "SELECT file_data FROM knowledge_base_files WHERE file_url = $1 LIMIT 1",
+        [fileUrl],
+      );
+      if (!rows[0]?.file_data) throw new Error(`No file_data found in Neon for ${fileUrl}`);
+      return rows[0].file_data;
+    } finally {
+      client.release();
+    }
+  }
   throw new Error(`Unsupported storage path format: ${fileUrl}`);
 }
 

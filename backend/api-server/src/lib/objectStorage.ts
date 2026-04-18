@@ -272,22 +272,30 @@ async function signObjectURL({
 }
 
 /**
- * Save a file buffer to storage (GCS or local fallback).
+ * Save a file buffer to storage.
+ * Priority:
+ *   1. GCS (Replit / PRIVATE_OBJECT_DIR set)
+ *   2. Local filesystem (development only — files lost on redeploy)
+ *   3. Neon DB (file_data bytea column) — used on Railway/production
+ *
  * Returns the internal storage path suitable for use as fileUrl.
+ * For Neon storage the caller must supply the kb file ID so we can
+ * update its file_data column; pass kbFileId when available.
  */
 export async function saveBufferToStorage(
   buffer: Buffer,
   originalName: string,
   contentType: string,
   prefix = "kb",
+  kbFileId?: number,
 ): Promise<string> {
   const uuid   = randomUUID();
   const ext    = originalName.includes(".") ? originalName.split(".").pop()!.toLowerCase() : "";
   const suffix = ext ? `.${ext}` : "";
 
+  // 1. GCS mode (Replit)
   const privateDir = process.env["PRIVATE_OBJECT_DIR"];
   if (privateDir) {
-    // GCS mode — upload directly via @google-cloud/storage
     const objectId    = `${uuid}${suffix}`;
     const fullPath    = `/${privateDir.replace(/^\//, "")}/${prefix}/${objectId}`;
     const pathParts   = fullPath.slice(1).split("/");
@@ -297,11 +305,49 @@ export async function saveBufferToStorage(
     return `/objects/${prefix}/${objectId}`;
   }
 
-  // Local fallback
-  if (!existsSync(LOCAL_UPLOAD_DIR)) {
-    mkdirSync(LOCAL_UPLOAD_DIR, { recursive: true });
+  // 2. Local fallback (dev only)
+  if (process.env["NODE_ENV"] !== "production") {
+    if (!existsSync(LOCAL_UPLOAD_DIR)) {
+      mkdirSync(LOCAL_UPLOAD_DIR, { recursive: true });
+    }
+    const localName = `${prefix}-${uuid}${suffix}`;
+    await writeFile(join(LOCAL_UPLOAD_DIR, localName), buffer);
+    return `/local/${localName}`;
   }
-  const localName = `${prefix}-${uuid}${suffix}`;
-  await writeFile(join(LOCAL_UPLOAD_DIR, localName), buffer);
-  return `/local/${localName}`;
+
+  // 3. Neon DB storage (production without GCS)
+  // file_data is written immediately if we already have the kbFileId,
+  // otherwise the upload route must call writeFileDataToDb() after insert.
+  const neonPath = `/neon/${uuid}${suffix}`;
+  if (kbFileId) {
+    const { pool } = await import("@workspace/db");
+    const client = await pool.connect();
+    try {
+      await client.query(
+        "UPDATE knowledge_base_files SET file_data = $1, file_url = $2 WHERE id = $3",
+        [buffer, neonPath, kbFileId],
+      );
+    } finally {
+      client.release();
+    }
+  }
+  return neonPath;
+}
+
+/**
+ * Write raw bytes into the file_data column of an existing KB file row.
+ * Call this after the row has been inserted when kbFileId wasn't available
+ * at saveBufferToStorage() time.
+ */
+export async function writeFileDataToDb(kbFileId: number, buffer: Buffer, neonPath: string): Promise<void> {
+  const { pool } = await import("@workspace/db");
+  const client = await pool.connect();
+  try {
+    await client.query(
+      "UPDATE knowledge_base_files SET file_data = $1, file_url = $2 WHERE id = $3",
+      [buffer, neonPath, kbFileId],
+    );
+  } finally {
+    client.release();
+  }
 }

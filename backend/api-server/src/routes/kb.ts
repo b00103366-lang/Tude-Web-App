@@ -20,7 +20,7 @@ import {
 // Note: curriculumChaptersTable seeding is handled inside knowledgeBaseProcessor
 import { eq, and, desc, inArray, sql } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth";
-import { saveBufferToStorage } from "../lib/objectStorage";
+import { saveBufferToStorage, writeFileDataToDb } from "../lib/objectStorage";
 import { processUpload } from "../services/knowledgeBaseProcessor";
 
 // ── Multer setup (memory storage, 25MB limit) ─────────────────────────────────
@@ -96,7 +96,7 @@ router.post("/upload", upload.array("files", 20), async (req, res) => {
 
   for (const file of files) {
     try {
-      // Save file to storage
+      // Get the storage URL (for Neon mode this is a placeholder path until we have the row ID)
       const fileUrl = await saveBufferToStorage(file.buffer, file.originalname, file.mimetype);
 
       // Insert KB file record
@@ -113,6 +113,11 @@ router.post("/upload", upload.array("files", 20), async (req, res) => {
         uploadedBy:  user.id,
         status:      "processing",
       }).returning();
+
+      // For Neon-backed storage: write file bytes now that we have the row ID
+      if (fileUrl.startsWith("/neon/")) {
+        await writeFileDataToDb(kbFile.id, file.buffer, fileUrl);
+      }
 
       created.push(kbFile);
 

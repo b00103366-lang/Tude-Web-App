@@ -45,6 +45,9 @@ async function openStorageFile(fileUrl: string): Promise<void> {
   } else if (fileUrl.startsWith("/objects/")) {
     const path = fileUrl.slice("/objects/".length);
     apiUrl = `${API}/api/storage/objects/${path}`;
+  } else if (fileUrl.startsWith("/neon/")) {
+    const path = fileUrl.slice("/neon/".length);
+    apiUrl = `${API}/api/storage/neon/${path}`;
   } else {
     // Already an absolute URL (GCS signed URL, CDN, etc.) — open directly
     window.open(fileUrl, "_blank", "noopener,noreferrer");

@@ -3,8 +3,13 @@
  * Stores metadata + processing status for files uploaded via /kb.
  * Never exposed to professors or students.
  */
-import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, customType } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
+
+// bytea for storing raw file bytes in Neon (used when no external object storage is configured)
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType() { return "bytea"; },
+});
 
 export const knowledgeBaseFilesTable = pgTable("knowledge_base_files", {
   id:              serial("id").primaryKey(),
@@ -29,6 +34,7 @@ export const knowledgeBaseFilesTable = pgTable("knowledge_base_files", {
   flashcardsCount: integer("flashcards_count").notNull().default(0),
   notionsCount:    integer("notions_count").notNull().default(0),
   annalesCount:    integer("annales_count").notNull().default(0),
+  fileData:        bytea("file_data"),   // raw bytes stored in Neon when no external storage is configured
   createdAt:       timestamp("created_at").defaultNow().notNull(),
   processedAt:     timestamp("processed_at"),
 });

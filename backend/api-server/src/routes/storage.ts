@@ -6,6 +6,7 @@ import { join } from "path";
 import { randomUUID } from "crypto";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 import { requireAuth } from "../lib/auth";
+import { pool } from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -190,6 +191,38 @@ router.get("/storage/public-objects/*splat", async (req: Request, res: Response)
   } catch (error) {
     console.error("Error serving public object:", error);
     res.status(500).json({ error: "Failed to serve object" });
+  }
+});
+
+/**
+ * GET /storage/neon/:fileUrl
+ * Serve files stored as bytea in Neon knowledge_base_files.file_data.
+ * fileUrl is the /neon/... path stored in the file_url column.
+ */
+router.get("/storage/neon/*splat", requireAuth, async (req: Request, res: Response) => {
+  const splat = (req.params as any).splat as string;
+  const fileUrl = `/neon/${splat}`;
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query<{ file_data: Buffer; file_type: string | null; file_name: string }>(
+      "SELECT file_data, file_type, file_name FROM knowledge_base_files WHERE file_url = $1 LIMIT 1",
+      [fileUrl],
+    );
+    if (!rows[0]?.file_data) {
+      res.status(404).json({ error: "File not found in Neon storage" });
+      return;
+    }
+    const { file_data, file_type, file_name } = rows[0];
+    const contentType = file_type ?? "application/octet-stream";
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(file_name)}"`);
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.send(file_data);
+  } catch (err) {
+    console.error("[storage/neon] error:", err);
+    res.status(500).json({ error: "Failed to serve file" });
+  } finally {
+    client.release();
   }
 });
 
