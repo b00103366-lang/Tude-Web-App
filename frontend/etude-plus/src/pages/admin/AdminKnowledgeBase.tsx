@@ -92,10 +92,11 @@ type KBFile = {
   contentType: string;
   // Status lifecycle:
   //   processing → AI extraction running
+  //   pending_ai → waiting for Gemini quota / next startup retry
   //   ready      → AI done, questions are draft — admin must publish
   //   processed  → admin published all content
   //   error      → processing failed
-  status: "processing" | "ready" | "processed" | "error";
+  status: "processing" | "pending_ai" | "ready" | "processed" | "error";
   errorMessage: string | null;
   questionsCount: number;
   flashcardsCount: number;
@@ -163,10 +164,15 @@ function fileIcon(name: string | null | undefined, mime?: string | null) {
   return <FileText className="w-4 h-4 text-gray-400" />;
 }
 
-function StatusBadge({ status }: { status: KBFile["status"] }) {
+function StatusBadge({ status }: { status: KBFile["status"] | "pending_ai" }) {
   if (status === "processing") return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
       <Loader2 className="w-3 h-3 animate-spin" /> En traitement
+    </span>
+  );
+  if (status === "pending_ai") return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+      <Zap className="w-3 h-3" /> En attente IA
     </span>
   );
   if (status === "ready") return (
@@ -607,8 +613,8 @@ export function AdminKnowledgeBase() {
       .then(data => {
         const safeData = Array.isArray(data) ? data : [];
         setFiles(safeData);
-        // Poll until no files are actively processing
-        setPollingIds(safeData.filter(f => f.status === "processing").map(f => f.id));
+        // Poll until no files are actively processing or pending_ai
+        setPollingIds(safeData.filter(f => f.status === "processing" || f.status === "pending_ai").map(f => f.id));
       })
       .finally(() => setFilesLoading(false));
   }, [selGrade, selSubject, refresh]);
@@ -622,7 +628,7 @@ export function AdminKnowledgeBase() {
       );
       const data = Array.isArray(raw) ? raw : [];
       setFiles(prev => (Array.isArray(prev) ? prev : []).map(f => data.find(d => d.id === f.id) ?? f));
-      const still = data.filter(d => d.status === "processing").map(d => d.id);
+      const still = data.filter(d => d.status === "processing" || d.status === "pending_ai").map(d => d.id);
       setPollingIds(still);
       if (still.length === 0) setRefresh(r => r + 1);
     }, 3000);
@@ -698,30 +704,49 @@ export function AdminKnowledgeBase() {
   // ── Level 1: Grade cards ─────────────────────────────────────────────────
 
   function GradeLevel() {
-    const [aiRunning, setAiRunning] = useState(false);
-    const [aiMsg,     setAiMsg]     = useState<string | null>(null);
-
-    const errorCount = (Array.isArray(summary) ? summary : []).length === 0
-      ? 0
-      : (summary as any[]).reduce((n: number) => n, 0); // placeholder — we show the button always
+    const [aiRunning,       setAiRunning]       = useState(false);
+    const [publishRunning,  setPublishRunning]  = useState(false);
+    const [aiMsg,           setAiMsg]           = useState<string | null>(null);
 
     async function launchAi() {
       if (!confirm("Lancer le traitement IA sur tous les fichiers en attente ? Cela peut prendre plusieurs minutes.")) return;
       setAiRunning(true);
       setAiMsg(null);
       try {
-        const res = await apiFetch(`${API}/api/kb/reprocess-all`, { method: "POST" });
-        const data = await res.json() as { queued: number; message?: string };
+        const data = await apiFetch<{ queued: number; message?: string }>(`${API}/api/kb/reprocess-all`, { method: "POST" });
+        if (!data) {
+          setAiMsg("Erreur lors du lancement du traitement IA.");
+          return;
+        }
         if (data.queued === 0) {
           setAiMsg("Aucun fichier en attente — tout est déjà traité ou en cours.");
         } else {
-          setAiMsg(`${data.queued} fichier(s) mis en file d'attente. Le traitement démarre en arrière-plan (env. ${data.queued * 8} secondes).`);
+          setAiMsg(`${data.queued} fichier(s) mis en file d'attente. Le traitement démarre en arrière-plan (env. ${data.queued * 8}s).`);
           setTimeout(() => setRefresh(r => r + 1), data.queued * 8000 + 5000);
         }
       } catch {
         setAiMsg("Erreur lors du lancement du traitement IA.");
       } finally {
         setAiRunning(false);
+      }
+    }
+
+    async function publishAll() {
+      if (!confirm("Publier toutes les questions générées (statut « À réviser ») ? Elles seront immédiatement visibles par les élèves.")) return;
+      setPublishRunning(true);
+      setAiMsg(null);
+      try {
+        const data = await apiFetch<{ published: number; files: number; message?: string }>(`${API}/api/kb/publish-all-ready`, { method: "POST" });
+        if (!data) {
+          setAiMsg("Erreur lors de la publication.");
+          return;
+        }
+        setAiMsg(data.message ?? `${data.published} question(s) publiées.`);
+        setRefresh(r => r + 1);
+      } catch {
+        setAiMsg("Erreur lors de la publication.");
+      } finally {
+        setPublishRunning(false);
       }
     }
 
@@ -734,14 +759,24 @@ export function AdminKnowledgeBase() {
               Sélectionner un niveau pour gérer son contenu.
             </p>
           </div>
-          <button
-            onClick={launchAi}
-            disabled={aiRunning}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-60 transition-colors"
-          >
-            <Zap className="w-4 h-4" />
-            {aiRunning ? "Traitement en cours…" : "Générer avec l'IA"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={publishAll}
+              disabled={publishRunning}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-60 transition-colors"
+            >
+              <SendHorizonal className="w-4 h-4" />
+              {publishRunning ? "Publication…" : "Publier tout"}
+            </button>
+            <button
+              onClick={launchAi}
+              disabled={aiRunning}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-60 transition-colors"
+            >
+              <Zap className="w-4 h-4" />
+              {aiRunning ? "Traitement en cours…" : "Générer avec l'IA"}
+            </button>
+          </div>
         </div>
         {aiMsg && (
           <p className="text-sm px-4 py-3 rounded-xl bg-muted border border-border text-muted-foreground">{aiMsg}</p>
@@ -943,7 +978,9 @@ export function AdminKnowledgeBase() {
                           </span>
                         )
                         : f.status === "error"
-                        ? <span className="text-red-500 text-xs">{f.errorMessage?.slice(0, 40) ?? "Erreur"}</span>
+                        ? <span className="text-red-500 text-xs" title={f.errorMessage ?? ""}>{f.errorMessage?.slice(0, 50) ?? "Traitement échoué"}</span>
+                        : f.status === "pending_ai"
+                        ? <span className="text-purple-600 text-xs">En attente de crédits IA</span>
                         : "—"}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
@@ -971,8 +1008,8 @@ export function AdminKnowledgeBase() {
                             <Eye className="w-3.5 h-3.5" />
                           </button>
                         )}
-                        {/* Reprocess — shown for error files */}
-                        {f.status === "error" && (
+                        {/* Reprocess — shown for error or pending_ai files */}
+                        {(f.status === "error" || f.status === "pending_ai") && (
                           <button
                             onClick={() => reprocessFile(f.id)}
                             className="p-1.5 rounded-lg text-muted-foreground hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"

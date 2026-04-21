@@ -426,7 +426,56 @@ router.post("/files/:id/reprocess", async (req, res) => {
 // Safe to call multiple times — only targets non-processing files.
 router.post("/reprocess-all", async (_req, res) => {
   const result = await reprocessAllErrorFiles();
-  res.json({ queued: result.queued, ids: result.ids, message: result.queued === 0 ? "No files need reprocessing" : `Queued ${result.queued} file(s)` });
+  res.json({ queued: result.queued, ids: result.ids, message: result.queued === 0 ? "Aucun fichier en attente" : `${result.queued} fichier(s) mis en file d'attente` });
+});
+
+// ── POST /api/kb/publish-all-ready ───────────────────────────────────────────
+// Publishes ALL draft questions from files with status 'ready'.
+// Flips status → 'processed', questions → 'published'.
+router.post("/publish-all-ready", async (_req, res) => {
+  // Find all ready files
+  const readyFiles = await db
+    .select({ id: knowledgeBaseFilesTable.id })
+    .from(knowledgeBaseFilesTable)
+    .where(eq(knowledgeBaseFilesTable.status, "ready"));
+
+  if (readyFiles.length === 0) {
+    res.json({ published: 0, files: 0, message: "Aucun fichier prêt à publier" });
+    return;
+  }
+
+  const fileIds = readyFiles.map(f => f.id);
+
+  // Publish all draft questions for those files
+  const published = await db
+    .update(questionsTable)
+    .set({ status: "published", updatedAt: new Date() })
+    .where(and(
+      inArray(questionsTable.kbFileId, fileIds),
+      eq(questionsTable.status, "draft"),
+    ))
+    .returning({ id: questionsTable.id });
+
+  // Mark files as processed
+  await db
+    .update(knowledgeBaseFilesTable)
+    .set({ status: "processed" })
+    .where(inArray(knowledgeBaseFilesTable.id, fileIds));
+
+  res.json({ published: published.length, files: fileIds.length, message: `${published.length} question(s) publiées depuis ${fileIds.length} fichier(s)` });
+});
+
+// ── GET /api/kb/files/:id/errors ─────────────────────────────────────────────
+// Returns processing errors for a specific file (admin debugging).
+router.get("/files/:id/errors", async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const errors = await db
+    .select()
+    .from(processingErrorsTable)
+    .where(eq(processingErrorsTable.kbFileId, id))
+    .orderBy(desc(processingErrorsTable.attemptedAt))
+    .limit(10);
+  res.json(errors);
 });
 
 export default router;
