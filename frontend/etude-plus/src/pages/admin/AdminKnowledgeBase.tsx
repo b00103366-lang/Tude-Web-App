@@ -18,8 +18,9 @@ import {
   Folder, FolderOpen, ChevronRight, ChevronLeft,
   Upload, FileText, FileImage, Trash2, X, Plus,
   BookOpen, AlertCircle, CheckCircle2, Loader2, ExternalLink,
-  RefreshCw, Eye, SendHorizonal, RotateCcw, Hash, Layers, Zap,
+  RefreshCw, Eye, SendHorizonal, RotateCcw, Hash, Layers, Zap, PenLine,
 } from "lucide-react";
+import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { apiFetch, apiFetchArray } from "@/lib/api";
 
@@ -759,7 +760,16 @@ export function AdminKnowledgeBase() {
               Sélectionner un niveau pour gérer son contenu.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link href="/admin/manual-question">
+              <button
+                type="button"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-background text-sm font-medium hover:bg-muted transition-colors"
+              >
+                <PenLine className="w-4 h-4" />
+                Saisie manuelle
+              </button>
+            </Link>
             <button
               onClick={publishAll}
               disabled={publishRunning}

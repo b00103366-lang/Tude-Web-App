@@ -65,6 +65,7 @@ import { AdminAuditLogs } from "@/pages/admin/AdminAuditLogs";
 import { AdminAnalytics } from "@/pages/admin/AdminAnalytics";
 import { KnowledgeBase } from "@/pages/admin/KnowledgeBase";
 import { AdminKnowledgeBase } from "@/pages/admin/AdminKnowledgeBase";
+import { AdminManualQuestion } from "@/pages/admin/AdminManualQuestion";
 
 // Legal pages
 import { Terms } from "@/pages/Terms";
@@ -268,6 +269,10 @@ function Router() {
       {/* Knowledge Base folder manager — main admin content tool */}
       <Route path="/admin/knowledge-base">
         {() => <ProtectedRoute component={AdminKnowledgeBase} allowedRoles={["admin", "super_admin"]} />}
+      </Route>
+      {/* Manual question entry — bypass AI pipeline */}
+      <Route path="/admin/manual-question">
+        {() => <ProtectedRoute component={AdminManualQuestion} allowedRoles={["admin", "super_admin"]} />}
       </Route>
 
       {/* Hidden legacy KB tool — accessed by typing /kb directly */}

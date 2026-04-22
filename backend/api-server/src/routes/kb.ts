@@ -478,4 +478,96 @@ router.get("/files/:id/errors", async (req, res) => {
   res.json(errors);
 });
 
+// ── POST /api/kb/questions/manual ────────────────────────────────────────────
+// Admin manually creates a question — saved directly as 'published' so students
+// can see it immediately without going through the AI pipeline.
+router.post("/questions/manual", async (req, res) => {
+  const {
+    subject, gradeLevel, sectionKey, topic,
+    type, difficulty, questionText, context,
+    totalMarks, estimatedTimeMinutes, requiresCalculator,
+    parts, markScheme,
+  } = req.body;
+
+  if (!subject || !gradeLevel || !topic || !type || !difficulty || !questionText) {
+    res.status(400).json({ error: "subject, gradeLevel, topic, type, difficulty et questionText sont requis" });
+    return;
+  }
+
+  // Insert question as 'published' immediately — no AI pipeline needed
+  const [question] = await db.insert(questionsTable).values({
+    subject,
+    gradeLevel,
+    sectionKey:            sectionKey || null,
+    topic,
+    type,
+    difficulty,
+    questionText,
+    context:               context || null,
+    totalMarks:            totalMarks ? Number(totalMarks) : null,
+    estimatedTimeMinutes:  estimatedTimeMinutes ? Number(estimatedTimeMinutes) : null,
+    requiresCalculator:    requiresCalculator === true || requiresCalculator === "true",
+    status:                "published",
+    language:              "Français",
+  }).returning();
+
+  // Insert parts if provided
+  if (Array.isArray(parts) && parts.length > 0) {
+    await db.insert(questionPartsTable).values(
+      parts.map((p: any, i: number) => ({
+        questionId: question.id,
+        label:      String(p.label ?? String.fromCharCode(97 + i)),
+        text:       String(p.text ?? ""),
+        marks:      Number(p.marks ?? 0),
+        orderIndex: i,
+      }))
+    );
+  }
+
+  // Insert mark scheme entries if provided
+  if (Array.isArray(markScheme) && markScheme.length > 0) {
+    await db.insert(markSchemesTable).values(
+      markScheme.map((m: any, i: number) => ({
+        questionId:      question.id,
+        partLabel:       String(m.partLabel ?? m.label ?? String.fromCharCode(97 + i)),
+        answer:          String(m.answer ?? ""),
+        marksBreakdown:  m.marksBreakdown ? String(m.marksBreakdown) : null,
+        orderIndex:      i,
+      }))
+    );
+  }
+
+  res.status(201).json({ id: question.id, status: "published" });
+});
+
+// ── GET /api/kb/questions ─────────────────────────────────────────────────────
+// List published questions with optional filters (admin view).
+router.get("/questions", async (req, res) => {
+  const { subject, gradeLevel, sectionKey, topic } = req.query as Record<string, string | undefined>;
+  const conditions = [];
+  if (subject)    conditions.push(eq(questionsTable.subject, subject));
+  if (gradeLevel) conditions.push(eq(questionsTable.gradeLevel, gradeLevel));
+  if (sectionKey) conditions.push(eq(questionsTable.sectionKey, sectionKey));
+  if (topic)      conditions.push(eq(questionsTable.topic, topic));
+
+  const questions = await db
+    .select()
+    .from(questionsTable)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(questionsTable.createdAt))
+    .limit(200);
+
+  res.json(questions);
+});
+
+// ── DELETE /api/kb/questions/:id ──────────────────────────────────────────────
+// Delete a manually created question (and its parts + mark schemes).
+router.delete("/questions/:id", async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  await db.delete(questionPartsTable).where(eq(questionPartsTable.questionId, id));
+  await db.delete(markSchemesTable).where(eq(markSchemesTable.questionId, id));
+  await db.delete(questionsTable).where(eq(questionsTable.id, id));
+  res.json({ success: true });
+});
+
 export default router;
