@@ -540,6 +540,51 @@ router.post("/questions/manual", async (req, res) => {
   res.status(201).json({ id: question.id, status: "published" });
 });
 
+// ── POST /api/kb/flashcards/manual ───────────────────────────────────────────
+// Admin manually creates a flashcard — saved as 'live' immediately.
+router.post("/flashcards/manual", async (req, res) => {
+  const { subject, gradeLevel, sectionKey, topic, front, back } = req.body;
+  if (!subject || !gradeLevel || !topic || !front || !back) {
+    res.status(400).json({ error: "subject, gradeLevel, topic, front et back sont requis" });
+    return;
+  }
+  const [card] = await db.insert(flashcardsTable).values({
+    subject,
+    gradeLevel,
+    sectionKey: sectionKey || null,
+    topic,
+    front,
+    back,
+    status: "live",
+  }).returning();
+  res.status(201).json({ id: card.id, status: "live" });
+});
+
+// ── POST /api/kb/annales/manual ───────────────────────────────────────────────
+// Admin manually creates a practice exam (annale) — saved as 'live' immediately.
+// `questions` is an array of { question, parts?, totalMarks? }
+// `solutions` is an array of { answer, explanation? } (parallel to questions)
+router.post("/annales/manual", async (req, res) => {
+  const { subject, gradeLevel, sectionKey, topic, year, questions, solutions } = req.body;
+  if (!subject || !gradeLevel || !topic || !Array.isArray(questions) || questions.length === 0) {
+    res.status(400).json({ error: "subject, gradeLevel, topic et questions[] sont requis" });
+    return;
+  }
+  const content = JSON.stringify(questions);
+  const solution = (Array.isArray(solutions) && solutions.length > 0) ? JSON.stringify(solutions) : null;
+  const [annale] = await db.insert(annalesTable).values({
+    subject,
+    gradeLevel,
+    sectionKey: sectionKey || null,
+    topic,
+    year: year ? Number(year) : null,
+    content,
+    solution,
+    status: "live",
+  }).returning();
+  res.status(201).json({ id: annale.id, status: "live" });
+});
+
 // ── GET /api/kb/questions ─────────────────────────────────────────────────────
 // List published questions with optional filters (admin view).
 router.get("/questions", async (req, res) => {

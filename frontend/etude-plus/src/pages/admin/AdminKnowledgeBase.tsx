@@ -788,6 +788,20 @@ export function AdminKnowledgeBase() {
             </button>
           </div>
         </div>
+        {/* Manual entry banner — always visible */}
+        <Link href="/admin/manual-question">
+          <div className="flex items-center gap-4 p-4 rounded-2xl border-2 border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/50 transition-all cursor-pointer">
+            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+              <PenLine className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-sm text-primary">Saisie manuelle de contenu</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Ajouter des questions, flashcards ou examens pratiques — publiés immédiatement sans IA</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-primary/60 shrink-0" />
+          </div>
+        </Link>
+
         {aiMsg && (
           <p className="text-sm px-4 py-3 rounded-xl bg-muted border border-border text-muted-foreground">{aiMsg}</p>
         )}
