@@ -26,7 +26,7 @@ const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
 async function apiFetch(path: string) {
   const token = getToken();
-  const fullUrl = `${API_URL}${path}`;
+  const fullUrl = path.startsWith("http") ? path : `${API_URL}${path}`;
   const res = await fetch(fullUrl, {
     credentials: "include",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -102,9 +102,10 @@ export function ExamensPratiques() {
     queryKey: ["exam-pratiques-pool", subject, gradeLevel, sectionKey],
     queryFn: () => apiFetch(
       // No topic or difficulty params — intentionally cross-topic
-      `/api/revision/content/questions?subject=${encodeURIComponent(subject)}&gradeLevel=${encodeURIComponent(gradeLevel)}${sectionKey ? `&sectionKey=${encodeURIComponent(sectionKey)}` : ""}&limit=100`
+      `https://hilqkzjqysqjbfftqlkf.supabase.co/functions/v1/revision-questions?subject=${encodeURIComponent(subject)}&gradeLevel=${encodeURIComponent(gradeLevel)}${sectionKey ? `&sectionKey=${encodeURIComponent(sectionKey)}` : ""}&limit=100`
     ),
     enabled: !!subject && !!gradeLevel && examStarted,
+    staleTime: 10 * 60 * 1000,
   });
 
   // Shuffle once when the pool arrives for this exam attempt

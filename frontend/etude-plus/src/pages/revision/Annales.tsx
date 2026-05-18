@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card } from "@/components/ui/Premium";
 import { Link, useRoute } from "wouter";
@@ -100,6 +101,7 @@ export function Annales() {
       `/api/revision/content/annales?subject=${encodeURIComponent(subject)}&gradeLevel=${encodeURIComponent(gradeLevel)}${sectionKey ? `&sectionKey=${encodeURIComponent(sectionKey)}` : ""}`
     ),
     enabled: !!subject && !!gradeLevel,
+    staleTime: 10 * 60 * 1000,
   });
 
   const saveAttempt = useMutation({
@@ -441,7 +443,16 @@ export function Annales() {
 
         {isLoading && (
           <div className="space-y-4">
-            {[1, 2, 3].map(i => <div key={i} className="h-28 bg-muted rounded-2xl animate-pulse" />)}
+            {[1, 2, 3].map(i => (
+              <div key={i} className="p-5 flex items-center gap-4 rounded-2xl border border-border bg-card">
+                <Skeleton className="w-12 h-12 rounded-2xl shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-40" />
+                </div>
+                <Skeleton className="h-9 w-28 rounded-xl shrink-0" />
+              </div>
+            ))}
           </div>
         )}
 

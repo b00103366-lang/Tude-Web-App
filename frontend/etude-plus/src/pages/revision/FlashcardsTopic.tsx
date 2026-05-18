@@ -8,6 +8,7 @@
  */
 
 import { useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card } from "@/components/ui/Premium";
 import { Link, useRoute } from "wouter";
@@ -19,6 +20,7 @@ import {
   BookOpen, ChevronRight, ChevronLeft, RotateCcw,
   Layers, Construction,
 } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
@@ -56,6 +58,7 @@ export function FlashcardsTopic() {
         `/api/revision/content/flashcards?subject=${encodeURIComponent(subject)}&gradeLevel=${encodeURIComponent(gradeLevel)}${sectionKey ? `&sectionKey=${encodeURIComponent(sectionKey)}` : ""}&topic=${encodeURIComponent(topic)}`
       ),
     enabled: !!subject && !!gradeLevel && !!topic,
+    staleTime: 10 * 60 * 1000,
   });
 
   const current = flashcards[currentIndex];
@@ -97,10 +100,22 @@ export function FlashcardsTopic() {
           </p>
         </div>
 
-        {/* Loading */}
+        {/* Loading — mirrors the flashcard deck layout */}
         {isLoading && (
-          <div className="space-y-4">
-            {[1, 2].map(i => <div key={i} className="h-40 bg-muted rounded-2xl animate-pulse" />)}
+          <div className="flex flex-col items-center gap-6">
+            {/* Mode toggle placeholder */}
+            <div className="flex gap-2 self-start">
+              <Skeleton className="h-9 w-28 rounded-xl" />
+              <Skeleton className="h-9 w-36 rounded-xl" />
+            </div>
+            {/* Card placeholder */}
+            <Skeleton className="w-full max-w-lg h-56 rounded-2xl" />
+            {/* Progress + nav placeholder */}
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-9 w-9 rounded-xl" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-9 w-9 rounded-xl" />
+            </div>
           </div>
         )}
 
@@ -189,26 +204,38 @@ export function FlashcardsTopic() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={prev}
-                    disabled={currentIndex === 0}
-                    className="p-2 rounded-xl border border-border hover:bg-muted disabled:opacity-40 transition-colors"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={prev}
+                        disabled={currentIndex === 0}
+                        aria-label="Carte précédente"
+                        className="p-2 rounded-xl border border-border hover:bg-muted disabled:opacity-40 transition-colors"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Carte précédente</TooltipContent>
+                  </Tooltip>
                   <button
                     onClick={restart}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border hover:bg-muted transition-colors text-sm font-medium"
                   >
                     <RotateCcw className="w-4 h-4" /> Recommencer
                   </button>
-                  <button
-                    onClick={next}
-                    disabled={currentIndex === flashcards.length - 1}
-                    className="p-2 rounded-xl border border-border hover:bg-muted disabled:opacity-40 transition-colors"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={next}
+                        disabled={currentIndex === flashcards.length - 1}
+                        aria-label="Carte suivante"
+                        className="p-2 rounded-xl border border-border hover:bg-muted disabled:opacity-40 transition-colors"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Carte suivante</TooltipContent>
+                  </Tooltip>
                 </div>
 
                 {/* Progress dots */}

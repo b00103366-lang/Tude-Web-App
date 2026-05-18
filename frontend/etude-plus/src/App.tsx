@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { trackEvent } from "@/lib/analytics";
 import { AuthProvider, useAuth, getDashboardPath, getImpersonationState } from "@/hooks/use-auth";
@@ -76,7 +77,16 @@ import { Cookies } from "@/pages/Cookies";
 import { CookieBanner } from "@/components/CookieBanner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,      // data stays fresh 5 min — no refetch on nav back
+      gcTime: 10 * 60 * 1000,         // keep in memory 10 min after component unmounts
+      retry: 1,                        // one retry on failure instead of default 3
+      refetchOnWindowFocus: false,     // don't refetch when user alt-tabs back
+    },
+  },
+});
 
 const Spinner = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -325,15 +335,17 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <ErrorBoundary>
-              <Router />
-            </ErrorBoundary>
-          </WouterRouter>
-          <Toaster />
-          <CookieBanner />
-        </AuthProvider>
+        <TooltipProvider delayDuration={400}>
+          <AuthProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <ErrorBoundary>
+                <Router />
+              </ErrorBoundary>
+            </WouterRouter>
+            <Toaster />
+            <CookieBanner />
+          </AuthProvider>
+        </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

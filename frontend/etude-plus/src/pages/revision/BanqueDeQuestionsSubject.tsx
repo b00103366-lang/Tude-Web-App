@@ -52,6 +52,7 @@ export function BanqueDeQuestionsSubject() {
     queryKey: ["curriculum-chapters", levelCode, sectionKey, subject],
     queryFn: () => fetchChapters(levelCode, sectionKey, subject),
     enabled: !!levelCode && !!subject,
+    staleTime: 15 * 60 * 1000,
   });
 
   return (

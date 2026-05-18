@@ -26,7 +26,8 @@ const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
 async function apiFetch(path: string) {
   const token = getToken();
-  const res = await fetch(`${API_URL}${path}`, {
+  const url = path.startsWith("http") ? path : `${API_URL}${path}`;
+  const res = await fetch(url, {
     credentials: "include",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
@@ -273,7 +274,7 @@ export function BanqueDeQuestionsTopic() {
   const [bookmarks, setBookmarks]           = useState<Set<number>>(new Set());
   const [sessionDone, setSessionDone]       = useState(false);
 
-  const questionsUrl = `/api/revision/content/questions?${new URLSearchParams({
+  const questionsUrl = `https://hilqkzjqysqjbfftqlkf.supabase.co/functions/v1/revision-questions?${new URLSearchParams({
     subject, gradeLevel: levelCode, topic,
     ...(sectionKey ? { sectionKey } : {}),
     limit: "20",
@@ -283,6 +284,7 @@ export function BanqueDeQuestionsTopic() {
     queryKey: ["revision-questions-topic", levelCode, sectionKey, subject, topic],
     queryFn: () => apiFetch(questionsUrl),
     enabled: !!levelCode && !!subject && !!topic,
+    staleTime: 10 * 60 * 1000,
   });
 
   useEffect(() => {
@@ -468,7 +470,7 @@ export function BanqueDeQuestionsTopic() {
               </div>
 
               <h2 className="text-2xl font-bold tracking-tight">Question {currentIdx + 1}</h2>
-              <QuestionCard question={currentQuestion} index={currentIdx} selfMark={selfMark} showMarkScheme={showMarkScheme} />
+              <QuestionCard question={currentQuestion} selfMark={selfMark} showMarkScheme={showMarkScheme} />
             </div>
 
             <div className="lg:sticky lg:top-6">

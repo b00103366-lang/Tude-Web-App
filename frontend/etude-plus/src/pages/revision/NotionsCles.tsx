@@ -41,6 +41,7 @@ export function NotionsCles() {
       `/api/revision/content/notions?subject=${encodeURIComponent(subject)}&gradeLevel=${encodeURIComponent(gradeLevel)}${sectionKey ? `&sectionKey=${encodeURIComponent(sectionKey)}` : ""}`
     ),
     enabled: !!subject && !!gradeLevel,
+    staleTime: 10 * 60 * 1000,
   });
 
   // Distinct topics

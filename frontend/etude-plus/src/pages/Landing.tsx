@@ -4,32 +4,14 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Button, FadeIn } from "@/components/ui/Premium";
 import { MathBackground } from "@/components/ui/MathBackground";
 import { FloatingSymbols } from "@/components/ui/FloatingSymbols";
+import { DeskHero } from "@/components/ui/LaptopHero";
 import {
-  ArrowRight, Star, BookOpen, Video, ShieldCheck, Trophy,
-  GraduationCap, Users, CheckCircle, ChevronRight
+  ArrowRight, BookOpen, Video, Trophy,
+  GraduationCap, CheckCircle, ChevronRight
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
-const API_URL = import.meta.env.VITE_API_URL;
-
-function useCountUp(target: number, duration = 1500) {
-  const [value, setValue] = useState(0);
-  const raf = useRef<number | null>(null);
-  useEffect(() => {
-    if (target === 0) return;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const progress = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.round(eased * target));
-      if (progress < 1) raf.current = requestAnimationFrame(tick);
-    };
-    raf.current = requestAnimationFrame(tick);
-    return () => { if (raf.current) cancelAnimationFrame(raf.current); };
-  }, [target, duration]);
-  return value;
-}
 
 const TABS = [
   {
@@ -77,24 +59,7 @@ const SUBJECTS = [
 
 export function Landing() {
   const { t } = useTranslation();
-  const [liveStats, setLiveStats] = useState<{ totalStudents: number; totalProfessors: number } | null>(null);
   const [activeTab, setActiveTab] = useState("live");
-
-  useEffect(() => {
-    fetch(`${API_URL}/api/stats/public`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data) setLiveStats(data); })
-      .catch(() => {});
-  }, []);
-
-  const studentCount = useCountUp(liveStats?.totalStudents ?? 0);
-
-  const STATS = [
-    { value: liveStats ? `${studentCount}` : "…", label: t("landing.stats.students") },
-    { value: "5 000+", label: t("landing.stats.professors") },
-    { value: "98%",  label: t("landing.stats.successRate") },
-    { value: "4.9★", label: t("landing.stats.avgRating") },
-  ];
 
 
   return (
@@ -123,23 +88,22 @@ export function Landing() {
             {/* Left copy */}
             <FadeIn className="max-w-2xl">
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-serif font-bold text-[#1a1a2e] leading-[1.08] mb-6 tracking-tight">
-                {t("landing.hero.title1")}
-                <br />
-                {t("landing.hero.title2")}{" "}
                 <span
-                  className="relative inline-block"
                   style={{
                     background: "linear-gradient(135deg, #f59e0b 0%, #f97316 60%, #fb923c 100%)",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                   }}
                 >
-                  {t("landing.hero.title3")}
+                  Étude+
                 </span>
+                {" "}améliore
+                <br />
+                vos notes.
               </h1>
 
               <p className="text-xl text-gray-600 mb-10 leading-relaxed">
-                {t("landing.hero.subtitle")}
+                Accédez à des banques de questions, des examens pratiques et un scoring de préparation pour vous préparer à tous les défis académiques.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-12">
@@ -172,55 +136,71 @@ export function Landing() {
               </div>
             </FadeIn>
 
-            {/* Right — stats card cluster */}
+            {/* Right — academic workspace */}
             <FadeIn delay={0.2} className="relative hidden lg:flex items-center justify-center">
-              <div className="relative w-[480px] h-[480px]">
-                {/* Central glow */}
+              {/* Ambient glow */}
+              <div
+                aria-hidden="true"
+                className="absolute inset-0"
+                style={{ background: "radial-gradient(ellipse 70% 60% at 55% 55%, rgba(245,158,11,0.08) 0%, transparent 70%)" }}
+              />
+
+              <div className="relative">
+                {/* Desk items row — items-end aligns everything to the desk surface */}
+                <div className="flex items-end justify-center gap-5">
+
+                  {/* Stacked books */}
+                  <div className="flex flex-col">
+                    {[
+                      { bg: "#1c1c2e", w: 70, h: 20 },
+                      { bg: "#f59e0b", w: 78, h: 22 },
+                      { bg: "#fb923c", w: 74, h: 18 },
+                    ].map((book, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          width: book.w,
+                          height: book.h,
+                          background: book.bg,
+                          borderRadius: 3,
+                          boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
+                          marginBottom: 1,
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Interactive 3-D laptop */}
+                  <motion.div
+                    initial={{ y: 24, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.4, duration: 0.8, type: "spring", stiffness: 80 }}
+                  >
+                    <DeskHero />
+                  </motion.div>
+
+                  {/* Small plant */}
+                  <svg width="42" height="80" viewBox="0 0 42 80" fill="none" aria-hidden="true">
+                    <line x1="21" y1="60" x2="21" y2="18" stroke="#3d7030" strokeWidth="2.5" strokeLinecap="round" />
+                    <path d="M21 52 Q9 44 8 32 Q17 37 21 50 Z" fill="#4d8c3a" />
+                    <path d="M21 44 Q33 36 34 24 Q25 31 21 43 Z" fill="#5a9e42" />
+                    <path d="M21 36 Q11 26 13 14 Q21 22 21 34 Z" fill="#4d8c3a" opacity="0.85" />
+                    <path d="M21 36 Q31 28 29 16 Q21 24 21 34 Z" fill="#5a9e42" opacity="0.85" />
+                    <rect x="8" y="58" width="26" height="6" rx="3" fill="#b87a55" />
+                    <path d="M10 64 L6 80 H36 L32 64 Z" fill="#c4885f" />
+                  </svg>
+
+                </div>
+
+                {/* Desk surface */}
                 <div
-                  className="absolute inset-0 rounded-full"
                   style={{
-                    background: "radial-gradient(circle, rgba(245,158,11,0.12) 0%, transparent 70%)",
+                    height: 9,
+                    background: "linear-gradient(to right, rgba(215,195,160,0.5), rgba(235,216,180,0.9), rgba(215,195,160,0.5))",
+                    borderRadius: "0 0 6px 6px",
+                    boxShadow: "0 6px 20px rgba(0,0,0,0.07)",
                   }}
                 />
-
-                {/* Big stat ring */}
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.4, duration: 0.7, type: "spring" }}
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-56 rounded-full bg-white border-2 border-amber-200 shadow-2xl flex flex-col items-center justify-center"
-                  style={{ boxShadow: "0 0 60px rgba(245,158,11,0.15)" }}
-                >
-                  <Trophy className="w-10 h-10 mb-2" style={{ color: "#f59e0b" }} />
-                  <p className="text-4xl font-bold text-gray-900">98%</p>
-                  <p className="text-sm text-gray-500 font-medium">{t("landing.stats.successRate")}</p>
-                </motion.div>
-
-                {/* Orbiting stat cards */}
-                {[
-                  { label: t("landing.stats.studentsOrbit"), value: liveStats ? `${studentCount}` : "…", angle: -60, icon: Users, color: "#f59e0b" },
-                  { label: t("landing.stats.profsOrbit"), value: "5 000+", angle: 60, icon: ShieldCheck, color: "#fb923c" },
-                  { label: t("landing.stats.ratingOrbit"), value: "4.9 ★", angle: 180, icon: Star, color: "#f97316" },
-                ].map((item, i) => {
-                  const rad = (item.angle * Math.PI) / 180;
-                  const r = 210;
-                  const cx = 240 + r * Math.cos(rad);
-                  const cy = 240 + r * Math.sin(rad);
-                  return (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.6 + i * 0.15, duration: 0.5 }}
-                      className="absolute w-36 bg-white rounded-2xl border border-gray-100 shadow-lg p-4 flex flex-col items-center"
-                      style={{ left: cx - 72, top: cy - 44 }}
-                    >
-                      <item.icon className="w-5 h-5 mb-1" style={{ color: item.color }} />
-                      <p className="text-xl font-bold text-gray-900">{item.value}</p>
-                      <p className="text-xs text-gray-500">{item.label}</p>
-                    </motion.div>
-                  );
-                })}
               </div>
             </FadeIn>
           </div>
@@ -237,28 +217,6 @@ export function Landing() {
           </div>
         </div>
 
-        {/* ── STATS ROW ─────────────────────────────────────── */}
-        <section className="max-w-5xl mx-auto px-4 sm:px-6 py-20">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {STATS.map((s, i) => (
-              <FadeIn key={i} delay={0.1 * i}>
-                <div className="text-center">
-                  <p
-                    className="text-4xl font-bold font-serif mb-1"
-                    style={{
-                      background: "linear-gradient(135deg, #f59e0b, #f97316)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                    }}
-                  >
-                    {s.value}
-                  </p>
-                  <p className="text-sm text-gray-500 font-medium">{s.label}</p>
-                </div>
-              </FadeIn>
-            ))}
-          </div>
-        </section>
 
         {/* ── FEATURES TABS ─────────────────────────────────── */}
         <section id="features" className="bg-white/70 backdrop-blur-sm py-24 border-y border-gray-100">

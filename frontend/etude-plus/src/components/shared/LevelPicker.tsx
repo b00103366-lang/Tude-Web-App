@@ -89,7 +89,7 @@ export function LevelPicker({ niveauValue, sectionValue, onChange, className }: 
   return (
     <div className={cn("space-y-3", className)}>
       {/* Step 1 — Cycle */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {[
           { id: "college" as Cycle, label: "Collège", sub: "7ème – 9ème de base" },
           { id: "lycee" as Cycle,   label: "Lycée",   sub: "1ère année – Bac" },
@@ -107,6 +107,15 @@ export function LevelPicker({ niveauValue, sectionValue, onChange, className }: 
             <p className="text-xs text-muted-foreground">{sub}</p>
           </button>
         ))}
+        {/* Primary school is not yet supported */}
+        <button
+          type="button"
+          disabled
+          className="p-3 rounded-xl border-2 border-dashed border-border text-left opacity-50 cursor-not-allowed"
+        >
+          <p className="font-bold text-sm text-muted-foreground">Primaire</p>
+          <p className="text-xs text-muted-foreground">Bientôt disponible</p>
+        </button>
       </div>
 
       {/* Step 2 — Collège: pick year directly */}
