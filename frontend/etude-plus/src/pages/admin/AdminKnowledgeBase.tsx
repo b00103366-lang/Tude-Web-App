@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { apiFetch, apiFetchArray } from "@/lib/api";
 
 const API = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+const SUPABASE_FN = "https://hilqkzjqysqjbfftqlkf.supabase.co/functions/v1";
 
 /**
  * Convert a raw storage path stored in the DB to a URL that the browser can open.
@@ -302,7 +303,7 @@ function UploadModal({
       let saved: { id: number } | null = null;
 
       if (contentType === "question") {
-        saved = await apiFetch<{ id: number }>(`${API}/api/kb/questions/manual`, {
+        saved = await apiFetch<{ id: number }>(`${SUPABASE_FN}/admin-questions`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -311,6 +312,7 @@ function UploadModal({
             difficulty,
             questionText,
             totalMarks: points ? Number(points) : null,
+            parts: [],
             markScheme: answer ? [{ partLabel: "a", answer }] : [],
           }),
         });
