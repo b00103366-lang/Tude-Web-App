@@ -180,7 +180,10 @@ function QuestionTab() {
             : simpleAnswer ? [{ partLabel: "a", answer: simpleAnswer }] : [],
         }),
       });
-      if (!data) return;
+      if (!data) {
+        toast({ title: "Erreur serveur", description: "Impossible d'enregistrer la question. Vérifiez la console (F12) pour le détail.", variant: "destructive" });
+        return;
+      }
       setLastId(data.id);
       toast({ title: "Question publiée dans la banque ✓" });
       setQuestionText(""); setSimpleAnswer(""); setTotalMarks("");
@@ -302,7 +305,10 @@ function FlashcardTab() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ subject, gradeLevel: gradeKey.value, sectionKey: gradeKey.sectionKey ?? null, topic, front, back }),
       });
-      if (!data) return;
+      if (!data) {
+        toast({ title: "Erreur serveur", description: "Impossible d'enregistrer la flashcard. Vérifiez la console (F12).", variant: "destructive" });
+        return;
+      }
       setLastId(data.id);
       toast({ title: "Flashcard ajoutée ✓" });
       setFront(""); setBack("");
@@ -397,7 +403,10 @@ function PracticeExamTab() {
           questions: qs, solutions: sols,
         }),
       });
-      if (!data) return;
+      if (!data) {
+        toast({ title: "Erreur serveur", description: "Impossible d'enregistrer l'examen. Vérifiez la console (F12).", variant: "destructive" });
+        return;
+      }
       setLastId(data.id);
       toast({ title: "Examen pratique ajouté ✓" });
       setQuestions([{ question: "", totalMarks: "", answer: "" }]); setYear("");
