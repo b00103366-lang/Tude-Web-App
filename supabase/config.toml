@@ -441,3 +441,9 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/revision/deno.json"
 entrypoint = "./functions/revision/index.ts"
+
+[functions.admin-questions]
+enabled = true
+verify_jwt = false
+import_map = "./functions/admin-questions/deno.json"
+entrypoint = "./functions/admin-questions/index.ts"
