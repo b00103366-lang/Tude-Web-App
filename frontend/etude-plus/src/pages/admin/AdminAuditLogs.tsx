@@ -39,7 +39,7 @@ const EVENT_META: Record<string, { labelKey: string; icon: any; color: string; b
   kyc_document_submitted:   { labelKey: "admin.auditLogs.eventKycSubmitted",      icon: FileText,     color: "text-blue-700",   bg: "bg-blue-100",   category: "kyc" },
 };
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 async function fetchAuditLogs(page: number, limit: number) {
   const token = getToken();

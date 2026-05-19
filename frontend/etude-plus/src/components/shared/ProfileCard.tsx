@@ -7,7 +7,7 @@ import { Camera, Loader2, Star, BookOpen, MapPin, Calendar, Shield, Save } from 
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 const ROLE_LABELS: Record<string, string> = {
   student: "Élève",

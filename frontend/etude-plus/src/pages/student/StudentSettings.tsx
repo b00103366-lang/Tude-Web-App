@@ -5,12 +5,10 @@ import { ProfileCard } from "@/components/shared/ProfileCard";
 import { LevelPicker } from "@/components/shared/LevelPicker";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { getToken } from "@workspace/api-client-react";
+import { changePassword } from "@workspace/api-client-react";
 import { KeyRound, Loader2, GraduationCap, Save } from "lucide-react";
 import { getLevelLabel } from "@/lib/educationConfig";
 import { useTranslation } from "react-i18next";
-
-const API_URL = import.meta.env.VITE_API_URL;
 
 function ChangePasswordCard() {
   const { t } = useTranslation();
@@ -26,14 +24,7 @@ function ChangePasswordCard() {
     if (next.length < 8) { toast({ title: t("common.error"), description: t("student.settings.minChars"), variant: "destructive" }); return; }
     setSaving(true);
     try {
-      const token = getToken();
-      const res = await fetch(`${API_URL}/api/auth/change-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ currentPassword: current, newPassword: next }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? t("common.error"));
+      await changePassword({ currentPassword: current, newPassword: next });
       toast({ title: t("student.settings.passwordUpdated") });
       setCurrent(""); setNext(""); setConfirm("");
     } catch (err: any) {

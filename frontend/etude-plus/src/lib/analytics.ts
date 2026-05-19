@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 const ESSENTIAL_EVENTS = new Set([
   "page_view", "login", "logout", "signup_completed", "class_enrolled",

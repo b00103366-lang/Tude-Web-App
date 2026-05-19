@@ -1,7 +1,9 @@
 import React, { createContext, useContext } from "react";
 
-const API_URL = import.meta.env.VITE_API_URL;
-import { User, useGetMe, getGetMeQueryKey, login, register, LoginRequest, RegisterRequest, saveToken, clearToken, getToken } from "@workspace/api-client-react";
+// restore-session is not yet on Supabase — always send to Railway.
+// Falls back to VITE_API_URL so local dev (single Express server) keeps working.
+const RAILWAY_URL: string = import.meta.env.VITE_RAILWAY_URL ?? import.meta.env.VITE_API_URL ?? "";
+import { User, useGetMe, getGetMeQueryKey, login, logout, register, LoginRequest, RegisterRequest, saveToken, clearToken, getToken } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { trackEvent } from "@/lib/analytics";
 
@@ -102,8 +104,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     trackEvent("logout");
-    // Clear server-side session cookie (fire-and-forget)
-    fetch(`${API_URL}/api/auth/logout`, { method: "POST", credentials: "include" }).catch(() => {});
+    // Clear server-side session cookie (fire-and-forget).
+    // Uses api-client-react logout() so the call goes through customFetch routing
+    // and reaches the correct Supabase /auth/logout endpoint.
+    logout().catch(() => {});
     clearToken();
     queryClient.setQueryData([`/api/auth/me`], null);
     queryClient.clear();
@@ -122,7 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let adminToken = getToken();
     if (!adminToken) {
       try {
-        const res = await fetch(`${API_URL}/api/auth/restore-session`, {
+        const res = await fetch(`${RAILWAY_URL}/api/auth/restore-session`, {
           method: "POST",
           credentials: "include",
         });
@@ -153,7 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem(IMPERSONATION_KEY);
     saveToken(imp.adminToken);
     // Restore the admin's session cookie by calling restore-session with the admin bearer token
-    await fetch(`${API_URL}/api/auth/restore-session`, {
+    await fetch(`${RAILWAY_URL}/api/auth/restore-session`, {
       method: "POST",
       credentials: "include",
       headers: { Authorization: `Bearer ${imp.adminToken}` },

@@ -15,7 +15,7 @@ import { StartClassButton, LiveBadge } from "@/components/shared/SessionButton";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 // ── Status chip colours ────────────────────────────────────────────────────────
 

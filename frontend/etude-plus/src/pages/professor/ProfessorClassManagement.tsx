@@ -32,7 +32,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { formatTND } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 function Modal({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
   if (!open) return null;

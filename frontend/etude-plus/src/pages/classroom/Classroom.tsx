@@ -22,7 +22,7 @@ function BadgeEl({ children, className }: { children: React.ReactNode; className
   return <span className={cn("px-2 py-0.5 rounded text-xs font-bold", className)}>{children}</span>;
 }
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 function getToken() {
   return localStorage.getItem("etude_auth_token");

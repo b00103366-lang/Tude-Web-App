@@ -37,7 +37,7 @@ function RatingBar({ label, count, total }: { label: string; count: number; tota
   );
 }
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 export function CoursePreview() {
   const { t } = useTranslation();

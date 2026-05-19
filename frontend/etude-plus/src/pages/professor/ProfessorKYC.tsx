@@ -15,7 +15,7 @@ import {
 
 // ─── Upload helpers ───────────────────────────────────────────────────────────
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 async function uploadDoc(file: File): Promise<string> {
   const token = getToken();

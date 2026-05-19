@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatTND } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 async function adminFetch(path: string, method = "GET", body?: unknown) {
   const token = getToken();

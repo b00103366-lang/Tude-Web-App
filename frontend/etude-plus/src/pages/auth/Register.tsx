@@ -1,6 +1,5 @@
 import { useState } from "react";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { sendCode, verifyCode } from "@workspace/api-client-react";
 import { Link, useLocation } from "wouter";
 import { useAuth, getDashboardPath } from "@/hooks/use-auth";
 import { Button, Card, Input, Label, FadeIn } from "@/components/ui/Premium";
@@ -119,13 +118,7 @@ export function Register() {
 
     setSendingCode(true);
     try {
-      const res = await fetch(`${API_URL}/api/auth/send-code`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.toLowerCase().trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? t("register.errorSending"));
+      const data = await sendCode({ email: email.toLowerCase().trim() });
       setRegisteredEmail(email.toLowerCase().trim());
       if (data.devCode) setDevCode(data.devCode);
       setStep("verify-email");
@@ -143,13 +136,7 @@ export function Register() {
     setOtpLoading(true);
     try {
       // Verify code
-      const verifyRes = await fetch(`${API_URL}/api/auth/verify-code`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: registeredEmail, code: otpCode }),
-      });
-      const verifyData = await verifyRes.json();
-      if (!verifyRes.ok) throw new Error(verifyData.error ?? t("register.errorCodeInvalid"));
+      await verifyCode({ email: registeredEmail, code: otpCode });
 
       // Create account
       setIsLoading(true);
@@ -243,8 +230,7 @@ export function Register() {
           onClick={async () => {
             setSendingCode(true);
             try {
-              const res = await fetch(`${API_URL}/api/auth/send-code`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: registeredEmail }) });
-              const resendData = await res.json();
+              const resendData = await sendCode({ email: registeredEmail });
               if (resendData.devCode) setDevCode(resendData.devCode);
               toast({ title: t("register.codeSent"), description: t("register.checkInbox") });
             } finally { setSendingCode(false); }

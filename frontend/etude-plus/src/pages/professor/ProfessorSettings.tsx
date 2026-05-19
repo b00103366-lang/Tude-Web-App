@@ -4,7 +4,7 @@ import { PageHeader, Card, FadeIn, Button, Input, Label } from "@/components/ui/
 import { ProfileCard } from "@/components/shared/ProfileCard";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { getToken } from "@workspace/api-client-react";
+import { getToken, changePassword } from "@workspace/api-client-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   KeyRound, Loader2, BookOpen, Save, ShieldCheck, AlertCircle, Clock,
@@ -16,7 +16,7 @@ import { useTranslation } from "react-i18next";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 async function apiFetch(url: string, opts?: RequestInit) {
   const token = getToken();
@@ -78,12 +78,7 @@ function ChangePasswordCard() {
     if (next.length < 8) { toast({ title: t("common.error"), description: t("prof.settings.passwordMin"), variant: "destructive" }); return; }
     setSaving(true);
     try {
-      const res = await apiFetch(`${API_URL}/api/auth/change-password`, {
-        method: "POST",
-        body: JSON.stringify({ currentPassword: current, newPassword: next }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? t("common.error"));
+      await changePassword({ currentPassword: current, newPassword: next });
       toast({ title: t("prof.settings.passwordUpdated") });
       setCurrent(""); setNext(""); setConfirm("");
     } catch (err: any) {

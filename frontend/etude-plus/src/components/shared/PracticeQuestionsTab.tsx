@@ -23,7 +23,7 @@ interface PracticeQuestionsResponse {
 
 // ── Fetch helper ──────────────────────────────────────────────────────────────
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 async function fetchPracticeQuestions(classId: number): Promise<PracticeQuestionsResponse> {
   const token = getToken();

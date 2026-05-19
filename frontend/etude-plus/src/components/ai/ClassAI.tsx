@@ -54,7 +54,7 @@ const DEFAULT_SYLLABUS = {
   topics: ["Programme officiel tunisien", "Théorie et applications", "Exercices et entraînement", "Révisions et examens"],
 };
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 async function callAI(endpoint: string, body: object): Promise<string> {
   const token = getToken();

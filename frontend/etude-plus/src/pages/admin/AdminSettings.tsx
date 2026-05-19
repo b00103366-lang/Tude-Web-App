@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Button, Input, Label } from "@/components/ui/Premium";
 import { ProfileCard } from "@/components/shared/ProfileCard";
 import { useToast } from "@/hooks/use-toast";
-import { getToken } from "@workspace/api-client-react";
+import { getToken, changePassword } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
 import {
   Settings, Shield, AlertTriangle, KeyRound, Percent,
@@ -13,7 +13,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 async function adminFetch(url: string, opts: RequestInit = {}) {
   const token = getToken();
@@ -209,10 +209,7 @@ export function AdminSettings() {
     setSavingAccount(true);
     try {
       if (newPassword) {
-        await adminFetch(`${API_URL}/api/auth/change-password`, {
-          method: "POST",
-          body: JSON.stringify({ currentPassword, newPassword }),
-        });
+        await changePassword({ currentPassword, newPassword });
       }
       toast({ title: t("admin.settings.accountUpdated"), description: t("admin.settings.accountUpdatedDesc") });
       setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");

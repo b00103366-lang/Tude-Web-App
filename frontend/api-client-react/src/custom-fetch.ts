@@ -273,9 +273,9 @@ async function parseSuccessBody(
 
 export const TOKEN_KEY = "etude_auth_token";
 
-// Base URL for all API requests.
-// Set VITE_API_URL=https://your-api.up.railway.app in Vercel/production env vars.
-// In development leave it unset — relative paths are proxied by Vite.
+// Base URL for all API requests — set VITE_API_URL to the Supabase Edge Functions
+// base in Vercel: https://xxx.supabase.co/functions/v1
+// In local dev, leave unset so Vite's proxy handles relative paths.
 const API_BASE =
   (typeof import.meta !== "undefined" &&
     (import.meta as any).env?.VITE_API_URL) ??
@@ -299,9 +299,20 @@ export async function customFetch<T = unknown>(
 ): Promise<T> {
   const { responseType = "auto", headers: headersInit, ...init } = options;
 
-  // Prepend the API base URL when a relative path is given and a base is configured.
+  // Rewrite generated-client paths to Supabase Edge Function URLs.
+  //
+  // The generated client produces paths like /api/auth/login, /api/curriculum/chapters.
+  // Supabase Edge Functions live at supabase.../functions/v1/<function-name>/...
+  // So we strip the leading /api and keep everything else:
+  //   /api/auth/login        → /auth/login        (function: auth,       sub-path: /login)
+  //   /api/curriculum/chapters → /curriculum/chapters (function: curriculum, sub-path: /chapters)
+  //
+  // We also trim any trailing slash from API_BASE to avoid double-slash in the URL
+  // when VITE_API_URL is set with a trailing slash (e.g. ".../functions/v1/").
   if (API_BASE && typeof input === "string" && input.startsWith("/")) {
-    input = `${API_BASE}${input}`;
+    const base = API_BASE.replace(/\/$/, "");
+    const path = input.startsWith("/api/") ? input.slice("/api".length) : input;
+    input = `${base}${path}`;
   }
 
   const method = resolveMethod(input, init.method);

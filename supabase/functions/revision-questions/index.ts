@@ -7,7 +7,7 @@ import { neon } from "@neondatabase/serverless";
 // Vercel URL. For local dev, set it to "http://localhost:5173".
 //   supabase secrets set ALLOWED_ORIGIN="https://your-app.vercel.app"
 const ALLOWED_ORIGIN =
-  Deno.env.get("ALLOWED_ORIGIN") ?? "https://etude-plus.vercel.app";
+  Deno.env.get("ALLOWED_ORIGIN") ?? "https://tude-web-app-etude-plus-xi.vercel.app";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": ALLOWED_ORIGIN,

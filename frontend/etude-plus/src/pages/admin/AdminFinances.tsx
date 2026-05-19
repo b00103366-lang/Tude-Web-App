@@ -17,7 +17,7 @@ import { useTranslation } from "react-i18next";
 const STATUS_OPTIONS = ["pending", "completed", "failed", "refunded"] as const;
 type TxStatus = typeof STATUS_OPTIONS[number];
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 function useOverrideStatus() {
   const qc = useQueryClient();

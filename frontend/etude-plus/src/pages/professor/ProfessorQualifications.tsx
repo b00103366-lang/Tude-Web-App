@@ -23,7 +23,7 @@ interface QualRequest {
   status: "pending" | "approved" | "rejected"; adminNotes: string | null; createdAt: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 const apiHeaders = () => {
   const token = localStorage.getItem("etude_auth_token");
