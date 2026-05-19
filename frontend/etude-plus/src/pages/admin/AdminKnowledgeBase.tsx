@@ -282,7 +282,7 @@ function UploadModal({
   }
 
   const canSubmit = !saving && !!topic && !!contentType && (
-    contentType === "question"  ? !!(questionText && answer) :
+    contentType === "question"  ? !!questionText :
     contentType === "flashcard" ? !!(front && back) :
     contentType === "exam"      ? examQuestions.length > 0 && examQuestions.every(q => q.question) :
     false
@@ -299,8 +299,10 @@ function UploadModal({
       topic,
     };
     try {
+      let saved: { id: number } | null = null;
+
       if (contentType === "question") {
-        await apiFetch(`${API}/api/kb/questions/manual`, {
+        saved = await apiFetch<{ id: number }>(`${API}/api/kb/questions/manual`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -313,7 +315,7 @@ function UploadModal({
           }),
         });
       } else if (contentType === "flashcard") {
-        await apiFetch(`${API}/api/kb/flashcards/manual`, {
+        saved = await apiFetch<{ id: number }>(`${API}/api/kb/flashcards/manual`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...base, front, back }),
@@ -329,12 +331,19 @@ function UploadModal({
           answer: q.answer,
           ...(q.markScheme ? { markScheme: q.markScheme } : {}),
         }));
-        await apiFetch(`${API}/api/kb/annales/manual`, {
+        saved = await apiFetch<{ id: number }>(`${API}/api/kb/annales/manual`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...base, questions: qs, solutions: sols }),
         });
       }
+
+      if (saved === null) {
+        // apiFetch already logged the HTTP error to console
+        setError("Échec de l'enregistrement — ouvrez la console (F12) pour voir le détail de l'erreur.");
+        return;
+      }
+
       onUploaded();
       onClose();
     } catch (err: any) {
