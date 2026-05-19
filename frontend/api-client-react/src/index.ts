@@ -1,3 +1,5 @@
+import { customFetch } from "./custom-fetch";
+
 export * from "./generated/api";
 export * from "./generated/api.schemas";
 export { saveToken, clearToken, getToken, TOKEN_KEY, customFetch } from "./custom-fetch";
@@ -6,8 +8,6 @@ export { saveToken, clearToken, getToken, TOKEN_KEY, customFetch } from "./custo
 // These routes were added to the Supabase auth function after the OpenAPI spec
 // was last generated. They go through customFetch so URL mapping and auth-token
 // injection happen in one place, exactly like the generated functions.
-
-import { customFetch } from "./custom-fetch";
 
 export interface SendCodeRequest { email: string }
 export interface SendCodeResponse { success: boolean; message: string; devCode?: string }

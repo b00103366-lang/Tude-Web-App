@@ -5,10 +5,12 @@ import { ProfileCard } from "@/components/shared/ProfileCard";
 import { LevelPicker } from "@/components/shared/LevelPicker";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { changePassword } from "@workspace/api-client-react";
+import { getToken, changePassword } from "@workspace/api-client-react";
 import { KeyRound, Loader2, GraduationCap, Save } from "lucide-react";
 import { getLevelLabel } from "@/lib/educationConfig";
 import { useTranslation } from "react-i18next";
+
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 function ChangePasswordCard() {
   const { t } = useTranslation();

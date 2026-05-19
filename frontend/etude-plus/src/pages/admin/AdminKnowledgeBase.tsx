@@ -195,6 +195,46 @@ function StatusBadge({ status }: { status: KBFile["status"] | "pending_ai" }) {
 
 // ── Upload Modal ─────────────────────────────────────────────────────────────
 
+type ManualContentType = "question" | "flashcard" | "exam";
+
+interface ExamQ {
+  question: string;
+  answer: string;
+  markScheme: string;
+  points: string;
+  difficulty: "facile" | "moyen" | "difficile";
+}
+
+const MANUAL_TYPES: { id: ManualContentType; label: string; desc: string; icon: any; activeClass: string }[] = [
+  {
+    id: "question",
+    label: "Banque de questions",
+    desc: "Question avec corrigé",
+    icon: BookOpen,
+    activeClass: "border-primary bg-primary/5 text-primary",
+  },
+  {
+    id: "flashcard",
+    label: "Flashcards",
+    desc: "Carte recto / verso",
+    icon: Layers,
+    activeClass: "border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300",
+  },
+  {
+    id: "exam",
+    label: "Examen pratique",
+    desc: "Sujets complets",
+    icon: FileText,
+    activeClass: "border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300",
+  },
+];
+
+const _DIFFICULTIES = [
+  { value: "facile" as const,    label: "Facile" },
+  { value: "moyen" as const,     label: "Moyen" },
+  { value: "difficile" as const, label: "Difficile" },
+];
+
 function UploadModal({
   gradeFolder,
   subject,
@@ -206,162 +246,375 @@ function UploadModal({
   onClose: () => void;
   onUploaded: () => void;
 }) {
+  const inputCls = "w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all";
+  const selectCls = "w-full h-10 rounded-xl border border-border bg-background px-3 text-sm focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all";
+
+  // Shared
+  const [contentType, setContentType] = useState<ManualContentType | null>(null);
   const [topic, setTopic]             = useState("");
-  const [contentType, setContentType] = useState("");
-  const [notes, setNotes]             = useState("");
-  const [files, setFiles]             = useState<File[]>([]);
-  const [uploading, setUploading]     = useState(false);
+  const [saving, setSaving]           = useState(false);
   const [error, setError]             = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
 
-  const addFiles = (incoming: File[]) => {
-    setFiles(prev => {
-      const existing = new Set(prev.map(f => f.name));
-      return [...prev, ...incoming.filter(f => !existing.has(f.name))];
-    });
-  };
+  // Question form
+  const [questionText, setQuestionText] = useState("");
+  const [answer, setAnswer]             = useState("");
+  const [points, setPoints]             = useState("");
+  const [difficulty, setDifficulty]     = useState<"facile" | "moyen" | "difficile">("moyen");
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    addFiles(Array.from(e.dataTransfer.files));
-  };
+  // Flashcard form
+  const [front, setFront] = useState("");
+  const [back, setBack]   = useState("");
 
-  const canSubmit = topic && contentType && files.length > 0 && !uploading;
+  // Exam form
+  const [examQuestions, setExamQuestions] = useState<ExamQ[]>([
+    { question: "", answer: "", markScheme: "", points: "", difficulty: "moyen" },
+  ]);
+  const totalExamPoints = examQuestions.reduce((s, q) => s + (Number(q.points) || 0), 0);
 
-  const handleSubmit = async () => {
-    if (!canSubmit) return;
-    setUploading(true);
+  function addExamQ() {
+    setExamQuestions(q => [...q, { question: "", answer: "", markScheme: "", points: "", difficulty: "moyen" }]);
+  }
+  function removeExamQ(i: number) {
+    setExamQuestions(q => q.filter((_, j) => j !== i));
+  }
+  function updateExamQ<K extends keyof ExamQ>(i: number, field: K, val: ExamQ[K]) {
+    setExamQuestions(q => q.map((x, j) => j === i ? { ...x, [field]: val } : x));
+  }
+
+  const canSubmit = !saving && !!topic && !!contentType && (
+    contentType === "question"  ? !!(questionText && answer) :
+    contentType === "flashcard" ? !!(front && back) :
+    contentType === "exam"      ? examQuestions.length > 0 && examQuestions.every(q => q.question) :
+    false
+  );
+
+  async function handleSubmit() {
+    if (!canSubmit || !contentType) return;
+    setSaving(true);
     setError("");
-    const fd = new FormData();
-    files.forEach(f => fd.append("files", f));
-    fd.append("subject",      subject);
-    fd.append("grade_level",  gradeFolder.gradeLevel);
-    if (gradeFolder.sectionKey) fd.append("section_key", gradeFolder.sectionKey);
-    fd.append("topic",        topic);
-    fd.append("content_type", contentType);
-    if (notes) fd.append("notes", notes);
-
+    const base = {
+      subject,
+      gradeLevel: gradeFolder.gradeLevel,
+      sectionKey: gradeFolder.sectionKey ?? null,
+      topic,
+    };
     try {
-      const result = await apiFetch(`${API}/api/kb/upload`, { method: "POST", body: fd as any });
-      if (result === null) throw new Error("Envoi échoué — vérifiez votre connexion");
+      if (contentType === "question") {
+        await apiFetch(`${API}/api/kb/questions/manual`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...base,
+            type: "Exercice",
+            difficulty,
+            questionText,
+            totalMarks: points ? Number(points) : null,
+            markScheme: answer ? [{ partLabel: "a", answer }] : [],
+          }),
+        });
+      } else if (contentType === "flashcard") {
+        await apiFetch(`${API}/api/kb/flashcards/manual`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...base, front, back }),
+        });
+      } else if (contentType === "exam") {
+        const qs = examQuestions.map(q => ({
+          question: q.question,
+          totalMarks: q.points ? Number(q.points) : undefined,
+          difficulty: q.difficulty,
+          parts: [],
+        }));
+        const sols = examQuestions.map(q => ({
+          answer: q.answer,
+          ...(q.markScheme ? { markScheme: q.markScheme } : {}),
+        }));
+        await apiFetch(`${API}/api/kb/annales/manual`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...base, questions: qs, solutions: sols }),
+        });
+      }
       onUploaded();
       onClose();
     } catch (err: any) {
-      setError(err.message ?? "Erreur lors de l'envoi");
+      setError(err.message ?? "Erreur lors de l'enregistrement");
     } finally {
-      setUploading(false);
+      setSaving(false);
     }
+  }
+
+  // File upload code preserved for future AI extraction feature (not shown in UI yet)
+  const _uploadCodeReserved = {
+    CONTENT_TYPES,
+    handleFileUpload: async (_files: File[], _uploadContentType: string, _notes: string) => {
+      const fd = new FormData();
+      _files.forEach(f => fd.append("files", f));
+      fd.append("subject",      subject);
+      fd.append("grade_level",  gradeFolder.gradeLevel);
+      if (gradeFolder.sectionKey) fd.append("section_key", gradeFolder.sectionKey);
+      fd.append("topic",        topic);
+      fd.append("content_type", _uploadContentType);
+      if (_notes) fd.append("notes", _notes);
+      const result = await apiFetch(`${API}/api/kb/upload`, { method: "POST", body: fd as any });
+      if (result === null) throw new Error("Envoi échoué — vérifiez votre connexion");
+    },
   };
+  void _uploadCodeReserved;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-background rounded-2xl border border-border shadow-2xl w-full max-w-lg space-y-5 p-6">
+      <div className="bg-background rounded-2xl border border-border shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between p-6 border-b border-border shrink-0">
           <div>
             <h2 className="text-base font-bold">Ajouter des ressources</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {gradeFolder.label} → {subject}
-            </p>
+            <p className="text-sm text-muted-foreground mt-0.5">{gradeFolder.label} → {subject}</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-muted transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Drop zone */}
-        <div
-          onDragOver={e => e.preventDefault()}
-          onDrop={handleDrop}
-          onClick={() => fileRef.current?.click()}
-          className="border-2 border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors"
-        >
-          <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm font-medium">Glisser-déposer ou cliquer pour parcourir</p>
-          <p className="text-xs text-muted-foreground mt-1">PDF · TXT · PPTX · JPG · PNG — max 25 Mo</p>
-          <input
-            ref={fileRef}
-            type="file"
-            multiple
-            accept=".pdf,.txt,.pptx,.jpg,.jpeg,.png"
-            className="hidden"
-            onChange={e => { if (e.target.files) addFiles(Array.from(e.target.files)); e.target.value = ""; }}
-          />
-        </div>
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
 
-        {/* Selected files */}
-        {files.length > 0 && (
-          <div className="space-y-1.5 max-h-32 overflow-y-auto">
-            {files.map((f, i) => (
-              <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-muted/40 text-sm">
-                {fileIcon(f.name, f.type)}
-                <span className="flex-1 truncate font-medium">{f.name}</span>
-                <span className="text-xs text-muted-foreground">{(f.size / 1024 / 1024).toFixed(1)} Mo</span>
-                <button onClick={() => setFiles(prev => prev.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-red-500">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
+          {/* Content type picker */}
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Type de contenu *</p>
+            <div className="grid grid-cols-3 gap-2">
+              {MANUAL_TYPES.map(t => {
+                const Icon = t.icon;
+                const isActive = contentType === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setContentType(t.id)}
+                    className={cn(
+                      "flex flex-col items-start gap-1 p-3 rounded-xl border-2 text-left transition-all",
+                      isActive
+                        ? t.activeClass
+                        : "border-border text-muted-foreground hover:bg-muted/60"
+                    )}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Icon className="w-4 h-4 shrink-0" />
+                      <span className="text-xs font-bold leading-tight">{t.label}</span>
+                    </div>
+                    <span className="text-[11px] opacity-70">{t.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        )}
 
-        {/* Metadata */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2">
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">Chapitre / Thème *</label>
+          {/* Topic — shared by all types */}
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Chapitre / Thème *</label>
             <input
               type="text"
               value={topic}
               onChange={e => setTopic(e.target.value)}
-              placeholder="ex. Fonctions affines, La cellule..."
-              className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+              placeholder="ex. Fonctions affines, La cellule, La Révolution..."
+              className={inputCls}
             />
           </div>
-          <div className="col-span-2">
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">Type de contenu *</label>
-            <select
-              value={contentType}
-              onChange={e => setContentType(e.target.value)}
-              className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
-            >
-              <option value="">Sélectionner...</option>
-              {CONTENT_TYPES.map(ct => (
-                <option key={ct.value} value={ct.value}>{ct.label}</option>
+
+          {/* ── Question form ── */}
+          {contentType === "question" && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Énoncé de la question *</label>
+                <textarea
+                  value={questionText}
+                  onChange={e => setQuestionText(e.target.value)}
+                  rows={4}
+                  placeholder="Tapez l'énoncé de la question..."
+                  className={cn(inputCls, "resize-none")}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Corrigé / Réponse *</label>
+                <textarea
+                  value={answer}
+                  onChange={e => setAnswer(e.target.value)}
+                  rows={3}
+                  placeholder="Réponse attendue et éléments de correction..."
+                  className={cn(inputCls, "resize-none")}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Points (optionnel)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={points}
+                    onChange={e => setPoints(e.target.value)}
+                    placeholder="ex. 4"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Difficulté (optionnel)</label>
+                  <select
+                    value={difficulty}
+                    onChange={e => setDifficulty(e.target.value as typeof difficulty)}
+                    className={selectCls}
+                  >
+                    {_DIFFICULTIES.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Flashcard form ── */}
+          {contentType === "flashcard" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                    <span className="text-[10px] font-bold text-blue-600">R</span>
+                  </div>
+                  <span className="text-sm font-bold">Recto — Question / Titre *</span>
+                </div>
+                <textarea
+                  value={front}
+                  onChange={e => setFront(e.target.value)}
+                  rows={5}
+                  placeholder="Ce qui s'affiche en premier sur la carte..."
+                  className={cn(inputCls, "resize-none")}
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
+                    <span className="text-[10px] font-bold text-green-600">V</span>
+                  </div>
+                  <span className="text-sm font-bold">Verso — Notes / Explication *</span>
+                </div>
+                <textarea
+                  value={back}
+                  onChange={e => setBack(e.target.value)}
+                  rows={5}
+                  placeholder="La réponse, la définition, l'explication..."
+                  className={cn(inputCls, "resize-none")}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* ── Exam form ── */}
+          {contentType === "exam" && (
+            <div className="space-y-4">
+              {examQuestions.map((q, i) => (
+                <div key={i} className="border border-border rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-xs font-bold text-amber-700 shrink-0">
+                        {i + 1}
+                      </span>
+                      <span className="text-sm font-semibold">Question {i + 1}</span>
+                    </div>
+                    {examQuestions.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeExamQ(i)}
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  <textarea
+                    rows={3}
+                    value={q.question}
+                    onChange={e => updateExamQ(i, "question", e.target.value)}
+                    placeholder="Énoncé de la question *"
+                    className={cn(inputCls, "resize-none")}
+                  />
+                  <textarea
+                    rows={2}
+                    value={q.answer}
+                    onChange={e => updateExamQ(i, "answer", e.target.value)}
+                    placeholder="Corrigé / Réponse attendue..."
+                    className={cn(inputCls, "resize-none")}
+                  />
+                  <textarea
+                    rows={2}
+                    value={q.markScheme}
+                    onChange={e => updateExamQ(i, "markScheme", e.target.value)}
+                    placeholder="Barème / critères de notation (optionnel)..."
+                    className={cn(inputCls, "resize-none")}
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">Points</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={q.points}
+                        onChange={e => updateExamQ(i, "points", e.target.value)}
+                        placeholder="ex. 4"
+                        className={inputCls}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">Difficulté</label>
+                      <select
+                        value={q.difficulty}
+                        onChange={e => updateExamQ(i, "difficulty", e.target.value as ExamQ["difficulty"])}
+                        className={selectCls}
+                      >
+                        {_DIFFICULTIES.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
               ))}
-            </select>
-          </div>
-          <div className="col-span-2">
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">Notes IA (optionnel)</label>
-            <textarea
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              rows={2}
-              placeholder="Contexte pour l'IA..."
-              className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-            />
-          </div>
+
+              <button
+                type="button"
+                onClick={addExamQ}
+                className="w-full py-2.5 rounded-xl border-2 border-dashed border-border text-sm font-semibold text-muted-foreground hover:text-foreground hover:border-primary/40 flex items-center justify-center gap-2 transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Ajouter une question
+              </button>
+
+              {totalExamPoints > 0 && (
+                <p className="text-sm text-right text-muted-foreground">
+                  Total calculé : <span className="font-bold text-foreground">{totalExamPoints} point{totalExamPoints > 1 ? "s" : ""}</span>
+                </p>
+              )}
+            </div>
+          )}
+
+          {error && (
+            <p className="text-xs text-red-600 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-xl">{error}</p>
+          )}
         </div>
 
-        {error && (
-          <p className="text-xs text-red-600 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-xl">
-            {error}
-          </p>
-        )}
-
-        {/* Actions */}
-        <div className="flex gap-3 pt-1">
+        {/* Footer */}
+        <div className="p-6 border-t border-border shrink-0 flex gap-3">
           <button
+            type="button"
             onClick={onClose}
             className="flex-1 py-2.5 rounded-xl border border-border text-sm font-semibold hover:bg-muted transition-colors"
           >
             Annuler
           </button>
           <button
+            type="button"
             onClick={handleSubmit}
             disabled={!canSubmit}
             className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
-            {uploading ? <><Loader2 className="w-4 h-4 animate-spin" /> Envoi...</> : <><Upload className="w-4 h-4" /> Envoyer</>}
+            {saving
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Enregistrement...</>
+              : <><CheckCircle2 className="w-4 h-4" /> Publier</>}
           </button>
         </div>
       </div>

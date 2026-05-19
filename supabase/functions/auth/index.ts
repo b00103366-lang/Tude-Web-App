@@ -80,7 +80,10 @@ async function verifyPassword(
   password: string,
   storedHash: string,
 ): Promise<boolean> {
-  if (isLegacyHash(storedHash)) {
+  if (!storedHash) { console.log("[verifyPassword] storedHash is empty/null"); return false; }
+  const legacy = isLegacyHash(storedHash);
+  console.log("[verifyPassword] isLegacyHash:", legacy);
+  if (legacy) {
     const legacyHash = await sha256Hex(password + SHA256_LEGACY_SALT);
     // Constant-time compare to prevent timing attacks
     if (legacyHash.length !== storedHash.length) return false;
@@ -90,11 +93,13 @@ async function verifyPassword(
     }
     return diff === 0;
   }
-  return bcrypt.compare(password, storedHash);
+  const result = bcrypt.compareSync(password, storedHash);
+  console.log("[verifyPassword] compareSync returned:", result);
+  return result;
 }
 
-async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, BCRYPT_ROUNDS);
+function hashPassword(password: string): string {
+  return bcrypt.hashSync(password, BCRYPT_ROUNDS);
 }
 
 // ── Token ─────────────────────────────────────────────────────────────────────
@@ -294,11 +299,16 @@ async function handleLogin(req: Request, sql: SqlClient, secret: string): Promis
 
   const userRows = await sql`SELECT * FROM users WHERE email = ${normalizedEmail} LIMIT 1`;
   // Same error message for wrong email and wrong password — prevents user enumeration
+  console.log("[login] user found:", userRows.length > 0);
   if (userRows.length === 0) return json({ error: "Invalid credentials" }, 401);
 
   const user = userRows[0] as Record<string, unknown>;
+  const storedHash = user.password_hash as string | undefined;
+  console.log("[login] password_hash exists:", storedHash != null);
+  console.log("[login] password_hash prefix:", storedHash?.slice(0, 7) ?? "null");
 
-  const passwordValid = await verifyPassword(password, user.password_hash as string);
+  const passwordValid = await verifyPassword(password, storedHash ?? "");
+  console.log("[login] bcrypt compare result:", passwordValid);
   if (!passwordValid) return json({ error: "Invalid credentials" }, 401);
 
   if (user.is_suspended) {
