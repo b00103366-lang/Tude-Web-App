@@ -10,7 +10,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card } from "@/components/ui/Premium";
 import {
   PenLine, Plus, Trash2, CheckCircle2, Loader2,
-  ChevronLeft, BookOpen, Layers, FileText, Brain,
+  ChevronLeft, BookOpen, FileText, Brain,
   Pencil, RefreshCw,
 } from "lucide-react";
 import { Link } from "wouter";
@@ -445,198 +445,31 @@ function QuestionTab() {
   );
 }
 
-// ── TAB 2: Flashcard ─────────────────────────────────────────────────────────
+// ── TAB 2: Flashcard (coming soon) ───────────────────────────────────────────
 
 function FlashcardTab() {
-  const { toast } = useToast();
-  const [subject, setSubject]   = useState("");
-  const [gradeKey, setGradeKey] = useState<GradeOption | null>(null);
-  const [topic, setTopic]       = useState("");
-  const [front, setFront]       = useState("");
-  const [back, setBack]         = useState("");
-  const [saving, setSaving]     = useState(false);
-  const [lastId, setLastId]     = useState<number | null>(null);
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!subject || !gradeKey || !topic || !front || !back) return;
-    setSaving(true);
-    try {
-      const data = await apiFetch<{ id: number }>(`${API}/api/kb/flashcards/manual`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject, gradeLevel: gradeKey.value, sectionKey: gradeKey.sectionKey ?? null, topic, front, back }),
-      });
-      if (!data) {
-        toast({ title: "Erreur serveur", description: "Impossible d'enregistrer la flashcard. Vérifiez la console (F12).", variant: "destructive" });
-        return;
-      }
-      setLastId(data.id);
-      toast({ title: "Flashcard ajoutée ✓" });
-      setFront(""); setBack("");
-    } finally { setSaving(false); }
-  }
-
   return (
-    <form onSubmit={submit} className="space-y-5">
-      {lastId && <SuccessBanner label="Flashcard" id={lastId} />}
-
-      <Card className="p-5 space-y-4">
-        <ContextPicker subject={subject} setSubject={setSubject} gradeKey={gradeKey} setGradeKey={setGradeKey} topic={topic} setTopic={setTopic} />
-      </Card>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card className="p-5 space-y-3 border-2 border-blue-200 dark:border-blue-800">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <span className="text-xs font-bold text-blue-600">R</span>
-            </div>
-            <span className="text-sm font-bold">Recto (Question)</span>
-          </div>
-          <textarea value={front} onChange={e => setFront(e.target.value)}
-            rows={5} placeholder="Ce qui s'affiche en premier sur la flashcard..." className={inputCls("resize-none")} required />
-        </Card>
-
-        <Card className="p-5 space-y-3 border-2 border-green-200 dark:border-green-800">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <span className="text-xs font-bold text-green-600">V</span>
-            </div>
-            <span className="text-sm font-bold">Verso (Réponse)</span>
-          </div>
-          <textarea value={back} onChange={e => setBack(e.target.value)}
-            rows={5} placeholder="La réponse / définition qui apparaît en retournant la carte..." className={inputCls("resize-none")} required />
-        </Card>
-      </div>
-
-      <button type="submit" disabled={!subject || !gradeKey || !topic || !front || !back || saving}
-        className="w-full py-3.5 rounded-xl font-bold text-sm bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors">
-        {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Enregistrement...</> : <><Brain className="w-4 h-4" /> Ajouter la flashcard</>}
-      </button>
-    </form>
+    <div className="rounded-2xl border-2 border-dashed border-border bg-muted/30 p-10 flex flex-col items-center gap-3 text-center">
+      <Brain className="w-8 h-8 text-muted-foreground/40" />
+      <p className="text-base font-semibold">Bientôt disponible</p>
+      <p className="text-sm text-muted-foreground max-w-xs">
+        La création de flashcards sera disponible prochainement. Utilisez la <strong>Banque de questions</strong> pour ajouter du contenu dès maintenant.
+      </p>
+    </div>
   );
 }
 
-// ── TAB 3: Practice exam ──────────────────────────────────────────────────────
-
-interface ExamQuestion {
-  question: string;
-  totalMarks: string;
-  answer: string;
-}
+// ── TAB 3: Practice exam (coming soon) ───────────────────────────────────────
 
 function PracticeExamTab() {
-  const { toast } = useToast();
-  const [subject, setSubject]   = useState("");
-  const [gradeKey, setGradeKey] = useState<GradeOption | null>(null);
-  const [topic, setTopic]       = useState("");
-  const [year, setYear]         = useState("");
-  const [questions, setQuestions] = useState<ExamQuestion[]>([{ question: "", totalMarks: "", answer: "" }]);
-  const [saving, setSaving]     = useState(false);
-  const [lastId, setLastId]     = useState<number | null>(null);
-
-  function addQ() {
-    setQuestions(q => [...q, { question: "", totalMarks: "", answer: "" }]);
-  }
-  function removeQ(i: number) {
-    setQuestions(q => q.filter((_, j) => j !== i));
-  }
-  function updateQ(i: number, field: keyof ExamQuestion, val: string) {
-    setQuestions(q => q.map((x, j) => j === i ? { ...x, [field]: val } : x));
-  }
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!subject || !gradeKey || !topic || questions.length === 0) return;
-    setSaving(true);
-    try {
-      const qs = questions.map(q => ({
-        question: q.question,
-        totalMarks: q.totalMarks ? Number(q.totalMarks) : undefined,
-        parts: [],
-      }));
-      const sols = questions.map(q => ({ answer: q.answer }));
-      const data = await apiFetch<{ id: number }>(`${API}/api/kb/annales/manual`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          subject, gradeLevel: gradeKey.value, sectionKey: gradeKey.sectionKey ?? null,
-          topic, year: year ? Number(year) : null,
-          questions: qs, solutions: sols,
-        }),
-      });
-      if (!data) {
-        toast({ title: "Erreur serveur", description: "Impossible d'enregistrer l'examen. Vérifiez la console (F12).", variant: "destructive" });
-        return;
-      }
-      setLastId(data.id);
-      toast({ title: "Examen pratique ajouté ✓" });
-      setQuestions([{ question: "", totalMarks: "", answer: "" }]); setYear("");
-    } finally { setSaving(false); }
-  }
-
   return (
-    <form onSubmit={submit} className="space-y-5">
-      {lastId && <SuccessBanner label="Examen pratique" id={lastId} />}
-
-      <Card className="p-5 space-y-4">
-        <ContextPicker subject={subject} setSubject={setSubject} gradeKey={gradeKey} setGradeKey={setGradeKey} topic={topic} setTopic={setTopic} />
-        <div>
-          <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Année (optionnel)</label>
-          <input type="number" min="2000" max="2030" value={year} onChange={e => setYear(e.target.value)}
-            placeholder="ex. 2024" className={inputCls("max-w-[160px]")} />
-        </div>
-      </Card>
-
-      <div className="space-y-4">
-        {questions.map((q, i) => (
-          <Card key={i} className="p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-sm font-bold text-amber-700">
-                  {i + 1}
-                </span>
-                <span className="text-sm font-semibold">Question {i + 1}</span>
-              </div>
-              {questions.length > 1 && (
-                <button type="button" onClick={() => removeQ(i)}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-4 gap-3">
-              <div className="col-span-3">
-                <textarea rows={3} value={q.question} onChange={e => updateQ(i, "question", e.target.value)}
-                  placeholder="Énoncé de la question..." className={inputCls("resize-none")} required />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Points</label>
-                <input type="number" min="0" value={q.totalMarks} onChange={e => updateQ(i, "totalMarks", e.target.value)}
-                  placeholder="ex. 4" className={inputCls()} />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Corrigé</label>
-              <textarea rows={2} value={q.answer} onChange={e => updateQ(i, "answer", e.target.value)}
-                placeholder="Réponse modèle pour cette question..." className={inputCls("resize-none")} />
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      <button type="button" onClick={addQ}
-        className="w-full py-3 rounded-xl border-2 border-dashed border-border text-sm font-semibold text-muted-foreground hover:text-foreground hover:border-primary/40 flex items-center justify-center gap-2 transition-colors">
-        <Plus className="w-4 h-4" /> Ajouter une question
-      </button>
-
-      <button type="submit" disabled={!subject || !gradeKey || !topic || questions.some(q => !q.question) || saving}
-        className="w-full py-3.5 rounded-xl font-bold text-sm bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors">
-        {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Enregistrement...</> : <><FileText className="w-4 h-4" /> Publier l'examen pratique</>}
-      </button>
-    </form>
+    <div className="rounded-2xl border-2 border-dashed border-border bg-muted/30 p-10 flex flex-col items-center gap-3 text-center">
+      <FileText className="w-8 h-8 text-muted-foreground/40" />
+      <p className="text-base font-semibold">Bientôt disponible</p>
+      <p className="text-sm text-muted-foreground max-w-xs">
+        La création d'examens pratiques sera disponible prochainement. Utilisez la <strong>Banque de questions</strong> pour ajouter du contenu dès maintenant.
+      </p>
+    </div>
   );
 }
 
@@ -644,7 +477,7 @@ function PracticeExamTab() {
 
 type Tab = "question" | "flashcard" | "exam";
 
-const TABS: { id: Tab; label: string; desc: string; icon: any; color: string; active: string }[] = [
+const TABS: { id: Tab; label: string; desc: string; icon: any; color: string; active: string; comingSoon?: boolean }[] = [
   {
     id: "question",  label: "Banque de questions", desc: "Questions avec corrigé notées",
     icon: BookOpen,
@@ -652,16 +485,18 @@ const TABS: { id: Tab; label: string; desc: string; icon: any; color: string; ac
     active: "border-primary bg-primary/5 text-primary",
   },
   {
-    id: "flashcard", label: "Flashcards", desc: "Cartes recto / verso",
+    id: "flashcard", label: "Flashcards", desc: "Bientôt disponible",
     icon: Brain,
-    color: "border-border text-muted-foreground hover:border-purple-400/50 hover:text-foreground",
-    active: "border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300",
+    color: "border-border text-muted-foreground/50",
+    active: "border-border text-muted-foreground/50",
+    comingSoon: true,
   },
   {
-    id: "exam", label: "Examen pratique", desc: "Sujets d'annale complets",
+    id: "exam", label: "Examen pratique", desc: "Bientôt disponible",
     icon: FileText,
-    color: "border-border text-muted-foreground hover:border-amber-400/50 hover:text-foreground",
-    active: "border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300",
+    color: "border-border text-muted-foreground/50",
+    active: "border-border text-muted-foreground/50",
+    comingSoon: true,
   },
 ];
 
@@ -696,8 +531,11 @@ export function AdminManualQuestion() {
             const isActive = tab === t.id;
             return (
               <button key={t.id} type="button" onClick={() => setTab(t.id)}
-                className={cn("flex flex-col items-start gap-1.5 p-4 rounded-2xl border-2 text-left transition-all",
-                  isActive ? t.active : t.color)}>
+                className={cn(
+                  "flex flex-col items-start gap-1.5 p-4 rounded-2xl border-2 text-left transition-all",
+                  t.comingSoon ? "opacity-50" : "",
+                  isActive ? t.active : t.color,
+                )}>
                 <div className="flex items-center gap-2">
                   <Icon className="w-4 h-4" />
                   <span className="text-sm font-bold">{t.label}</span>

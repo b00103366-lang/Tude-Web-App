@@ -206,7 +206,7 @@ interface ExamQ {
   difficulty: "facile" | "moyen" | "difficile";
 }
 
-const MANUAL_TYPES: { id: ManualContentType; label: string; desc: string; icon: any; activeClass: string }[] = [
+const MANUAL_TYPES: { id: ManualContentType; label: string; desc: string; icon: any; activeClass: string; comingSoon?: boolean }[] = [
   {
     id: "question",
     label: "Banque de questions",
@@ -217,16 +217,18 @@ const MANUAL_TYPES: { id: ManualContentType; label: string; desc: string; icon: 
   {
     id: "flashcard",
     label: "Flashcards",
-    desc: "Carte recto / verso",
+    desc: "Bientôt disponible",
     icon: Layers,
-    activeClass: "border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300",
+    activeClass: "border-border",
+    comingSoon: true,
   },
   {
     id: "exam",
     label: "Examen pratique",
-    desc: "Sujets complets",
+    desc: "Bientôt disponible",
     icon: FileText,
-    activeClass: "border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300",
+    activeClass: "border-border",
+    comingSoon: true,
   },
 ];
 
@@ -316,28 +318,6 @@ function UploadModal({
             markScheme: answer ? [{ partLabel: "a", answer }] : [],
           }),
         });
-      } else if (contentType === "flashcard") {
-        saved = await apiFetch<{ id: number }>(`${API}/api/kb/flashcards/manual`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...base, front, back }),
-        });
-      } else if (contentType === "exam") {
-        const qs = examQuestions.map(q => ({
-          question: q.question,
-          totalMarks: q.points ? Number(q.points) : undefined,
-          difficulty: q.difficulty,
-          parts: [],
-        }));
-        const sols = examQuestions.map(q => ({
-          answer: q.answer,
-          ...(q.markScheme ? { markScheme: q.markScheme } : {}),
-        }));
-        saved = await apiFetch<{ id: number }>(`${API}/api/kb/annales/manual`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...base, questions: qs, solutions: sols }),
-        });
       }
 
       if (saved === null) {
@@ -402,12 +382,15 @@ function UploadModal({
                   <button
                     key={t.id}
                     type="button"
-                    onClick={() => setContentType(t.id)}
+                    disabled={t.comingSoon}
+                    onClick={() => !t.comingSoon && setContentType(t.id)}
                     className={cn(
                       "flex flex-col items-start gap-1 p-3 rounded-xl border-2 text-left transition-all",
-                      isActive
-                        ? t.activeClass
-                        : "border-border text-muted-foreground hover:bg-muted/60"
+                      t.comingSoon
+                        ? "border-border text-muted-foreground/50 cursor-not-allowed opacity-60"
+                        : isActive
+                          ? t.activeClass
+                          : "border-border text-muted-foreground hover:bg-muted/60"
                     )}
                   >
                     <div className="flex items-center gap-1.5">
