@@ -6,7 +6,7 @@ import {
   Star, CreditCard, ClipboardList, KeyRound, Loader2, Trash2,
   ChevronDown, CheckCircle2, XCircle, Clock, FileText, Download, MapPin, BookOpen, User, AlertCircle, UserCog,
 } from "lucide-react";
-import { useListUsers, useListProfessors, useApproveProfessor, getToken } from "@workspace/api-client-react";
+import { useListProfessors, useApproveProfessor, getToken } from "@workspace/api-client-react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +37,7 @@ const KYC_CONFIG = {
 // ── API Helper ────────────────────────────────────────────────────────────────
 
 const API_URL = import.meta.env.VITE_API_URL ?? "";
+const SUPABASE_FN = "https://hilqkzjqysqjbfftqlkf.supabase.co/functions/v1";
 
 async function adminFetch(url: string, opts: RequestInit = {}) {
   const token = getToken();
@@ -62,7 +63,7 @@ function useUserAction(action: "suspend" | "unsuspend") {
   return useMutation({
     mutationFn: (userId: number) => adminFetch(`${API_URL}/api/admin/users/${userId}/${action}`, { method: "POST" }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/users"] });
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
       toast({ title: action === "suspend" ? "Compte suspendu" : "Compte réactivé" });
     },
     onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
@@ -76,7 +77,7 @@ function useChangeRole() {
     mutationFn: ({ userId, role }: { userId: number; role: string }) =>
       adminFetch(`${API_URL}/api/admin/users/${userId}/change-role`, { method: "POST", body: JSON.stringify({ role }) }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/users"] });
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
       toast({ title: "Rôle modifié", description: "Prend effet immédiatement (prochaine requête API)." });
     },
     onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
@@ -89,7 +90,7 @@ function useDeleteUser() {
   return useMutation({
     mutationFn: (userId: number) => adminFetch(`${API_URL}/api/admin/users/${userId}`, { method: "DELETE" }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/users"] });
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
       toast({ title: "Compte supprimé" });
     },
     onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
@@ -621,7 +622,7 @@ function CreateUserModal({ open, onClose }: { open: boolean; onClose: () => void
     try {
       const data = await adminFetch(`${API_URL}/api/admin/create-user`, { method: "POST", body: JSON.stringify({ fullName, email, password, role }) });
       toast({ title: "Compte créé", description: data.email });
-      qc.invalidateQueries({ queryKey: ["/api/users"] });
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
       setFullName(""); setEmail(""); setPassword(""); setRole("student");
       onClose();
     } catch (e: any) {
@@ -686,7 +687,11 @@ export function AdminUsers() {
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [changingRoleId, setChangingRoleId] = useState<number | null>(null);
 
-  const { data: usersData, isLoading: usersLoading } = useListUsers() as any;
+  const { data: usersData, isLoading: usersLoading } = useQuery({
+    queryKey: ["admin-users"],
+    queryFn: () => adminFetch(`${SUPABASE_FN}/admin-users`),
+    staleTime: 60 * 1000,
+  });
   const { data: professorsData } = useListProfessors() as any;
   const suspendMutation = useUserAction("suspend");
   const unsuspendMutation = useUserAction("unsuspend");
