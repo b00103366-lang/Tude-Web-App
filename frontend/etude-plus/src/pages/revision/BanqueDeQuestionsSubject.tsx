@@ -18,7 +18,7 @@ import { BookOpen, ChevronRight, Hash, AlertCircle, Loader2 } from "lucide-react
 import { cn } from "@/lib/utils";
 import type { CurriculumChapter } from "@/types/curriculum";
 
-const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+const SUPABASE_FN = "https://hilqkzjqysqjbfftqlkf.supabase.co/functions/v1";
 
 async function fetchChapters(
   levelCode: string,
@@ -29,7 +29,7 @@ async function fetchChapters(
   const params = new URLSearchParams({ levelCode, subject });
   if (sectionKey) params.set("sectionKey", sectionKey);
 
-  const res = await fetch(`${API_URL}/api/curriculum/chapters?${params}`, {
+  const res = await fetch(`${SUPABASE_FN}/curriculum/chapters?${params}`, {
     credentials: "include",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
