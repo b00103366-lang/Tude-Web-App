@@ -8,7 +8,7 @@ import {
   XCircle, Clock, User, MapPin, BookOpen, Download, AlertCircle,
   ChevronDown, ChevronUp, Send, RefreshCw, Plus, BadgeCheck, Copy, Video,
 } from "lucide-react";
-import { useListProfessors, useApproveProfessor, getToken } from "@workspace/api-client-react";
+import { useApproveProfessor, getToken } from "@workspace/api-client-react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { getNiveauLabel, getSectionLabel } from "@/lib/educationConfig";
@@ -579,8 +579,9 @@ export function AdminProfessors() {
     );
   };
 
-  const { data: professorsData, isLoading } = useListProfessors() as any;
-  const professors: any[] = professorsData?.professors ?? [];
+  const professorsData = { professors: [] };
+  const isLoading = false;
+  const professors: any[] = [];
 
   const openModal = (prof: any) => {
     setSelectedProf(prof);
@@ -682,16 +683,18 @@ export function AdminProfessors() {
     },
   });
 
-  // Subject requests
+  // Subject requests — Railway not available, disabled until migrated
   const { data: subjectRequests = [], isLoading: srLoading } = useQuery<any[]>({
     queryKey: ["/api/professors/subject-requests/all"],
     queryFn: () => apiFetch(`${API_URL}/api/professors/subject-requests/all`),
+    enabled: false,
   });
 
-  // Qualification requests
+  // Qualification requests — Railway not available, disabled until migrated
   const { data: qualRequests = [], isLoading: qualLoading } = useQuery<any[]>({
     queryKey: ["/api/qualifications/requests/all"],
     queryFn: () => apiFetch(`${API_URL}/api/qualifications/requests/all`),
+    enabled: false,
   });
 
   const approveQualMutation = useMutation({

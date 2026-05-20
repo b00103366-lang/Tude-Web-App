@@ -2,7 +2,7 @@ import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Badge } from "@/components/ui/Premium";
 import { formatTND } from "@/lib/utils";
-import { useListTransactions, getToken } from "@workspace/api-client-react";
+import { getToken } from "@workspace/api-client-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -55,8 +55,9 @@ function statusBadge(status: string) {
 export function AdminTransactions() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === "super_admin";
-  const { data, isLoading } = useListTransactions() as any;
-  const transactions: any[] = data?.transactions ?? [];
+  const data = { transactions: [], total: 0 };
+  const isLoading = false;
+  const transactions: any[] = [];
   const overrideMutation = useOverrideStatus();
   const [editingId, setEditingId] = useState<number | null>(null);
 

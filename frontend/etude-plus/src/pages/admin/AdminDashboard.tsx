@@ -8,14 +8,26 @@ import {
 } from "lucide-react";
 import { formatTND } from "@/lib/utils";
 import { Link } from "wouter";
-import { useGetOverviewStats, useListProfessors, useListUsers, useListTransactions, useApproveProfessor, getToken } from "@workspace/api-client-react";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { useApproveProfessor, getToken } from "@workspace/api-client-react";
+import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "";
+const SUPABASE_FN = "https://hilqkzjqysqjbfftqlkf.supabase.co/functions/v1";
+
+async function adminFetch(url: string) {
+  const token = getToken();
+  const res = await fetch(url, {
+    credentials: "include",
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as any)?.error ?? `HTTP ${res.status}`);
+  return data;
+}
 
 function useRejectProfessor() {
   const qc = useQueryClient();
@@ -41,14 +53,21 @@ export function AdminDashboard() {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const { toast } = useToast();
-  const { data: stats, isLoading: statsLoading } = useGetOverviewStats();
-  const { data: professorsData } = useListProfessors() as any;
-  const { data: usersData } = useListUsers() as any;
-  const { data: txData } = useListTransactions() as any;
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ["admin-overview"],
+    queryFn: () => adminFetch(`${SUPABASE_FN}/admin-overview`),
+    staleTime: 60 * 1000,
+  });
 
-  const professors: any[] = professorsData?.professors ?? [];
-  const allUsers: any[] = usersData?.users ?? [];
-  const allTx: any[] = txData?.transactions ?? [];
+  const { data: usersResp } = useQuery({
+    queryKey: ["admin-users"],
+    queryFn: () => adminFetch(`${SUPABASE_FN}/admin-users`),
+    staleTime: 60 * 1000,
+  });
+
+  const professors: any[] = [];
+  const allUsers: any[] = (usersResp as any)?.users ?? [];
+  const allTx: any[] = [];
 
   const pendingProfs = professors.filter((p: any) => p.status === "pending" || p.status === "kyc_submitted");
   const bannedUsers = allUsers.filter((u: any) => u.isSuspended);
