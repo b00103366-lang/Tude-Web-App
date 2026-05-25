@@ -53,7 +53,7 @@ export function CoursePreview() {
     queryKey: ["class-reviews", classId],
     enabled: !!classId,
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/reviews?classId=${classId}`);
+      const res = await fetch(`${API_URL}/reviews?classId=${classId}`);
       return res.ok ? res.json() : [];
     },
   });
@@ -268,7 +268,7 @@ export function CoursePreview() {
                     <div key={r.id} className="flex gap-4 pb-5 border-b border-border last:border-0">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary shrink-0">
                         {r.student?.profilePhoto
-                          ? <img src={`${API_URL}/api/storage${r.student.profilePhoto}`} alt="" className="w-full h-full object-cover rounded-full" />
+                          ? <img src={`${API_URL}/storage${r.student.profilePhoto}`} alt="" className="w-full h-full object-cover rounded-full" />
                           : r.student?.fullName?.charAt(0) ?? "?"}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -301,7 +301,7 @@ export function CoursePreview() {
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-16 h-16 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center font-bold text-primary text-xl shrink-0">
                   {prof?.profilePhoto
-                    ? <img src={`${API_URL}/api/storage${prof.profilePhoto}`} alt="" className="w-full h-full object-cover" />
+                    ? <img src={`${API_URL}/storage${prof.profilePhoto}`} alt="" className="w-full h-full object-cover" />
                     : prof?.fullName?.charAt(0) ?? "?"}
                 </div>
                 <div>

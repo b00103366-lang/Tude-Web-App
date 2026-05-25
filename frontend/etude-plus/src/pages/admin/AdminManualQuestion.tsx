@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/Premium";
 import {
   PenLine, Plus, Trash2, CheckCircle2, Loader2,
   ChevronLeft, BookOpen, FileText, Brain,
-  Pencil, RefreshCw,
+  Pencil, RefreshCw, Sparkles,
 } from "lucide-react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
@@ -150,6 +150,7 @@ interface QuestionRow {
   questionText: string;
   totalMarks: number | null;
   status: string;
+  source: string | null;
   kbFileId: number | null;
   createdAt: string;
   markScheme: Array<{ partLabel: string; answer: string; orderIndex: number }>;
@@ -178,6 +179,12 @@ function QuestionTab() {
   const [questionList, setQuestionList] = useState<QuestionRow[]>([]);
   const [loadingList, setLoadingList]   = useState(false);
   const [editId, setEditId]             = useState<number | null>(null);
+
+  // AI variation state
+  const [variantPanelId, setVariantPanelId] = useState<number | null>(null);
+  const [variantCount, setVariantCount]     = useState(5);
+  const [generatingId, setGeneratingId]     = useState<number | null>(null);
+  const [approvingId, setApprovingId]       = useState<number | null>(null);
 
   useEffect(() => {
     if (!subject || !gradeKey || !topic) { setQuestionList([]); return; }
@@ -209,6 +216,51 @@ function QuestionTab() {
     setEditId(null);
     setQuestionText(""); setSimpleAnswer(""); setTotalMarks("");
     setParts([{ label: "a", text: "", marks: "", answer: "" }]); setHasParts(false);
+  }
+
+  async function generateVariations(q: QuestionRow) {
+    setGeneratingId(q.id);
+    setVariantPanelId(null);
+    try {
+      const res = await apiFetch<{ generated: number; message: string }>(
+        `${SUPABASE_FN}/ai/question-variations`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ questionId: q.id, count: variantCount }),
+        },
+      );
+      if (!res) {
+        toast({ title: "Erreur", description: "Génération échouée — vérifiez la console.", variant: "destructive" });
+        return;
+      }
+      toast({ title: `${res.generated} variante(s) générée(s) ✓`, description: "Visibles ci-dessous avec le badge IA — approuvez-les pour les publier." });
+      loadQuestions();
+    } finally {
+      setGeneratingId(null);
+    }
+  }
+
+  async function approveQuestion(id: number) {
+    setApprovingId(id);
+    try {
+      const res = await apiFetch<{ id: number; status: string }>(
+        `${SUPABASE_FN}/admin-questions?id=${id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "published" }),
+        },
+      );
+      if (!res) {
+        toast({ title: "Erreur", description: "Impossible de publier la question.", variant: "destructive" });
+        return;
+      }
+      toast({ title: "Question publiée ✓", description: "Visible par les étudiants." });
+      loadQuestions();
+    } finally {
+      setApprovingId(null);
+    }
   }
 
   async function deleteQuestion(id: number) {
@@ -301,42 +353,124 @@ function QuestionTab() {
 
           {!loadingList && questionList.length > 0 && (
             <div className="space-y-2">
-              {questionList.map(q => (
-                <div key={q.id}
-                  className={cn("flex items-start gap-3 p-3 rounded-xl border transition-colors",
-                    editId === q.id ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40")}>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium line-clamp-2 leading-snug">{q.questionText}</p>
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      <span className={cn("px-2 py-0.5 rounded-full text-xs font-semibold", DIFF_BADGE[q.difficulty] ?? DIFF_BADGE.moyen)}>
-                        {q.difficulty}
-                      </span>
-                      <span className={cn("px-2 py-0.5 rounded-full text-xs font-semibold",
-                        q.kbFileId == null
-                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                          : "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300")}>
-                        {q.kbFileId == null ? "Manuel" : "IA"}
-                      </span>
-                      {q.totalMarks != null && (
-                        <span className="text-xs text-muted-foreground">{q.totalMarks} pts</span>
-                      )}
+              {questionList.map(q => {
+                const isAi = q.source === "ai" || q.kbFileId != null;
+                const isDraft = q.status === "draft";
+                const isGenerating = generatingId === q.id;
+                const isApproving = approvingId === q.id;
+                const showVariantPanel = variantPanelId === q.id;
+
+                return (
+                  <div key={q.id} className="rounded-xl border transition-colors overflow-hidden
+                    border-border hover:border-primary/30">
+                    <div className={cn("flex items-start gap-3 p-3",
+                      editId === q.id ? "bg-primary/5" : isDraft ? "bg-amber-50/60 dark:bg-amber-900/10" : "")}>
+
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium line-clamp-2 leading-snug">{q.questionText}</p>
+                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                          <span className={cn("px-2 py-0.5 rounded-full text-xs font-semibold", DIFF_BADGE[q.difficulty] ?? DIFF_BADGE.moyen)}>
+                            {q.difficulty}
+                          </span>
+
+                          {isAi ? (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                              IA
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                              Manuel
+                            </span>
+                          )}
+
+                          {isDraft && (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                              Brouillon
+                            </span>
+                          )}
+
+                          {q.totalMarks != null && (
+                            <span className="text-xs text-muted-foreground">{q.totalMarks} pts</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        {/* Approve button — only for AI draft questions */}
+                        {isAi && isDraft && (
+                          <button
+                            type="button"
+                            title="Approuver et publier"
+                            disabled={isApproving}
+                            onClick={() => approveQuestion(q.id)}
+                            className="p-1.5 rounded-lg text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors disabled:opacity-40">
+                            {isApproving
+                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              : <CheckCircle2 className="w-3.5 h-3.5" />}
+                          </button>
+                        )}
+
+                        {/* Generate variations button */}
+                        <button
+                          type="button"
+                          title="Générer des variantes IA"
+                          disabled={isGenerating || generatingId !== null}
+                          onClick={() => setVariantPanelId(showVariantPanel ? null : q.id)}
+                          className={cn(
+                            "p-1.5 rounded-lg transition-colors disabled:opacity-40",
+                            showVariantPanel
+                              ? "text-purple-600 bg-purple-100 dark:bg-purple-900/30"
+                              : "text-muted-foreground hover:text-purple-600 hover:bg-purple-100 dark:hover:bg-purple-900/30",
+                          )}>
+                          {isGenerating
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            : <Sparkles className="w-3.5 h-3.5" />}
+                        </button>
+
+                        <button type="button" onClick={() => editId === q.id ? cancelEdit() : startEdit(q)}
+                          className={cn("p-1.5 rounded-lg transition-colors",
+                            editId === q.id
+                              ? "text-primary bg-primary/10"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button type="button" onClick={() => deleteQuestion(q.id)}
+                          className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Variant generation panel */}
+                    {showVariantPanel && (
+                      <div className="flex items-center gap-3 px-3 py-2.5 border-t border-purple-200 bg-purple-50 dark:bg-purple-900/20 dark:border-purple-800">
+                        <Sparkles className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                        <span className="text-xs text-purple-700 dark:text-purple-300 font-medium">Variantes à générer :</span>
+                        <select
+                          value={variantCount}
+                          onChange={e => setVariantCount(Number(e.target.value))}
+                          className="h-7 rounded-lg border border-purple-200 dark:border-purple-700 bg-white dark:bg-background text-xs px-2 focus:outline-none focus:border-purple-500">
+                          {[1, 2, 3, 5, 8, 10].map(n => (
+                            <option key={n} value={n}>{n}</option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => generateVariations(q)}
+                          className="px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors">
+                          Générer →
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setVariantPanelId(null)}
+                          className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors">
+                          Annuler
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button type="button" onClick={() => editId === q.id ? cancelEdit() : startEdit(q)}
-                      className={cn("p-1.5 rounded-lg transition-colors",
-                        editId === q.id
-                          ? "text-primary bg-primary/10"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button type="button" onClick={() => deleteQuestion(q.id)}
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </Card>

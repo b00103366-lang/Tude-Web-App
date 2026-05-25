@@ -1,8 +1,6 @@
 import React, { createContext, useContext } from "react";
 
-// restore-session is not yet on Supabase — always send to Railway.
-// Falls back to VITE_API_URL so local dev (single Express server) keeps working.
-const RAILWAY_URL: string = import.meta.env.VITE_RAILWAY_URL ?? import.meta.env.VITE_API_URL ?? "";
+const SUPABASE_FN = "https://hilqkzjqysqjbfftqlkf.supabase.co/functions/v1";
 import { User, useGetMe, getGetMeQueryKey, login, logout, register, LoginRequest, RegisterRequest, saveToken, clearToken, getToken } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { trackEvent } from "@/lib/analytics";
@@ -126,7 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let adminToken = getToken();
     if (!adminToken) {
       try {
-        const res = await fetch(`${RAILWAY_URL}/api/auth/restore-session`, {
+        const res = await fetch(`${SUPABASE_FN}/auth/restore-session`, {
           method: "POST",
           credentials: "include",
         });
@@ -157,7 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem(IMPERSONATION_KEY);
     saveToken(imp.adminToken);
     // Restore the admin's session cookie by calling restore-session with the admin bearer token
-    await fetch(`${RAILWAY_URL}/api/auth/restore-session`, {
+    await fetch(`${SUPABASE_FN}/auth/restore-session`, {
       method: "POST",
       credentials: "include",
       headers: { Authorization: `Bearer ${imp.adminToken}` },

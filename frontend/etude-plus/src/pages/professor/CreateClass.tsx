@@ -32,7 +32,7 @@ function useMyQualifications() {
     queryKey: ["/api/qualifications/mine"],
     queryFn: async () => {
       const token = localStorage.getItem("etude_auth_token");
-      const res = await fetch(`${API_URL}/api/qualifications/mine`, {
+      const res = await fetch(`${API_URL}/qualifications/mine`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error("Error loading qualifications");

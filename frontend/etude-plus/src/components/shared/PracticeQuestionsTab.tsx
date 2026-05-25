@@ -27,7 +27,7 @@ const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 async function fetchPracticeQuestions(classId: number): Promise<PracticeQuestionsResponse> {
   const token = getToken();
-  const res = await fetch(`${API_URL}/api/classes/${classId}/practice-questions`, {
+  const res = await fetch(`${API_URL}/classes/${classId}/practice-questions`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!res.ok) return { facile: [], moyen: [], difficile: [] };

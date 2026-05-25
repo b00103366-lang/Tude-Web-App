@@ -53,13 +53,13 @@ export function AdminSettings() {
 
   const { data: announcements = [] } = useQuery<any[]>({
     queryKey: ["admin-announcements"],
-    queryFn: () => adminFetch(`${API_URL}/api/announcements/all`),
+    queryFn: () => adminFetch(`${API_URL}/announcements/all`),
     refetchInterval: 30_000,
   });
 
   const { data: allUsers = [] } = useQuery<any[]>({
     queryKey: ["admin-all-users"],
-    queryFn: () => adminFetch(`${API_URL}/api/users`),
+    queryFn: () => adminFetch(`${API_URL}/users`),
   });
 
   const filteredUsers = userSearch.trim().length > 1
@@ -72,7 +72,7 @@ export function AdminSettings() {
 
   const postAnn = useMutation({
     mutationFn: (data: { title: string; body: string; targetAudience: string; targetUserIds: number[] }) =>
-      adminFetch(`${API_URL}/api/announcements`, { method: "POST", body: JSON.stringify(data) }),
+      adminFetch(`${API_URL}/announcements`, { method: "POST", body: JSON.stringify(data) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-announcements"] });
       qc.invalidateQueries({ queryKey: ["announcements"] });
@@ -83,7 +83,7 @@ export function AdminSettings() {
   });
 
   const deleteAnn = useMutation({
-    mutationFn: (id: number) => adminFetch(`${API_URL}/api/announcements/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) => adminFetch(`${API_URL}/announcements/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-announcements"] });
       qc.invalidateQueries({ queryKey: ["announcements"] });
@@ -100,11 +100,11 @@ export function AdminSettings() {
 
   const { data: discountCodes = [] } = useQuery<any[]>({
     queryKey: ["admin-discount-codes"],
-    queryFn: () => adminFetch(`${API_URL}/api/admin/discount-codes`),
+    queryFn: () => adminFetch(`${API_URL}/admin/discount-codes`),
   });
 
   const createDc = useMutation({
-    mutationFn: (data: any) => adminFetch(`${API_URL}/api/admin/discount-codes`, { method: "POST", body: JSON.stringify(data) }),
+    mutationFn: (data: any) => adminFetch(`${API_URL}/admin/discount-codes`, { method: "POST", body: JSON.stringify(data) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-discount-codes"] });
       setDcCode(""); setDcPct(""); setDcMaxUses(""); setDcExpiry("");
@@ -114,13 +114,13 @@ export function AdminSettings() {
   });
 
   const patchDc = useMutation({
-    mutationFn: ({ id, ...data }: any) => adminFetch(`${API_URL}/api/admin/discount-codes/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    mutationFn: ({ id, ...data }: any) => adminFetch(`${API_URL}/admin/discount-codes/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-discount-codes"] }),
     onError: (err: any) => toast({ title: t("common.error"), description: err.message, variant: "destructive" }),
   });
 
   const deleteDc = useMutation({
-    mutationFn: (id: number) => adminFetch(`${API_URL}/api/admin/discount-codes/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) => adminFetch(`${API_URL}/admin/discount-codes/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-discount-codes"] });
       setConfirmDeleteDc(null);
@@ -143,7 +143,7 @@ export function AdminSettings() {
   // Load real settings on mount
   const { data: platformSettings } = useQuery<any>({
     queryKey: ["admin-platform-settings"],
-    queryFn: () => adminFetch(`${API_URL}/api/admin/settings`),
+    queryFn: () => adminFetch(`${API_URL}/admin/settings`),
   });
 
   // Sync state when settings load (must be in useEffect — never call setState during render)
@@ -174,7 +174,7 @@ export function AdminSettings() {
     }
     setSavingPlatform(true);
     try {
-      await adminFetch(`${API_URL}/api/admin/settings`, {
+      await adminFetch(`${API_URL}/admin/settings`, {
         method: "PUT",
         body: JSON.stringify({ commissionRate: c, maxCoursePrice: p, maintenanceMode: maintenance }),
       });

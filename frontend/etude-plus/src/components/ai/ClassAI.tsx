@@ -58,7 +58,7 @@ const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 async function callAI(endpoint: string, body: object): Promise<string> {
   const token = getToken();
-  const res = await fetch(`${API_URL}/api/ai/${endpoint}`, {
+  const res = await fetch(`${API_URL}/ai/${endpoint}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

@@ -42,7 +42,7 @@ export function Checkout() {
     setPromoError("");
     try {
       const token = getToken();
-      const res = await fetch(`${API_URL}/api/discount-codes/validate`, {
+      const res = await fetch(`${API_URL}/discount-codes/validate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -82,10 +82,10 @@ export function AdminAnalytics() {
   const fetchAll = useCallback(async () => {
     try {
       const [s, c, ck, l] = await Promise.all([
-        apiFetch(`${API_URL}/api/admin/analytics/summary`),
-        apiFetch(`${API_URL}/api/admin/analytics/charts?days=30`),
-        apiFetch(`${API_URL}/api/admin/analytics/cookie-consent`),
-        apiFetch(`${API_URL}/api/admin/analytics/live`),
+        apiFetch(`${API_URL}/admin/analytics/summary`),
+        apiFetch(`${API_URL}/admin/analytics/charts?days=30`),
+        apiFetch(`${API_URL}/admin/analytics/cookie-consent`),
+        apiFetch(`${API_URL}/admin/analytics/live`),
       ]);
       setSummary(s);
       setCharts(c);
@@ -104,7 +104,7 @@ export function AdminAnalytics() {
 
   const handleExport = () => {
     const token = getToken();
-    const url = `${API_URL}/api/admin/analytics/export?days=30`;
+    const url = `${API_URL}/admin/analytics/export?days=30`;
     const a = document.createElement("a");
     a.href = url;
     a.download = "etude-analytics-30days.csv";

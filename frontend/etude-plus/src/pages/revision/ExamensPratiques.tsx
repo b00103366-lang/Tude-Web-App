@@ -120,7 +120,7 @@ export function ExamensPratiques() {
   const saveAttempt = useMutation({
     mutationFn: async (body: object) => {
       const token = getToken();
-      const res = await fetch(`${API_URL}/api/progress/attempts`, {
+      const res = await fetch(`${API_URL}/progress/attempts`, {
         method: "POST",
         credentials: "include",
         headers: {

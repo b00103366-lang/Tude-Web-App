@@ -157,7 +157,7 @@ export function AdminQuestions() {
   // Load history on mount
   useEffect(() => {
     const token = getToken();
-    fetch(`${API_URL}/api/kb/files`, {
+    fetch(`${API_URL}/kb/files`, {
       credentials: "include",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
@@ -175,7 +175,7 @@ export function AdminQuestions() {
     const token = getToken();
     const interval = setInterval(async () => {
       const data: KBFile[] = await fetch(
-        `${API_URL}/api/kb/files/status?ids=${pollingIds.join(",")}`,
+        `${API_URL}/kb/files/status?ids=${pollingIds.join(",")}`,
         {
           credentials: "include",
           headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -217,7 +217,7 @@ export function AdminQuestions() {
     const updated = await Promise.all(
       selectedFiles.map(async sf => {
         const params = new URLSearchParams({ file_name: sf.file.name, subject: kbSubject, grade_level: kbGradeKey.value });
-        const res = await fetch(`${API_URL}/api/kb/check-duplicate?${params}`, {
+        const res = await fetch(`${API_URL}/kb/check-duplicate?${params}`, {
           credentials: "include",
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
@@ -247,7 +247,7 @@ export function AdminQuestions() {
     if (kbNotes) formData.append("notes", kbNotes);
 
     try {
-      const created: KBFile[] = await kbFetch(`${API_URL}/api/kb/upload`, { method: "POST", body: formData });
+      const created: KBFile[] = await kbFetch(`${API_URL}/kb/upload`, { method: "POST", body: formData });
       setUploadedBatch(created);
       setPollingIds(created.filter(f => f.status === "processing").map(f => f.id));
       setKbHistory(prev => [...created, ...prev]);
@@ -262,7 +262,7 @@ export function AdminQuestions() {
 
   const deleteKBFile = async (id: number) => {
     if (!confirm("Supprimer ce fichier et tout le contenu généré par l'IA ?")) return;
-    await kbFetch(`${API_URL}/api/kb/files/${id}`, { method: "DELETE" });
+    await kbFetch(`${API_URL}/kb/files/${id}`, { method: "DELETE" });
     setKbHistory(prev => prev.filter(f => f.id !== id));
     setUploadedBatch(prev => prev.filter(f => f.id !== id));
     if (expandedRow === id) { setExpandedRow(null); setExpandedData(null); }
@@ -272,7 +272,7 @@ export function AdminQuestions() {
     if (expandedRow === id) { setExpandedRow(null); setExpandedData(null); return; }
     setExpandedRow(id);
     setExpandedData(null);
-    const data = await kbFetch(`${API_URL}/api/kb/files/${id}`);
+    const data = await kbFetch(`${API_URL}/kb/files/${id}`);
     setExpandedData(data);
   };
 

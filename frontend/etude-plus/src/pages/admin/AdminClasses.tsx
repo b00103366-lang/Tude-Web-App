@@ -31,7 +31,7 @@ async function adminFetch(path: string, method = "GET", body?: unknown) {
 function useAdminClasses(search: string) {
   return useQuery({
     queryKey: ["/api/admin/classes", search],
-    queryFn: () => adminFetch(`${API_URL}/api/admin/classes${search ? `?search=${encodeURIComponent(search)}` : ""}`),
+    queryFn: () => adminFetch(`${API_URL}/admin/classes${search ? `?search=${encodeURIComponent(search)}` : ""}`),
   });
 }
 
@@ -42,8 +42,8 @@ function useClassAction(action: "archive" | "unarchive" | "delete") {
   return useMutation({
     mutationFn: (classId: number) =>
       action === "delete"
-        ? adminFetch(`${API_URL}/api/admin/classes/${classId}`, "DELETE")
-        : adminFetch(`${API_URL}/api/admin/classes/${classId}/${action}`, "POST"),
+        ? adminFetch(`${API_URL}/admin/classes/${classId}`, "DELETE")
+        : adminFetch(`${API_URL}/admin/classes/${classId}/${action}`, "POST"),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/admin/classes"] });
       const labelKeys: Record<string, string> = {

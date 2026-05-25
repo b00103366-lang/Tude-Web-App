@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { formatTND } from "@/lib/utils";
 import { Link } from "wouter";
-import { useApproveProfessor, getToken } from "@workspace/api-client-react";
+import { getToken } from "@workspace/api-client-react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -36,7 +36,7 @@ function useRejectProfessor() {
   return useMutation({
     mutationFn: async ({ id, notes }: { id: number; notes: string }) => {
       const token = getToken();
-      const res = await fetch(`${API_URL}/api/professors/${id}/reject`, {
+      const res = await fetch(`${API_URL}/professors/${id}/reject`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ notes }),
@@ -44,7 +44,7 @@ function useRejectProfessor() {
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? t("common.error"));
       return res.json();
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/professors"] }); toast({ title: t("admin.dashboard.professorRejected") }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["professors"] }); toast({ title: t("admin.dashboard.professorRejected") }); },
     onError: (e: any) => toast({ title: t("common.error"), description: e.message, variant: "destructive" }),
   });
 }
@@ -79,11 +79,18 @@ export function AdminDashboard() {
     .filter((tx: any) => new Date(tx.createdAt) >= monthStart)
     .reduce((s: number, tx: any) => s + (tx.platformFee ?? tx.amount * 0.15), 0);
 
-  const approveMutation = useApproveProfessor({
-    mutation: {
-      onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/professors"] }); toast({ title: t("admin.dashboard.professorApproved") }); },
-      onError: (e: any) => toast({ title: t("common.error"), description: e.message, variant: "destructive" }),
+  const approveMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const token = getToken();
+      const res = await fetch(`${API_URL}/professors/${id}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? t("common.error"));
+      return res.json();
     },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["professors"] }); toast({ title: t("admin.dashboard.professorApproved") }); },
+    onError: (e: any) => toast({ title: t("common.error"), description: e.message, variant: "destructive" }),
   });
   const rejectMutation = useRejectProfessor();
 
@@ -217,7 +224,7 @@ export function AdminDashboard() {
                         <XCircle className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => approveMutation.mutate({ id: prof.id })}
+                        onClick={() => approveMutation.mutate(prof.id)}
                         disabled={approveMutation.isPending}
                         title={t("admin.dashboard.approve")}
                         className="w-8 h-8 rounded-lg bg-green-100 hover:bg-green-200 text-green-600 flex items-center justify-center transition-colors"

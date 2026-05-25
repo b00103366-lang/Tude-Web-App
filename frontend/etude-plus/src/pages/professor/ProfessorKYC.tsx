@@ -21,7 +21,7 @@ async function uploadDoc(file: File): Promise<string> {
   const token = getToken();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  const r = await fetch(`${API_URL}/api/storage/uploads/request-url`, {
+  const r = await fetch(`${API_URL}/storage/uploads/request-url`, {
     method: "POST", headers,
     body: JSON.stringify({ name: file.name, contentType: file.type, size: file.size }),
   });
@@ -33,7 +33,7 @@ async function uploadDoc(file: File): Promise<string> {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-    await fetch(`${API_URL}/api/storage/uploads/direct`, {
+    await fetch(`${API_URL}/storage/uploads/direct`, {
       method: "POST", headers,
       body: JSON.stringify({ objectPath, content: b64, contentType: file.type }),
     });
@@ -75,7 +75,7 @@ function UploadSlot({
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           {file && (
-            <a href={`${API_URL}/api/storage${file.objectPath}`} target="_blank" rel="noopener noreferrer"
+            <a href={`${API_URL}/storage${file.objectPath}`} target="_blank" rel="noopener noreferrer"
               className="p-1.5 rounded-lg hover:bg-green-100 text-green-700">
               <Eye className="w-4 h-4" />
             </a>
@@ -218,7 +218,7 @@ export function ProfessorKYC() {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      const res = await fetch(`${API_URL}/api/professors/${profId}/submit-kyc`, {
+      const res = await fetch(`${API_URL}/professors/${profId}/submit-kyc`, {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -556,7 +556,7 @@ export function ProfessorKYC() {
                   { doc: teachingCert, label: t("prof.kyc.teachingCert") },
                   { doc: additionalDoc, label: t("prof.kyc.additionalDoc") },
                 ].filter(d => d.doc).map(({ doc, label }) => (
-                  <a key={label} href={`${API_URL}/api/storage${doc!.objectPath}`} target="_blank" rel="noopener noreferrer"
+                  <a key={label} href={`${API_URL}/storage${doc!.objectPath}`} target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl hover:bg-green-100 transition-colors">
                     <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
                     <span className="text-sm font-medium text-green-800 flex-1 truncate">{label} : {doc!.name}</span>

@@ -13,7 +13,7 @@ function useMyClasses() {
   useEffect(() => {
     const token = localStorage.getItem("etude_auth_token");
     if (!token) { setIsLoading(false); return; }
-    fetch(`${API_URL}/api/classes/my-classes`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_URL}/classes/my-classes`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(d => { setClasses(d.classes ?? []); setIsLoading(false); })
       .catch(() => setIsLoading(false));

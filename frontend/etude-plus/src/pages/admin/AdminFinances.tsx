@@ -26,7 +26,7 @@ function useOverrideStatus() {
   return useMutation({
     mutationFn: async ({ id, status }: { id: number; status: TxStatus }) => {
       const token = getToken();
-      const res = await fetch(`${API_URL}/api/admin/transactions/${id}/status`, {
+      const res = await fetch(`${API_URL}/admin/transactions/${id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ status }),

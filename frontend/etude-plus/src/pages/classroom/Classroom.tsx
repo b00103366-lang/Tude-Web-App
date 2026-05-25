@@ -66,7 +66,7 @@ export function Classroom() {
   const fetchSession = useCallback(async () => {
     if (!sessionId) return;
     const token = getToken();
-    const r = await fetch(`${API_URL}/api/classes/sessions/${sessionId}`, {
+    const r = await fetch(`${API_URL}/classes/sessions/${sessionId}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     if (!r.ok) throw new Error("Session introuvable");
@@ -84,7 +84,7 @@ export function Classroom() {
 
         // Fetch JaaS JWT token (works for both professor and student)
         try {
-          const tokenRes = await apiFetch(`${API_URL}/api/classes/sessions/${sessionId}/jitsi-token`);
+          const tokenRes = await apiFetch(`${API_URL}/classes/sessions/${sessionId}/jitsi-token`);
           if (tokenRes.ok) {
             const tokenData = await tokenRes.json();
             setJitsiJwt(tokenData.token);
@@ -96,7 +96,7 @@ export function Classroom() {
         // Professor auto-starts the session
         if (user?.role === "professor" && d.session.status !== "live") {
           setStarting(true);
-          apiFetch(`${API_URL}/api/classes/sessions/${sessionId}/start`, { method: "POST" })
+          apiFetch(`${API_URL}/classes/sessions/${sessionId}/start`, { method: "POST" })
             .then(r => r.json())
             .then(updated => { setSessionStatus(updated.status ?? "live"); setStarting(false); })
             .catch(() => { setSessionStatus("live"); setStarting(false); });

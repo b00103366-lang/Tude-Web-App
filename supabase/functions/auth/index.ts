@@ -16,17 +16,23 @@ const MAX_PASSWORD_LENGTH = 128;
 const MERCHANT_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
-// Must be a specific origin (not "*") when Allow-Credentials is true,
-// because browsers reject wildcard + credentials per the CORS spec.
-const ALLOWED_ORIGIN =
-  Deno.env.get("ALLOWED_ORIGIN") ?? "https://tude-web-app-etude-plus-xi.vercel.app";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Authorization, Content-Type",
-  "Access-Control-Allow-Credentials": "true",
-};
+const ALLOWED_ORIGINS = (
+  Deno.env.get("ALLOWED_ORIGINS") ??
+  Deno.env.get("ALLOWED_ORIGIN") ??
+  "https://tude-web-app-etude-plus-xi.vercel.app"
+).split(",").map((s) => s.trim()).filter(Boolean);
+
+function getCorsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get("Origin") ?? "";
+  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowed,
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Authorization, Content-Type",
+    "Access-Control-Allow-Credentials": "true",
+  };
+}
 
 // ── Response helpers ──────────────────────────────────────────────────────────
 
@@ -36,10 +42,12 @@ function json(
   data: unknown,
   status = 200,
   extra: Record<string, string> = {},
+  req?: Request,
 ): Response {
+  const cors = req ? getCorsHeaders(req) : { "Access-Control-Allow-Origin": ALLOWED_ORIGINS[0], "Access-Control-Allow-Credentials": "true" };
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json", ...extra },
+    headers: { ...cors, "Content-Type": "application/json", ...extra },
   });
 }
 
@@ -600,9 +608,8 @@ async function handleChangePassword(
 // ── Main handler ──────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request): Promise<Response> => {
-  // Browsers send OPTIONS preflight before every cross-origin request
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 200, headers: corsHeaders });
+    return new Response(null, { status: 200, headers: getCorsHeaders(req) });
   }
 
   // Resolve secrets once per invocation
@@ -646,6 +653,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
       case "change-password":
         if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
         return await handleChangePassword(req, sql, secret);
+
+      case "restore-session": {
+        if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+        const auth = await authenticate(req, sql, secret);
+        if (!auth.ok) return auth.response;
+        const freshToken = await generateToken(auth.user.id as number, secret);
+        return json({ token: freshToken }, 200, {
+          "Set-Cookie": sessionCookieHeader(freshToken, true),
+        });
+      }
 
       default:
         return json({ error: "Not found" }, 404);

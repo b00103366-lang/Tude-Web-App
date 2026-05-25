@@ -16,7 +16,7 @@ const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
 async function fetchOverview() {
   const token = getToken();
-  const res = await fetch(`${API_URL}/api/progress/overview`, {
+  const res = await fetch(`${API_URL}/progress/overview`, {
     credentials: "include",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });

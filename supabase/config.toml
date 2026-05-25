@@ -459,3 +459,117 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/admin-overview/deno.json"
 entrypoint = "./functions/admin-overview/index.ts"
+
+[functions.analytics]
+enabled = true
+verify_jwt = false
+import_map = "./functions/analytics/deno.json"
+entrypoint = "./functions/analytics/index.ts"
+
+[functions.announcements]
+enabled = true
+verify_jwt = false
+import_map = "./functions/announcements/deno.json"
+entrypoint = "./functions/announcements/index.ts"
+
+[functions.payments]
+enabled = true
+verify_jwt = false
+import_map = "./functions/payments/deno.json"
+entrypoint = "./functions/payments/index.ts"
+
+[functions.discount-codes]
+enabled = true
+verify_jwt = false
+import_map = "./functions/discount-codes/deno.json"
+entrypoint = "./functions/discount-codes/index.ts"
+
+[functions.ai]
+enabled = true
+verify_jwt = false
+import_map = "./functions/ai/deno.json"
+entrypoint = "./functions/ai/index.ts"
+
+[functions.storage]
+enabled = true
+verify_jwt = false
+import_map = "./functions/storage/deno.json"
+entrypoint = "./functions/storage/index.ts"
+
+[functions.mon-prof]
+enabled = true
+verify_jwt = false
+import_map = "./functions/mon-prof/deno.json"
+entrypoint = "./functions/mon-prof/index.ts"
+
+[functions.classes]
+enabled = true
+verify_jwt = false
+import_map = "./functions/classes/deno.json"
+entrypoint = "./functions/classes/index.ts"
+
+[functions.enrollments]
+enabled = true
+verify_jwt = false
+import_map = "./functions/enrollments/deno.json"
+entrypoint = "./functions/enrollments/index.ts"
+
+[functions.notifications]
+enabled = true
+verify_jwt = false
+import_map = "./functions/notifications/deno.json"
+entrypoint = "./functions/notifications/index.ts"
+
+[functions.grades]
+enabled = true
+verify_jwt = false
+import_map = "./functions/grades/deno.json"
+entrypoint = "./functions/grades/index.ts"
+
+[functions.reviews]
+enabled = true
+verify_jwt = false
+import_map = "./functions/reviews/deno.json"
+entrypoint = "./functions/reviews/index.ts"
+
+[functions.transactions]
+enabled = true
+verify_jwt = false
+import_map = "./functions/transactions/deno.json"
+entrypoint = "./functions/transactions/index.ts"
+
+[functions.progress]
+enabled = true
+verify_jwt = false
+import_map = "./functions/progress/deno.json"
+entrypoint = "./functions/progress/index.ts"
+
+[functions.qualifications]
+enabled = true
+verify_jwt = false
+import_map = "./functions/qualifications/deno.json"
+entrypoint = "./functions/qualifications/index.ts"
+
+[functions.stats]
+enabled = true
+verify_jwt = false
+import_map = "./functions/stats/deno.json"
+entrypoint = "./functions/stats/index.ts"
+
+[functions.users]
+enabled = true
+verify_jwt = false
+import_map = "./functions/users/deno.json"
+entrypoint = "./functions/users/index.ts"
+
+[functions.kb]
+enabled = true
+verify_jwt = false
+import_map = "./functions/kb/deno.json"
+entrypoint = "./functions/kb/index.ts"
+
+[functions.professors]
+enabled = true
+verify_jwt = false
+import_map = "./functions/professors/deno.json"
+entrypoint = "./functions/professors/index.ts"

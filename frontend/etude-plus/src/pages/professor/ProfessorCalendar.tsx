@@ -40,7 +40,7 @@ export function ProfessorCalendar() {
     queryKey: ["professor-my-sessions"],
     queryFn: async () => {
       const token = getToken();
-      const res = await fetch(`${API_URL}/api/classes/my-sessions`, {
+      const res = await fetch(`${API_URL}/classes/my-sessions`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) return [];
@@ -64,7 +64,7 @@ export function ProfessorCalendar() {
 
   const startSession = async (sessionId: number) => {
     const token = getToken();
-    const res = await fetch(`${API_URL}/api/classes/sessions/${sessionId}/start`, {
+    const res = await fetch(`${API_URL}/classes/sessions/${sessionId}/start`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     });

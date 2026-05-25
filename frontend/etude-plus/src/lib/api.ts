@@ -24,7 +24,9 @@ export async function apiFetch<T = unknown>(
 ): Promise<T | null> {
   const token = getToken();
 
-  const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
+  const url = path.startsWith("http")
+    ? path
+    : `${API_BASE}${path.startsWith("/api/") ? path.slice(4) : path}`;
 
   let response: Response;
   try {

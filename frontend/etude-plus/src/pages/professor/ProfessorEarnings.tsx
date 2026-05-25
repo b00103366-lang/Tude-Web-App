@@ -24,7 +24,7 @@ export function ProfessorEarnings() {
   useEffect(() => {
     const token = localStorage.getItem("etude_auth_token");
     if (!token) return;
-    fetch(`${API_URL}/api/transactions/my-earnings`, {
+    fetch(`${API_URL}/transactions/my-earnings`, {
       headers: { Authorization: `Bearer ${token}` },
     }).then(r => r.json()).then(setTransactions).catch(() => {});
   }, []);

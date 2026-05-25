@@ -43,7 +43,7 @@ const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 async function fetchAuditLogs(page: number, limit: number) {
   const token = getToken();
-  const res = await fetch(`${API_URL}/api/admin/audit-logs?page=${page}&limit=${limit}`, {
+  const res = await fetch(`${API_URL}/admin/audit-logs?page=${page}&limit=${limit}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!res.ok) throw new Error("Load error");

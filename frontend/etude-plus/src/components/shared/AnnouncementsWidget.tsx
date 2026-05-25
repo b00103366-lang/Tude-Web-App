@@ -19,7 +19,7 @@ async function apiFetch(url: string) {
 export function AnnouncementsWidget() {
   const { data: announcements = [] } = useQuery<any[]>({
     queryKey: ["announcements"],
-    queryFn: () => apiFetch(`${API_URL}/api/announcements`),
+    queryFn: () => apiFetch(`${API_URL}/announcements`),
     refetchInterval: 60_000,
   });
 

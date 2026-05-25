@@ -107,7 +107,7 @@ export function Annales() {
   const saveAttempt = useMutation({
     mutationFn: async (body: any) => {
       const token = getToken();
-      const res = await fetch(`${API_URL}/api/progress/attempts`, {
+      const res = await fetch(`${API_URL}/progress/attempts`, {
         method: "POST",
         credentials: "include",
         headers: {

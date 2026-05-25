@@ -167,7 +167,7 @@ export function AdminQuestionsGenerate() {
     setSaved(false);
 
     try {
-      const data = await adminFetch(`${API_URL}/api/admin/questions/generate`, {
+      const data = await adminFetch(`${API_URL}/admin/questions/generate`, {
         method: "POST",
         body: JSON.stringify({
           gradeLevel: niveauKey, sectionKey: effectiveSection,
@@ -215,7 +215,7 @@ export function AdminQuestionsGenerate() {
     if (!q) return;
     setSaving(true);
     try {
-      await adminFetch(`${API_URL}/api/admin/questions`, {
+      await adminFetch(`${API_URL}/admin/questions`, {
         method: "POST",
         body: JSON.stringify({
           gradeLevel: niveauKey,

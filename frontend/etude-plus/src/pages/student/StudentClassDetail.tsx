@@ -94,7 +94,7 @@ function QuizModal({
     setError("");
     try {
       const payload = questions.map(q => ({ questionId: q.id, answer: answers[q.id] ?? "" }));
-      const data = await apiFetch(`${API_URL}/api/classes/${classId}/${type}/${quiz.id}/submit`, {
+      const data = await apiFetch(`${API_URL}/classes/${classId}/${type}/${quiz.id}/submit`, {
         method: "POST",
         body: JSON.stringify({ answers: payload }),
       });
@@ -279,7 +279,7 @@ function ReviewModal({
     setSubmitting(true);
     setError("");
     try {
-      await apiFetch(`${API_URL}/api/reviews`, {
+      await apiFetch(`${API_URL}/reviews`, {
         method: "POST",
         body: JSON.stringify({
           professorId: cls.professor?.id,
@@ -397,7 +397,7 @@ export function StudentClassDetail() {
     queryKey: ["class-reviews", classId],
     enabled: !!classId,
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/reviews?classId=${classId}`);
+      const res = await fetch(`${API_URL}/reviews?classId=${classId}`);
       return res.ok ? res.json() : [];
     },
   });
@@ -703,7 +703,7 @@ export function StudentClassDetail() {
                         </div>
                       </div>
                       {m.fileUrl ? (
-                        <Button size="sm" onClick={() => window.open(`${API_URL}/api/storage${m.fileUrl}`, "_blank")}>
+                        <Button size="sm" onClick={() => window.open(`${API_URL}/storage${m.fileUrl}`, "_blank")}>
                           <PlayCircle className="w-4 h-4 mr-2" /> Regarder
                         </Button>
                       ) : (
@@ -737,7 +737,7 @@ export function StudentClassDetail() {
                           </div>
                         </div>
                         {m.fileUrl ? (
-                          <Button variant="ghost" size="sm" onClick={() => window.open(`${API_URL}/api/storage${m.fileUrl}`, "_blank")}>
+                          <Button variant="ghost" size="sm" onClick={() => window.open(`${API_URL}/storage${m.fileUrl}`, "_blank")}>
                             <Download className="w-5 h-5 text-primary" />
                           </Button>
                         ) : (
@@ -975,7 +975,7 @@ export function StudentClassDetail() {
                         <div className="flex gap-4">
                           <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary shrink-0 overflow-hidden">
                             {r.student?.profilePhoto
-                              ? <img src={`${API_URL}/api/storage${r.student.profilePhoto}`} alt="" className="w-full h-full object-cover" />
+                              ? <img src={`${API_URL}/storage${r.student.profilePhoto}`} alt="" className="w-full h-full object-cover" />
                               : r.student?.fullName?.charAt(0) ?? "?"}
                           </div>
                           <div className="flex-1">

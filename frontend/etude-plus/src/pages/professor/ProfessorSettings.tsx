@@ -36,7 +36,7 @@ async function uploadFile(file: File): Promise<string> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const reqRes = await fetch(`${API_URL}/api/storage/uploads/request-url`, {
+  const reqRes = await fetch(`${API_URL}/storage/uploads/request-url`, {
     method: "POST", headers,
     body: JSON.stringify({ name: file.name, contentType: file.type, size: file.size }),
   });
@@ -49,7 +49,7 @@ async function uploadFile(file: File): Promise<string> {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-    const up = await fetch(`${API_URL}/api/storage/uploads/direct`, {
+    const up = await fetch(`${API_URL}/storage/uploads/direct`, {
       method: "POST", headers,
       body: JSON.stringify({ objectPath: reqData.objectPath, content: base64, contentType: file.type }),
     });
@@ -123,7 +123,7 @@ function ProfessionalCard() {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await apiFetch(`${API_URL}/api/users/${(user as any).id}`, {
+      const res = await apiFetch(`${API_URL}/users/${(user as any).id}`, {
         method: "PUT",
         body: JSON.stringify({ bio, qualifications }),
       });
@@ -254,7 +254,7 @@ function SubjectRequestCard() {
     queryKey: ["subject-requests", profId],
     queryFn: async () => {
       if (!profId) return [];
-      const res = await apiFetch(`${API_URL}/api/professors/${profId}/subject-requests`);
+      const res = await apiFetch(`${API_URL}/professors/${profId}/subject-requests`);
       return res.ok ? res.json() : [];
     },
     enabled: !!profId,
@@ -281,7 +281,7 @@ function SubjectRequestCard() {
     setUploading(false);
     setSubmitting(true);
     try {
-      const res = await apiFetch(`${API_URL}/api/professors/${profId}/subject-requests`, {
+      const res = await apiFetch(`${API_URL}/professors/${profId}/subject-requests`, {
         method: "POST",
         body: JSON.stringify({ subjects: newSubjects, gradeLevels: newLevels, documentUrl: docUrl }),
       });
@@ -345,7 +345,7 @@ function SubjectRequestCard() {
                   <p className="text-xs mt-1 italic">{t("prof.settings.subjectReq.adminNote")} : {r.adminNotes}</p>
                 )}
                 {r.documentUrl && (
-                  <a href={`${API_URL}/api/storage${r.documentUrl}`} target="_blank" rel="noopener noreferrer"
+                  <a href={`${API_URL}/storage${r.documentUrl}`} target="_blank" rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1">
                     <Eye className="w-3 h-3" /> {t("prof.settings.subjectReq.viewDocument")}
                   </a>

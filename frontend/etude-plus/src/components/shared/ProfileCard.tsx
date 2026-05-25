@@ -17,7 +17,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 async function uploadFile(file: File, token: string): Promise<string> {
-  const urlRes = await fetch(`${API_URL}/api/storage/uploads/request-url`, {
+  const urlRes = await fetch(`${API_URL}/storage/uploads/request-url`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
@@ -32,7 +32,7 @@ async function uploadFile(file: File, token: string): Promise<string> {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-    const dirRes = await fetch(`${API_URL}/api/storage/uploads/direct`, {
+    const dirRes = await fetch(`${API_URL}/storage/uploads/direct`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ objectPath, content: base64, contentType: file.type }),
@@ -65,7 +65,7 @@ export function ProfileCard() {
   const prof = (user as any)?.professorProfile;
   const rating = prof?.rating ? Number(prof.rating) : null;
   const photoUrl = previewUrl
-    ?? (user.profilePhoto ? `${API_URL}/api/storage${user.profilePhoto}` : null);
+    ?? (user.profilePhoto ? `${API_URL}/storage${user.profilePhoto}` : null);
 
   const handlePhotoClick = () => fileInputRef.current?.click();
 
@@ -88,14 +88,14 @@ export function ProfileCard() {
       const objectPath = await uploadFile(file, token);
 
       // Save to user profile
-      const res = await fetch(`${API_URL}/api/users/${(user as any).id}`, {
+      const res = await fetch(`${API_URL}/users/${(user as any).id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ profilePhoto: objectPath }),
       });
       if (!res.ok) throw new Error("Impossible de sauvegarder la photo");
 
-      setPreviewUrl(`${API_URL}/api/storage${objectPath}`);
+      setPreviewUrl(`${API_URL}/storage${objectPath}`);
       await refreshUser();
       toast({ title: "Photo mise à jour" });
     } catch (err: any) {
@@ -115,7 +115,7 @@ export function ProfileCard() {
     setSaving(true);
     try {
       const token = getToken();
-      const res = await fetch(`${API_URL}/api/users/${(user as any).id}`, {
+      const res = await fetch(`${API_URL}/users/${(user as any).id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ fullName: fullName.trim(), city: city.trim() || null }),

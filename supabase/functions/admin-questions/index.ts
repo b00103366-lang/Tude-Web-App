@@ -8,7 +8,7 @@ const ALLOWED_ORIGIN =
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Authorization, Content-Type",
   "Access-Control-Allow-Credentials": "true",
 };
@@ -267,6 +267,27 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     return json(camel(updated[0]));
+  }
+
+  // ── PATCH: approve / change status (id via query param) ──────────────────
+  if (req.method === "PATCH") {
+    const idStr = url.searchParams.get("id");
+    const id = idStr ? parseInt(idStr, 10) : NaN;
+    if (isNaN(id)) return json({ error: "?id= required" }, 400);
+
+    const body = await req.json().catch(() => ({})) as { status?: string };
+    const { status } = body;
+    const VALID_STATUSES = ["draft", "published", "archived"];
+    if (!status || !VALID_STATUSES.includes(status)) {
+      return json({ error: `status must be one of: ${VALID_STATUSES.join(", ")}` }, 400);
+    }
+
+    const patched = await sql`
+      UPDATE questions SET status = ${status} WHERE id = ${id}
+      RETURNING id, status, source, question_text, difficulty, subject, grade_level, topic
+    `;
+    if (patched.length === 0) return json({ error: "Question not found" }, 404);
+    return json(camel(patched[0] as Record<string, unknown>));
   }
 
   // ── DELETE: delete question (id via query param) ──────────────────────────

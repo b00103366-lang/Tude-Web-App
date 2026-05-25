@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
-const API_URL = import.meta.env.VITE_API_URL ?? "";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Button, Badge, Input } from "@/components/ui/Premium";
-import { useListProfessors } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/api";
 import {
   Search, Star, BookOpen, GraduationCap, X, BadgeCheck,
   Users, ChevronRight, MapPin, Filter, SlidersHorizontal,
@@ -11,6 +11,8 @@ import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { getNiveauLabel, getSubjectsForNiveauSection, isSimpleLevel, isSectionLevel } from "@/lib/educationConfig";
 import { cn } from "@/lib/utils";
+
+const API_URL = import.meta.env.VITE_API_URL ?? "";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -65,7 +67,7 @@ function ProfessorCard({ prof }: { prof: Professor }) {
           <div className="w-20 h-20 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center font-bold text-2xl text-primary border-4 border-background shadow-lg">
             {prof.profilePhoto ? (
               <img
-                src={`${API_URL}/api/storage${prof.profilePhoto}`}
+                src={`${API_URL}/storage${prof.profilePhoto}`}
                 alt={prof.fullName}
                 className="w-full h-full object-cover"
               />
@@ -195,7 +197,11 @@ export function BrowseClasses() {
   const [showFilters, setShowFilters] = useState(false);
 
   // Fetch all approved professors
-  const { data, isLoading } = useListProfessors({ status: "approved" } as any);
+  const { data, isLoading } = useQuery({
+    queryKey: ["professors", "approved"],
+    queryFn: () => apiFetch(`${API_URL}/professors?status=approved`),
+    staleTime: 2 * 60 * 1000,
+  });
   const allProfs: Professor[] = (data as any)?.professors ?? [];
 
   // Filter & sort

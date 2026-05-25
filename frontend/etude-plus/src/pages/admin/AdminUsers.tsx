@@ -6,7 +6,7 @@ import {
   Star, CreditCard, ClipboardList, KeyRound, Loader2, Trash2,
   ChevronDown, CheckCircle2, XCircle, Clock, FileText, Download, MapPin, BookOpen, User, AlertCircle, UserCog,
 } from "lucide-react";
-import { useListProfessors, useApproveProfessor, getToken } from "@workspace/api-client-react";
+import { getToken } from "@workspace/api-client-react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -61,7 +61,8 @@ function useUserAction(action: "suspend" | "unsuspend") {
   const qc = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: (userId: number) => adminFetch(`${API_URL}/api/admin/users/${userId}/${action}`, { method: "POST" }),
+    mutationFn: (userId: number) =>
+      adminFetch(`${SUPABASE_FN}/admin-users?id=${userId}&action=${action}`, { method: "PATCH" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-users"] });
       toast({ title: action === "suspend" ? "Compte suspendu" : "Compte réactivé" });
@@ -75,7 +76,7 @@ function useChangeRole() {
   const { toast } = useToast();
   return useMutation({
     mutationFn: ({ userId, role }: { userId: number; role: string }) =>
-      adminFetch(`${API_URL}/api/admin/users/${userId}/change-role`, { method: "POST", body: JSON.stringify({ role }) }),
+      adminFetch(`${SUPABASE_FN}/admin-users?id=${userId}&action=change-role`, { method: "PATCH", body: JSON.stringify({ role }) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-users"] });
       toast({ title: "Rôle modifié", description: "Prend effet immédiatement (prochaine requête API)." });
@@ -88,7 +89,8 @@ function useDeleteUser() {
   const qc = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: (userId: number) => adminFetch(`${API_URL}/api/admin/users/${userId}`, { method: "DELETE" }),
+    mutationFn: (userId: number) =>
+      adminFetch(`${SUPABASE_FN}/admin-users?id=${userId}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-users"] });
       toast({ title: "Compte supprimé" });
@@ -102,10 +104,24 @@ function useRejectProfessor() {
   const { toast } = useToast();
   return useMutation({
     mutationFn: ({ id, notes }: { id: number; notes: string }) =>
-      adminFetch(`${API_URL}/api/professors/${id}/reject`, { method: "POST", body: JSON.stringify({ notes }) }),
+      adminFetch(`${SUPABASE_FN}/professors/${id}/reject`, { method: "POST", body: JSON.stringify({ notes }) }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/professors"] });
+      qc.invalidateQueries({ queryKey: ["professors"] });
       toast({ title: "Professeur refusé" });
+    },
+    onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+  });
+}
+
+function useApproveProfessor() {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: (id: number) =>
+      adminFetch(`${SUPABASE_FN}/professors/${id}/approve`, { method: "POST" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["professors"] });
+      toast({ title: "Approuvé" });
     },
     onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
   });
@@ -120,7 +136,7 @@ function DocLink({ label, objectPath }: { label: string; objectPath?: string | n
       <div><p className="text-sm font-medium text-muted-foreground">{label}</p><p className="text-xs text-muted-foreground">Non soumis</p></div>
     </div>
   );
-  const url = `${API_URL}/api/storage${objectPath}`;
+  const url = `${SUPABASE_FN}/storage${objectPath}`;
   return (
     <div className="flex items-center gap-3 p-3 rounded-xl bg-green-50 border border-green-200">
       <FileText className="w-4 h-4 text-green-600 flex-shrink-0" />
@@ -142,12 +158,7 @@ function KYCModal({ prof, onClose }: { prof: any; onClose: () => void }) {
   const [rejectNotes, setRejectNotes] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
 
-  const approveMutation = useApproveProfessor({
-    mutation: {
-      onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/professors"] }); toast({ title: "Approuvé" }); onClose(); },
-      onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
-    },
-  });
+  const approveMutation = useApproveProfessor();
   const rejectMutation = useRejectProfessor();
 
   const status = prof.status as keyof typeof KYC_CONFIG;
@@ -235,7 +246,7 @@ function KYCModal({ prof, onClose }: { prof: any; onClose: () => void }) {
             </Button>
             <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white"
               disabled={approveMutation.isPending}
-              onClick={() => approveMutation.mutate({ id: prof.id })}>
+              onClick={() => approveMutation.mutate(prof.id, { onSuccess: onClose })}>
               <CheckCircle2 className="w-4 h-4 mr-2" /> Approuver
             </Button>
           </div>
@@ -274,7 +285,7 @@ function UserDetailModal({ userId, onClose }: { userId: number; onClose: () => v
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin-user-details", userId],
-    queryFn: () => adminFetch(`${API_URL}/api/admin/users/${userId}/details`),
+    queryFn: () => adminFetch(`${SUPABASE_FN}/admin-users?id=${userId}`),
     retry: false,
   });
 
@@ -282,7 +293,7 @@ function UserDetailModal({ userId, onClose }: { userId: number; onClose: () => v
     if (newPassword.length < 8) { toast({ title: "Erreur", description: "Minimum 8 caractères.", variant: "destructive" }); return; }
     setResetting(true);
     try {
-      await adminFetch(`${API_URL}/api/admin/users/${userId}/reset-password`, { method: "POST", body: JSON.stringify({ newPassword }) });
+      await adminFetch(`${SUPABASE_FN}/admin-users?id=${userId}&action=reset-password`, { method: "PATCH", body: JSON.stringify({ password: newPassword }) });
       toast({ title: "Mot de passe réinitialisé", description: `Nouveau mot de passe : ${newPassword}` });
       setNewPassword("");
     } catch (e: any) {
@@ -620,7 +631,7 @@ function CreateUserModal({ open, onClose }: { open: boolean; onClose: () => void
     if (!fullName.trim() || !email.trim() || !password) { toast({ title: "Erreur", description: "Tous les champs requis.", variant: "destructive" }); return; }
     setCreating(true);
     try {
-      const data = await adminFetch(`${API_URL}/api/admin/create-user`, { method: "POST", body: JSON.stringify({ fullName, email, password, role }) });
+      const data = await adminFetch(`${SUPABASE_FN}/admin-users`, { method: "POST", body: JSON.stringify({ fullName, email, password, role }) });
       toast({ title: "Compte créé", description: data.email });
       qc.invalidateQueries({ queryKey: ["admin-users"] });
       setFullName(""); setEmail(""); setPassword(""); setRole("student");
@@ -672,7 +683,7 @@ export function AdminUsers() {
 
   const handleImpersonate = async (targetUser: any) => {
     try {
-      const data = await adminFetch(`${API_URL}/api/admin/users/${targetUser.id}/impersonate`, { method: "POST" });
+      const data = await adminFetch(`${SUPABASE_FN}/admin-users?id=${targetUser.id}&action=impersonate`, { method: "PATCH" });
       await startImpersonation(data.token, data.user);
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
@@ -692,7 +703,11 @@ export function AdminUsers() {
     queryFn: () => adminFetch(`${SUPABASE_FN}/admin-users`),
     staleTime: 60 * 1000,
   });
-  const { data: professorsData } = useListProfessors() as any;
+  const { data: professorsData } = useQuery({
+    queryKey: ["professors"],
+    queryFn: () => adminFetch(`${SUPABASE_FN}/professors`),
+    staleTime: 60 * 1000,
+  });
   const suspendMutation = useUserAction("suspend");
   const unsuspendMutation = useUserAction("unsuspend");
   const changeRoleMutation = useChangeRole();

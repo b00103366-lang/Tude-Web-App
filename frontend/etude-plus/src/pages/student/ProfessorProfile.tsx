@@ -137,7 +137,7 @@ export function ProfessorProfile() {
     queryKey: ["prof-classes", profId],
     enabled: !!profId,
     queryFn: () =>
-      apiFetch(`${API_URL}/api/classes?professorId=${profId}&isPublished=true`),
+      apiFetch(`${API_URL}/classes?professorId=${profId}&isPublished=true`),
   });
   const classes: any[] = classesData?.classes ?? [];
 
@@ -145,7 +145,7 @@ export function ProfessorProfile() {
     queryKey: ["prof-reviews", profId],
     enabled: !!profId,
     queryFn: () =>
-      fetch(`${API_URL}/api/reviews?professorId=${profId}`)
+      fetch(`${API_URL}/reviews?professorId=${profId}`)
         .then(r => (r.ok ? r.json() : [])),
   });
 
@@ -155,7 +155,7 @@ export function ProfessorProfile() {
 
   const submitReview = useMutation({
     mutationFn: () =>
-      apiFetch(`${API_URL}/api/reviews`, {
+      apiFetch(`${API_URL}/reviews`, {
         method: "POST",
         body: JSON.stringify({
           professorId: profId,
@@ -227,7 +227,7 @@ export function ProfessorProfile() {
                 <div className="w-28 h-28 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center font-bold text-4xl text-primary border-4 border-background shadow-xl">
                   {prof.profilePhoto ? (
                     <img
-                      src={`${API_URL}/api/storage${prof.profilePhoto}`}
+                      src={`${API_URL}/storage${prof.profilePhoto}`}
                       alt={prof.fullName}
                       className="w-full h-full object-cover"
                     />
@@ -473,7 +473,7 @@ export function ProfessorProfile() {
                       <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-bold text-sm text-muted-foreground border border-border shrink-0 overflow-hidden">
                         {review.student?.profilePhoto ? (
                           <img
-                            src={`${API_URL}/api/storage${review.student.profilePhoto}`}
+                            src={`${API_URL}/storage${review.student.profilePhoto}`}
                             alt={review.student.fullName}
                             className="w-full h-full object-cover"
                           />
