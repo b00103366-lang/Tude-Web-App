@@ -6,52 +6,31 @@ import {
   Target, Heart, Shield, BookOpen, Zap,
   GraduationCap, Award, Globe, ArrowRight
 } from "lucide-react";
-
-const VALUES = [
-  {
-    icon: Target,
-    title: "Excellence",
-    desc: "Nous aspirons à l'excellence dans chaque exercice. Chaque fonctionnalité est conçue pour donner aux élèves les meilleurs outils pour réussir leurs examens et progresser à leur rythme.",
-    color: "#f59e0b",
-    bg: "bg-amber-50 border-amber-200/60",
-  },
-  {
-    icon: Heart,
-    title: "Bienveillance",
-    desc: "La révision réussit dans un environnement bienveillant. Nos outils favorisent la pratique, l'encouragement et la progression personnelle.",
-    color: "#f97316",
-    bg: "bg-orange-50 border-orange-200/60",
-  },
-  {
-    icon: Shield,
-    title: "Confiance",
-    desc: "Contenu vérifié, données protégées, plateforme sécurisée. La confiance est le socle de chaque interaction sur Étude+.",
-    color: "#10b981",
-    bg: "bg-emerald-50 border-emerald-200/60",
-  },
-  {
-    icon: Globe,
-    title: "Accessibilité",
-    desc: "Peu importe votre ville ou votre niveau, Étude+ vous donne accès à des ressources de révision complètes, depuis n'importe quel appareil.",
-    color: "#3b82f6",
-    bg: "bg-blue-50 border-blue-200/60",
-  },
-];
-
-const TEAM_HIGHLIGHTS = [
-  { icon: GraduationCap, label: "Fondée par un Tunisien passionné d'éducation et de technologie" },
-  { icon: Award,         label: "Plateforme ouverte à tous les élèves tunisiens" },
-  { icon: BookOpen,      label: "Questions et quiz pour chaque matière du programme national" },
-  { icon: Zap,           label: "Technologie conçue pour la Tunisie" },
-];
-
-const TIMELINE = [
-  { year: "Mars 2026", short: "26", title: "Naissance d'Étude+", desc: "Fondée le 2 mars 2026 par un Tunisien vivant à l'étranger, Étude+ naît de la conviction que chaque élève tunisien mérite un accès à des outils de révision efficaces, peu importe où il vit." },
-  { year: "Bientôt", short: "◎", title: "Lancement officiel", desc: "La plateforme s'ouvre à tous les élèves tunisiens, avec une ambition simple : rendre l'excellence scolaire accessible à tous, dans chaque région." },
-  { year: "Demain", short: "→", title: "Une ambition sans frontières", desc: "Devenir la référence de la révision en ligne en Tunisie et au-delà — pour que chaque élève, de Tunis à Djerba, atteigne son plein potentiel." },
-];
+import { useTranslation } from "react-i18next";
 
 export function About() {
+  const { t } = useTranslation();
+
+  const VALUES = [
+    { icon: Target, key: "excellence", color: "#f59e0b", bg: "bg-amber-50 border-amber-200/60" },
+    { icon: Heart,  key: "kindness",   color: "#f97316", bg: "bg-orange-50 border-orange-200/60" },
+    { icon: Shield, key: "trust",      color: "#10b981", bg: "bg-emerald-50 border-emerald-200/60" },
+    { icon: Globe,  key: "access",     color: "#3b82f6", bg: "bg-blue-50 border-blue-200/60" },
+  ];
+
+  const TEAM_HIGHLIGHTS = [
+    { icon: GraduationCap, key: "highlight1" },
+    { icon: Award,         key: "highlight2" },
+    { icon: BookOpen,      key: "highlight3" },
+    { icon: Zap,           key: "highlight4" },
+  ];
+
+  const TIMELINE = [
+    { key: "item1" },
+    { key: "item2" },
+    { key: "item3" },
+  ];
+
   return (
     <div className="min-h-screen bg-[#FFFDF7] relative overflow-x-hidden">
       <MathBackground />
@@ -70,9 +49,11 @@ export function About() {
         {/* ── HERO ─────────────────────────────────────────── */}
         <section className="max-w-4xl mx-auto px-4 sm:px-6 text-center py-20">
           <FadeIn>
-            <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-4">Notre histoire</p>
+            <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-4">
+              {t("about.hero.label")}
+            </p>
             <h1 className="text-5xl sm:text-6xl font-serif font-bold text-gray-900 mb-6 leading-tight">
-              Réinventer la révision
+              {t("about.hero.title1")}
               <br />
               <span
                 style={{
@@ -81,12 +62,11 @@ export function About() {
                   WebkitTextFillColor: "transparent",
                 }}
               >
-                scolaire en Tunisie.
+                {t("about.hero.title2")}
               </span>
             </h1>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              Étude+ est née d'une conviction simple : chaque élève tunisien mérite
-              accès à des outils de révision efficaces, peu importe où il vit ou son niveau.
+              {t("about.hero.subtitle")}
             </p>
           </FadeIn>
         </section>
@@ -103,11 +83,11 @@ export function About() {
           </div>
           <FadeIn>
             <BookOpen className="w-12 h-12 mx-auto mb-6 text-amber-400" />
-            <h2 className="text-3xl sm:text-4xl font-serif font-bold text-white mb-5">Notre mission</h2>
+            <h2 className="text-3xl sm:text-4xl font-serif font-bold text-white mb-5">
+              {t("about.mission.title")}
+            </h2>
             <p className="text-gray-300 text-lg max-w-2xl mx-auto leading-relaxed">
-              Donner à chaque élève tunisien les meilleurs outils pour réviser, pratiquer et progresser,
-              à travers une plateforme simple et adaptée au programme national — pour que la réussite
-              scolaire ne dépende plus du code postal.
+              {t("about.mission.body")}
             </p>
           </FadeIn>
         </section>
@@ -116,17 +96,25 @@ export function About() {
         <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16">
           <FadeIn>
             <div className="text-center mb-14">
-              <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-3">Ce qui nous guide</p>
-              <h2 className="text-4xl font-serif font-bold text-gray-900">Nos valeurs</h2>
+              <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-3">
+                {t("about.values.label")}
+              </p>
+              <h2 className="text-4xl font-serif font-bold text-gray-900">
+                {t("about.values.title")}
+              </h2>
             </div>
           </FadeIn>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {VALUES.map((v, i) => (
-              <FadeIn key={i} delay={0.1 * i}>
+              <FadeIn key={v.key} delay={0.1 * i}>
                 <div className={`rounded-2xl p-7 border ${v.bg} h-full`}>
                   <v.icon className="w-8 h-8 mb-4" style={{ color: v.color }} />
-                  <h3 className="font-bold text-gray-900 text-lg mb-2">{v.title}</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed">{v.desc}</p>
+                  <h3 className="font-bold text-gray-900 text-lg mb-2">
+                    {t(`about.values.${v.key}.title`)}
+                  </h3>
+                  <p className="text-gray-500 text-sm leading-relaxed">
+                    {t(`about.values.${v.key}.desc`)}
+                  </p>
                 </div>
               </FadeIn>
             ))}
@@ -138,20 +126,24 @@ export function About() {
           <div className="max-w-4xl mx-auto px-4 sm:px-6">
             <FadeIn>
               <div className="text-center mb-14">
-                <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-3">Notre parcours</p>
-                <h2 className="text-4xl font-serif font-bold text-gray-900">L'histoire d'Étude+</h2>
+                <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-3">
+                  {t("about.timeline.label")}
+                </p>
+                <h2 className="text-4xl font-serif font-bold text-gray-900">
+                  {t("about.timeline.title")}
+                </h2>
               </div>
             </FadeIn>
             <div className="space-y-10 relative">
               <div className="absolute left-6 top-0 bottom-0 w-px bg-amber-200" />
-              {TIMELINE.map((t, i) => (
-                <FadeIn key={i} delay={0.15 * i}>
+              {TIMELINE.map((item, i) => (
+                <FadeIn key={item.key} delay={0.15 * i}>
                   <div className="flex gap-8 items-start">
                     <div
                       className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-white font-bold text-xs text-center relative z-10 shadow-md"
                       style={{ background: "linear-gradient(135deg, #f59e0b, #f97316)" }}
                     >
-                      {t.short}
+                      {t(`about.timeline.${item.key}.short`)}
                     </div>
                     <div className="pt-2">
                       <div className="flex items-center gap-3 mb-2">
@@ -159,11 +151,15 @@ export function About() {
                           className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded"
                           style={{ background: "#fef3c7", color: "#b45309" }}
                         >
-                          {t.year}
+                          {t(`about.timeline.${item.key}.year`)}
                         </span>
-                        <h3 className="font-bold text-gray-900 text-lg">{t.title}</h3>
+                        <h3 className="font-bold text-gray-900 text-lg">
+                          {t(`about.timeline.${item.key}.title`)}
+                        </h3>
                       </div>
-                      <p className="text-gray-500 leading-relaxed">{t.desc}</p>
+                      <p className="text-gray-500 leading-relaxed">
+                        {t(`about.timeline.${item.key}.desc`)}
+                      </p>
                     </div>
                   </div>
                 </FadeIn>
@@ -176,22 +172,25 @@ export function About() {
         <section className="max-w-4xl mx-auto px-4 sm:px-6 py-20">
           <FadeIn>
             <div className="text-center mb-12">
-              <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-3">L'équipe</p>
-              <h2 className="text-4xl font-serif font-bold text-gray-900">Qui sommes-nous ?</h2>
+              <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-3">
+                {t("about.team.label")}
+              </p>
+              <h2 className="text-4xl font-serif font-bold text-gray-900">
+                {t("about.team.title")}
+              </h2>
               <p className="text-gray-500 mt-4 max-w-xl mx-auto">
-                Un Tunisien vivant à l'étranger, animé par une seule ambition : que
-                chaque élève en Tunisie ait accès à des outils de révision de qualité, où qu'il soit.
+                {t("about.team.subtitle")}
               </p>
             </div>
           </FadeIn>
           <div className="grid sm:grid-cols-2 gap-5">
             {TEAM_HIGHLIGHTS.map((h, i) => (
-              <FadeIn key={i} delay={0.1 * i}>
+              <FadeIn key={h.key} delay={0.1 * i}>
                 <div className="flex items-center gap-4 p-5 rounded-2xl bg-amber-50 border border-amber-200/60">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#f59e0b,#f97316)" }}>
                     <h.icon className="w-5 h-5 text-white" />
                   </div>
-                  <p className="font-semibold text-gray-800">{h.label}</p>
+                  <p className="font-semibold text-gray-800">{t(`about.team.${h.key}`)}</p>
                 </div>
               </FadeIn>
             ))}
@@ -202,19 +201,19 @@ export function About() {
         <section className="mx-4 sm:mx-8 lg:mx-20 mb-20 text-center py-16 rounded-3xl bg-white/60 border border-gray-100 shadow-sm">
           <FadeIn>
             <h2 className="text-3xl font-serif font-bold text-gray-900 mb-4">
-              Rejoignez l'aventure Étude+
+              {t("about.cta.title")}
             </h2>
             <p className="text-gray-500 mb-8 max-w-md mx-auto">
-              Créez votre compte gratuitement et commencez à réviser par matière dès aujourd'hui.
+              {t("about.cta.subtitle")}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/select-role">
                 <Button size="lg" className="font-bold px-8 shadow-md shadow-amber-400/20">
-                  S'inscrire gratuitement <ArrowRight className="ml-2 w-5 h-5" />
+                  {t("landing.cta.register")} <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
               <Link href="/pricing">
-                <Button size="lg" variant="outline">Voir les tarifs</Button>
+                <Button size="lg" variant="outline">{t("landing.cta.pricing")}</Button>
               </Link>
             </div>
           </FadeIn>
@@ -225,9 +224,9 @@ export function About() {
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <span className="text-xl font-serif font-bold text-gray-900">Étude<span style={{ color: "#f59e0b" }}>+</span></span>
           <div className="flex gap-6 text-sm text-gray-500">
-            <Link href="/" className="hover:text-amber-600 transition-colors">Accueil</Link>
-            <Link href="/pricing" className="hover:text-amber-600 transition-colors">Tarifs</Link>
-            <Link href="/login" className="hover:text-amber-600 transition-colors">Connexion</Link>
+            <Link href="/" className="hover:text-amber-600 transition-colors">{t("about.footer.home")}</Link>
+            <Link href="/pricing" className="hover:text-amber-600 transition-colors">{t("about.footer.pricing")}</Link>
+            <Link href="/login" className="hover:text-amber-600 transition-colors">{t("about.footer.login")}</Link>
           </div>
         </div>
       </footer>

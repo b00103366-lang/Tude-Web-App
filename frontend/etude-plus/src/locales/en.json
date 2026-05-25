@@ -267,6 +267,47 @@
       "questionN": "Question {{n}}"
     }
   },
+  "about": {
+    "hero": {
+      "label": "Our story",
+      "title1": "Reimagining revision",
+      "title2": "for Tunisian students.",
+      "subtitle": "Étude+ was born from a simple belief: every Tunisian student deserves access to effective revision tools, no matter where they live or their level."
+    },
+    "mission": {
+      "title": "Our mission",
+      "body": "Give every Tunisian student the best tools to revise, practice, and progress through a simple platform adapted to the national curriculum — so academic success no longer depends on your postcode."
+    },
+    "values": {
+      "label": "What guides us",
+      "title": "Our values",
+      "excellence": { "title": "Excellence", "desc": "We strive for excellence in every feature. Each tool is designed to give students the best resources to succeed in their exams and progress at their own pace." },
+      "kindness": { "title": "Kindness", "desc": "Revision works best in a supportive environment. Our tools encourage practice, positive reinforcement, and personal growth." },
+      "trust": { "title": "Trust", "desc": "Verified content, protected data, secure platform. Trust is the foundation of every interaction on Étude+." },
+      "access": { "title": "Accessibility", "desc": "Regardless of your city or level, Étude+ gives you access to complete revision resources from any device." }
+    },
+    "timeline": {
+      "label": "Our journey",
+      "title": "The Étude+ story",
+      "item1": { "year": "March 2026", "short": "26", "title": "Étude+ is born", "desc": "Founded on 2 March 2026 by a Tunisian living abroad, Étude+ was born from the belief that every Tunisian student deserves access to effective revision tools, wherever they live." },
+      "item2": { "year": "Coming soon", "short": "◎", "title": "Official launch", "desc": "The platform opens to all Tunisian students, with one simple ambition: make academic excellence accessible to everyone, in every region." },
+      "item3": { "year": "Tomorrow", "short": "→", "title": "A borderless ambition", "desc": "Become the reference for online revision in Tunisia and beyond — so every student, from Tunis to Djerba, reaches their full potential." }
+    },
+    "team": {
+      "label": "The team",
+      "title": "Who are we?",
+      "subtitle": "A Tunisian living abroad, driven by one ambition: to give every student in Tunisia access to quality revision tools, wherever they are.",
+      "highlight1": "Founded by a Tunisian passionate about education and technology",
+      "highlight2": "Platform open to all Tunisian students",
+      "highlight3": "Questions and quizzes for every subject in the national curriculum",
+      "highlight4": "Technology built for Tunisia"
+    },
+    "cta": {
+      "title": "Join the Étude+ adventure",
+      "subtitle": "Create your free account and start revising by subject today."
+    },
+    "footer": { "home": "Home", "pricing": "Pricing", "login": "Log in" }
+  },
   "common": {
     "error": "Error",
     "back": "Back",

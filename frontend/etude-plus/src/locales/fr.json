@@ -268,6 +268,47 @@
       "questionN": "Question {{n}}"
     }
   },
+  "about": {
+    "hero": {
+      "label": "Notre histoire",
+      "title1": "Réinventer la révision",
+      "title2": "scolaire en Tunisie.",
+      "subtitle": "Étude+ est née d'une conviction simple : chaque élève tunisien mérite accès à des outils de révision efficaces, peu importe où il vit ou son niveau."
+    },
+    "mission": {
+      "title": "Notre mission",
+      "body": "Donner à chaque élève tunisien les meilleurs outils pour réviser, pratiquer et progresser, à travers une plateforme simple et adaptée au programme national — pour que la réussite scolaire ne dépende plus du code postal."
+    },
+    "values": {
+      "label": "Ce qui nous guide",
+      "title": "Nos valeurs",
+      "excellence": { "title": "Excellence", "desc": "Nous aspirons à l'excellence dans chaque exercice. Chaque fonctionnalité est conçue pour donner aux élèves les meilleurs outils pour réussir leurs examens et progresser à leur rythme." },
+      "kindness": { "title": "Bienveillance", "desc": "La révision réussit dans un environnement bienveillant. Nos outils favorisent la pratique, l'encouragement et la progression personnelle." },
+      "trust": { "title": "Confiance", "desc": "Contenu vérifié, données protégées, plateforme sécurisée. La confiance est le socle de chaque interaction sur Étude+." },
+      "access": { "title": "Accessibilité", "desc": "Peu importe votre ville ou votre niveau, Étude+ vous donne accès à des ressources de révision complètes, depuis n'importe quel appareil." }
+    },
+    "timeline": {
+      "label": "Notre parcours",
+      "title": "L'histoire d'Étude+",
+      "item1": { "year": "Mars 2026", "short": "26", "title": "Naissance d'Étude+", "desc": "Fondée le 2 mars 2026 par un Tunisien vivant à l'étranger, Étude+ naît de la conviction que chaque élève tunisien mérite un accès à des outils de révision efficaces, peu importe où il vit." },
+      "item2": { "year": "Bientôt", "short": "◎", "title": "Lancement officiel", "desc": "La plateforme s'ouvre à tous les élèves tunisiens, avec une ambition simple : rendre l'excellence scolaire accessible à tous, dans chaque région." },
+      "item3": { "year": "Demain", "short": "→", "title": "Une ambition sans frontières", "desc": "Devenir la référence de la révision en ligne en Tunisie et au-delà — pour que chaque élève, de Tunis à Djerba, atteigne son plein potentiel." }
+    },
+    "team": {
+      "label": "L'équipe",
+      "title": "Qui sommes-nous ?",
+      "subtitle": "Un Tunisien vivant à l'étranger, animé par une seule ambition : que chaque élève en Tunisie ait accès à des outils de révision de qualité, où qu'il soit.",
+      "highlight1": "Fondée par un Tunisien passionné d'éducation et de technologie",
+      "highlight2": "Plateforme ouverte à tous les élèves tunisiens",
+      "highlight3": "Questions et quiz pour chaque matière du programme national",
+      "highlight4": "Technologie conçue pour la Tunisie"
+    },
+    "cta": {
+      "title": "Rejoignez l'aventure Étude+",
+      "subtitle": "Créez votre compte gratuitement et commencez à réviser par matière dès aujourd'hui."
+    },
+    "footer": { "home": "Accueil", "pricing": "Tarifs", "login": "Connexion" }
+  },
   "common": {
     "error": "Erreur",
     "back": "Retour",
