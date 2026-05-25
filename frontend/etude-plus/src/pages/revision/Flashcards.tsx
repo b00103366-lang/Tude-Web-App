@@ -1,7 +1,7 @@
 /**
  * Flashcards — chapter list for a subject.
  *
- * Fetches chapters from /api/curriculum/chapters (includes flashcard counts).
+ * Fetches chapters from the curriculum edge function (includes flashcard counts).
  * Chapters always render even when flashcardCount = 0 — the curriculum drives
  * the UI, not the content tables.
  *
@@ -16,9 +16,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { subjectFromSlug, subjectToSlug } from "@/lib/educationConfig";
 import { BookOpen, ChevronRight, Layers, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import type { CurriculumChapter } from "@/types/curriculum";
 
-const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+const SUPABASE_FN = "https://hilqkzjqysqjbfftqlkf.supabase.co/functions/v1";
 
 async function fetchChapters(
   levelCode: string,
@@ -29,7 +30,7 @@ async function fetchChapters(
   const params = new URLSearchParams({ levelCode, subject });
   if (sectionKey) params.set("sectionKey", sectionKey);
 
-  const res = await fetch(`${API_URL}/api/curriculum/chapters?${params}`, {
+  const res = await fetch(`${SUPABASE_FN}/curriculum/chapters?${params}`, {
     credentials: "include",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
@@ -38,6 +39,7 @@ async function fetchChapters(
 }
 
 export function Flashcards() {
+  const { t } = useTranslation();
   const [, params] = useRoute("/revision/:subject/flashcards");
   const subject = params?.subject
     ? (subjectFromSlug(params.subject) ?? decodeURIComponent(params.subject))
@@ -63,15 +65,15 @@ export function Flashcards() {
         <div>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1.5 flex-wrap">
             <BookOpen className="w-4 h-4" />
-            <Link href="/revision" className="hover:text-foreground transition-colors">Révision Étude+</Link>
+            <Link href="/revision" className="hover:text-foreground transition-colors">{t("revision.breadcrumb.hub")}</Link>
             <ChevronRight className="w-3 h-3" />
             <Link href={`/revision/${slug}`} className="hover:text-foreground transition-colors">{subject}</Link>
             <ChevronRight className="w-3 h-3" />
-            <span className="text-foreground font-medium">Flashcards</span>
+            <span className="text-foreground font-medium">{t("revision.subject.sections.flashcards.title")}</span>
           </div>
-          <h1 className="text-2xl font-bold">{subject} — Flashcards</h1>
+          <h1 className="text-2xl font-bold">{subject} — {t("revision.subject.sections.flashcards.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Sélectionne un chapitre pour réviser avec les flashcards.
+            {t("revision.chapters.selectFlashcardChapter")}
           </p>
         </div>
 
@@ -80,9 +82,9 @@ export function Flashcards() {
           <div className="flex gap-3 p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
             <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">Niveau non défini</p>
+              <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">{t("revision.chapters.levelNotSet")}</p>
               <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
-                <Link href="/student/settings" className="underline">Configure ton niveau scolaire</Link> pour voir les chapitres adaptés.
+                <Link href="/student/settings" className="underline">{t("revision.chapters.configureLevel")}</Link>{" "}{t("revision.chapters.toSeeChapters")}
               </p>
             </div>
           </div>
@@ -101,9 +103,9 @@ export function Flashcards() {
         {isError && !isLoading && (
           <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl border border-dashed border-red-200 dark:border-red-900">
             <AlertCircle className="w-10 h-10 text-red-400 mb-3 opacity-60" />
-            <p className="font-semibold">Impossible de charger les chapitres</p>
+            <p className="font-semibold">{t("revision.chapters.loadError")}</p>
             <button onClick={() => window.location.reload()} className="mt-3 text-sm text-primary underline">
-              Réessayer
+              {t("revision.chapters.retry")}
             </button>
           </div>
         )}
@@ -112,9 +114,9 @@ export function Flashcards() {
         {!isLoading && !isError && chapters.length === 0 && levelCode && (
           <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed border-border">
             <BookOpen className="w-10 h-10 text-muted-foreground opacity-30 mb-4" />
-            <p className="font-semibold">Chapitres bientôt disponibles</p>
+            <p className="font-semibold">{t("revision.chapters.comingSoon")}</p>
             <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-              Le contenu pour <strong>{subject}</strong> est en cours de préparation.
+              {t("revision.chapters.contentInPrep", { subject })}
             </p>
           </div>
         )}
@@ -148,6 +150,7 @@ function FlashcardChapterCard({
   index:   number;
   href:    string;
 }) {
+  const { t } = useTranslation();
   const hasContent = chapter.flashcardCount > 0;
 
   return (
@@ -168,11 +171,11 @@ function FlashcardChapterCard({
             {hasContent ? (
               <span className="flex items-center gap-1 text-xs font-semibold text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/30 px-2 py-0.5 rounded-full">
                 <Layers className="w-3 h-3" />
-                {chapter.flashcardCount} carte{chapter.flashcardCount > 1 ? "s" : ""}
+                {chapter.flashcardCount} {chapter.flashcardCount > 1 ? t("revision.chapters.cards") : t("revision.chapters.card")}
               </span>
             ) : (
               <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                Bientôt
+                {t("revision.chapters.soon")}
               </span>
             )}
           </div>
@@ -200,7 +203,7 @@ function FlashcardChapterCard({
             ? "text-muted-foreground group-hover:text-violet-600 dark:group-hover:text-violet-400"
             : "text-muted-foreground"
         )}>
-          <span>{hasContent ? "Commencer" : "Voir le chapitre"}</span>
+          <span>{hasContent ? t("revision.chapters.start") : t("revision.chapters.viewChapter")}</span>
           <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
         </div>
       </div>

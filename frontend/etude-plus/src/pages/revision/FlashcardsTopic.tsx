@@ -22,12 +22,14 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
-const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+const SUPABASE_FN = "https://hilqkzjqysqjbfftqlkf.supabase.co/functions/v1";
 
 async function apiFetch(path: string) {
   const token = getToken();
-  const res = await fetch(`${API_URL}${path}`, {
+  const url = path.startsWith("http") ? path : `${SUPABASE_FN}${path}`;
+  const res = await fetch(url, {
     credentials: "include",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
@@ -36,6 +38,7 @@ async function apiFetch(path: string) {
 }
 
 export function FlashcardsTopic() {
+  const { t } = useTranslation();
   const [, params] = useRoute("/revision/:subject/flashcards/:topic");
   const subject = params?.subject
     ? (subjectFromSlug(params.subject) ?? decodeURIComponent(params.subject))
@@ -86,31 +89,28 @@ export function FlashcardsTopic() {
         <div>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1.5 flex-wrap">
             <BookOpen className="w-4 h-4" />
-            <Link href="/revision" className="hover:text-foreground transition-colors">Révision Étude+</Link>
+            <Link href="/revision" className="hover:text-foreground transition-colors">{t("revision.breadcrumb.hub")}</Link>
             <ChevronRight className="w-3 h-3" />
             <Link href={`/revision/${slug}`} className="hover:text-foreground transition-colors">{subject}</Link>
             <ChevronRight className="w-3 h-3" />
-            <Link href={`/revision/${slug}/flashcards`} className="hover:text-foreground transition-colors">Flashcards</Link>
+            <Link href={`/revision/${slug}/flashcards`} className="hover:text-foreground transition-colors">{t("revision.subject.sections.flashcards.title")}</Link>
             <ChevronRight className="w-3 h-3" />
             <span className="text-foreground font-medium truncate max-w-[200px]">{topic}</span>
           </div>
           <h1 className="text-2xl font-bold">{topic}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Mémorise les définitions, formules et concepts essentiels.
+            {t("revision.flashcardsTopic.subtitle")}
           </p>
         </div>
 
         {/* Loading — mirrors the flashcard deck layout */}
         {isLoading && (
           <div className="flex flex-col items-center gap-6">
-            {/* Mode toggle placeholder */}
             <div className="flex gap-2 self-start">
               <Skeleton className="h-9 w-28 rounded-xl" />
               <Skeleton className="h-9 w-36 rounded-xl" />
             </div>
-            {/* Card placeholder */}
             <Skeleton className="w-full max-w-lg h-56 rounded-2xl" />
-            {/* Progress + nav placeholder */}
             <div className="flex items-center gap-4">
               <Skeleton className="h-9 w-9 rounded-xl" />
               <Skeleton className="h-4 w-20" />
@@ -125,15 +125,15 @@ export function FlashcardsTopic() {
             <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
               <Construction className="w-8 h-8 text-amber-500" />
             </div>
-            <h2 className="text-lg font-bold">Flashcards en préparation</h2>
+            <h2 className="text-lg font-bold">{t("revision.flashcardsTopic.inPrep")}</h2>
             <p className="text-muted-foreground max-w-sm text-sm">
-              Les flashcards pour <strong>{topic}</strong> arrivent bientôt !
+              {t("revision.flashcardsTopic.comingSoon", { topic })}
             </p>
             <Link
               href={`/revision/${slug}/flashcards`}
               className="text-sm text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
             >
-              ← Retour aux chapitres
+              {t("revision.flashcardsTopic.backToChapters")}
             </Link>
           </div>
         )}
@@ -152,7 +152,7 @@ export function FlashcardsTopic() {
                     : "bg-muted border-border text-muted-foreground hover:bg-muted/80"
                 )}
               >
-                Mode carte
+                {t("revision.flashcardsTopic.deckMode")}
               </button>
               <button
                 onClick={() => setMode("browse")}
@@ -163,7 +163,7 @@ export function FlashcardsTopic() {
                     : "bg-muted border-border text-muted-foreground hover:bg-muted/80"
                 )}
               >
-                Toutes les cartes
+                {t("revision.flashcardsTopic.browseMode")}
               </button>
             </div>
 
@@ -187,15 +187,15 @@ export function FlashcardsTopic() {
                     {!flipped ? (
                       <>
                         <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
-                          Question
+                          {t("revision.flashcardsTopic.question")}
                         </p>
                         <p className="text-lg font-semibold">{current.front}</p>
-                        <p className="text-xs text-muted-foreground mt-4">Cliquer pour voir la réponse</p>
+                        <p className="text-xs text-muted-foreground mt-4">{t("revision.flashcardsTopic.clickToReveal")}</p>
                       </>
                     ) : (
                       <>
                         <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-3">
-                          Réponse
+                          {t("revision.flashcardsTopic.answer")}
                         </p>
                         <p className="text-lg font-semibold">{current.back}</p>
                       </>
@@ -209,32 +209,32 @@ export function FlashcardsTopic() {
                       <button
                         onClick={prev}
                         disabled={currentIndex === 0}
-                        aria-label="Carte précédente"
+                        aria-label={t("revision.flashcardsTopic.prevCard")}
                         className="p-2 rounded-xl border border-border hover:bg-muted disabled:opacity-40 transition-colors"
                       >
                         <ChevronLeft className="w-5 h-5" />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent>Carte précédente</TooltipContent>
+                    <TooltipContent>{t("revision.flashcardsTopic.prevCard")}</TooltipContent>
                   </Tooltip>
                   <button
                     onClick={restart}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border hover:bg-muted transition-colors text-sm font-medium"
                   >
-                    <RotateCcw className="w-4 h-4" /> Recommencer
+                    <RotateCcw className="w-4 h-4" /> {t("revision.flashcardsTopic.restart")}
                   </button>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
                         onClick={next}
                         disabled={currentIndex === flashcards.length - 1}
-                        aria-label="Carte suivante"
+                        aria-label={t("revision.flashcardsTopic.nextCard")}
                         className="p-2 rounded-xl border border-border hover:bg-muted disabled:opacity-40 transition-colors"
                       >
                         <ChevronRight className="w-5 h-5" />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent>Carte suivante</TooltipContent>
+                    <TooltipContent>{t("revision.flashcardsTopic.nextCard")}</TooltipContent>
                   </Tooltip>
                 </div>
 

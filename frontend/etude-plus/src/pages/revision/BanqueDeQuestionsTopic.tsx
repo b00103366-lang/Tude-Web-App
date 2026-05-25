@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 const SUPABASE_FN = "https://hilqkzjqysqjbfftqlkf.supabase.co/functions/v1";
@@ -41,17 +42,16 @@ type SelfMark = "correct" | "partial" | "incorrect" | null;
 // ── Difficulty badge ──────────────────────────────────────────────────────────
 
 function DifficultyBadge({ difficulty }: { difficulty: string }) {
+  const { t } = useTranslation();
   const styles: Record<string, string> = {
     facile:    "bg-emerald-50 text-emerald-700 border border-emerald-200",
     moyen:     "bg-amber-50 text-amber-700 border border-amber-200",
     difficile: "bg-red-50 text-red-700 border border-red-200",
   };
-  const labels: Record<string, string> = {
-    facile: "Facile", moyen: "Moyen", difficile: "Difficile",
-  };
+  const label = t(`revision.questionTopic.difficulty.${difficulty}`, { defaultValue: difficulty });
   return (
     <span className={cn("inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold", styles[difficulty] ?? styles.moyen)}>
-      {labels[difficulty] ?? difficulty}
+      {label}
     </span>
   );
 }
@@ -63,6 +63,7 @@ function QuestionCard({
 }: {
   question: any; selfMark: SelfMark; showMarkScheme: boolean;
 }) {
+  const { t } = useTranslation();
   const ring =
     selfMark === "correct"   ? "ring-2 ring-emerald-400" :
     selfMark === "partial"   ? "ring-2 ring-amber-400" :
@@ -78,7 +79,7 @@ function QuestionCard({
             : "bg-muted text-muted-foreground border-border"
         )}>
           <Calculator className="w-3 h-3" />
-          {question.requiresCalculator ? "Calculatrice" : "Sans calculatrice"}
+          {question.requiresCalculator ? t("revision.questionTopic.withCalc") : t("revision.questionTopic.noCalc")}
         </div>
         <DifficultyBadge difficulty={question.difficulty} />
         {question.totalMarks && (
@@ -118,7 +119,7 @@ function QuestionCard({
           <div className="mt-6 rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-5 space-y-4">
             <div className="flex items-center gap-2">
               <BookMarked className="w-4 h-4 text-emerald-600" />
-              <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">Corrigé / Barème</p>
+              <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">{t("revision.questionTopic.markScheme")}</p>
             </div>
             {question.markScheme?.length > 0 ? (
               <div className="space-y-3">
@@ -139,7 +140,7 @@ function QuestionCard({
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-emerald-700 dark:text-emerald-400">Corrigé non disponible pour cette question.</p>
+              <p className="text-sm text-emerald-700 dark:text-emerald-400">{t("revision.questionTopic.markSchemeNA")}</p>
             )}
           </div>
         )}
@@ -160,6 +161,7 @@ function ActionPanel({
   showMarkScheme: boolean; onToggleMarkScheme: () => void;
   onFinish: () => void; markedCount: number; totalCount: number; isPending: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2">
@@ -171,7 +173,7 @@ function ActionPanel({
           )}
         >
           {bookmarked ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
-          {bookmarked ? "Sauvegardé" : "Sauvegarder"}
+          {bookmarked ? t("revision.questionTopic.saved") : t("revision.questionTopic.save")}
         </button>
         <button
           onClick={() => onMark(selfMark === "correct" ? null : "correct")}
@@ -181,17 +183,17 @@ function ActionPanel({
           )}
         >
           <CheckCircle2 className="w-5 h-5" />
-          {selfMark === "correct" ? "Correct ✓" : "Complet"}
+          {selfMark === "correct" ? t("revision.questionTopic.correctMark") : t("revision.questionTopic.complete")}
         </button>
       </div>
 
       <div className="rounded-2xl border border-border bg-background p-4 space-y-3">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Auto-évaluation</p>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("revision.questionTopic.selfAssess")}</p>
         <div className="space-y-2">
           {([
-            { value: "correct" as SelfMark,   label: "Correct",   icon: CheckCircle2, active: "bg-emerald-500 border-emerald-500 text-white", base: "text-emerald-700 border-emerald-200 hover:bg-emerald-50" },
-            { value: "partial" as SelfMark,   label: "Partiel",   icon: MinusCircle,  active: "bg-amber-500 border-amber-500 text-white",   base: "text-amber-700 border-amber-200 hover:bg-amber-50" },
-            { value: "incorrect" as SelfMark, label: "Incorrect", icon: XCircle,      active: "bg-red-500 border-red-500 text-white",       base: "text-red-700 border-red-200 hover:bg-red-50" },
+            { value: "correct" as SelfMark,   label: t("revision.questionTopic.correct"),   icon: CheckCircle2, active: "bg-emerald-500 border-emerald-500 text-white", base: "text-emerald-700 border-emerald-200 hover:bg-emerald-50" },
+            { value: "partial" as SelfMark,   label: t("revision.questionTopic.partial"),   icon: MinusCircle,  active: "bg-amber-500 border-amber-500 text-white",   base: "text-amber-700 border-amber-200 hover:bg-amber-50" },
+            { value: "incorrect" as SelfMark, label: t("revision.questionTopic.incorrect"), icon: XCircle,      active: "bg-red-500 border-red-500 text-white",       base: "text-red-700 border-red-200 hover:bg-red-50" },
           ] as const).map(opt => (
             <button
               key={opt.value}
@@ -218,19 +220,19 @@ function ActionPanel({
         )}
       >
         <BookMarked className="w-4 h-4 shrink-0" />
-        <span className="flex-1 text-left">Corrigé / Barème</span>
+        <span className="flex-1 text-left">{t("revision.questionTopic.markScheme")}</span>
         {showMarkScheme ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
       </button>
 
       <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-border bg-muted/30 text-sm font-semibold text-muted-foreground">
         <Sparkles className="w-4 h-4 shrink-0 text-yellow-500" />
-        <span className="flex-1">Feedback IA</span>
-        <span className="text-[10px] font-bold uppercase tracking-wider bg-muted px-2 py-0.5 rounded-full">Bientôt</span>
+        <span className="flex-1">{t("revision.questionTopic.aiFeedback")}</span>
+        <span className="text-[10px] font-bold uppercase tracking-wider bg-muted px-2 py-0.5 rounded-full">{t("revision.questionTopic.soon")}</span>
       </div>
 
       <div className="rounded-2xl border border-border bg-background p-4 space-y-3">
         <div className="flex items-center justify-between text-xs">
-          <span className="font-semibold text-muted-foreground">Progression</span>
+          <span className="font-semibold text-muted-foreground">{t("revision.questionTopic.progress")}</span>
           <span className="font-bold text-primary">{markedCount}/{totalCount}</span>
         </div>
         <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
@@ -244,7 +246,7 @@ function ActionPanel({
           disabled={markedCount === 0 || isPending}
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
-          {isPending ? "Enregistrement..." : "Terminer la révision"}
+          {isPending ? t("revision.questionTopic.saving") : t("revision.questionTopic.finish")}
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
@@ -255,6 +257,7 @@ function ActionPanel({
 // ── Root component ────────────────────────────────────────────────────────────
 
 export function BanqueDeQuestionsTopic() {
+  const { t } = useTranslation();
   const [, params] = useRoute("/revision/:subject/banque-de-questions/:topic");
   const subject = params?.subject
     ? (subjectFromSlug(params.subject) ?? decodeURIComponent(params.subject))
@@ -308,8 +311,10 @@ export function BanqueDeQuestionsTopic() {
       queryClient.invalidateQueries({ queryKey: ["progress-overview"] });
       queryClient.invalidateQueries({ queryKey: ["progress-history"] });
       toast({
-        title: "Révision enregistrée",
-        description: data.gradeOutOf20 !== null ? `Résultat : ${data.gradeOutOf20.toFixed(1)}/20` : "Bonne continuation !",
+        title: t("revision.questionTopic.sessionSaved"),
+        description: data.gradeOutOf20 !== null
+          ? t("revision.questionTopic.result", { grade: data.gradeOutOf20.toFixed(1) })
+          : t("revision.questionTopic.goodLuck"),
       });
     },
   });
@@ -326,7 +331,7 @@ export function BanqueDeQuestionsTopic() {
 
   function handleFinish() {
     const marked = questions.filter((q: any) => selfMarks[q.id]);
-    if (!marked.length) { toast({ title: "Aucune question évaluée" }); return; }
+    if (!marked.length) { toast({ title: t("revision.questionTopic.noneEvaluated") }); return; }
     const totalMarks   = marked.reduce((s: number, q: any) => s + (q.totalMarks ?? 1), 0);
     const marksAwarded = marked.reduce((s: number, q: any) => {
       const m = selfMarks[q.id]; const qm = q.totalMarks ?? 1;
@@ -359,7 +364,7 @@ export function BanqueDeQuestionsTopic() {
             <Trophy className="w-10 h-10 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold mb-1">Révision terminée !</h1>
+            <h1 className="text-2xl font-bold mb-1">{t("revision.questionTopic.done")}</h1>
             <p className="text-muted-foreground">{topic}</p>
           </div>
           {grade !== null && (
@@ -373,11 +378,11 @@ export function BanqueDeQuestionsTopic() {
               onClick={() => { setSelfMarks({}); setBookmarks(new Set()); setShowMarkScheme(false); setSessionDone(false); setCurrentIdx(0); }}
               className="px-5 py-2.5 border border-border rounded-xl text-sm font-semibold hover:bg-muted transition-colors"
             >
-              Nouvelle révision
+              {t("revision.questionTopic.newSession")}
             </button>
             <Link href={`/revision/${slug}/banque-de-questions`}>
               <button className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
-                Autres chapitres <ArrowRight className="w-4 h-4" />
+                {t("revision.questionTopic.otherChapters")} <ArrowRight className="w-4 h-4" />
               </button>
             </Link>
           </div>
@@ -394,11 +399,11 @@ export function BanqueDeQuestionsTopic() {
         <div>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1.5 flex-wrap">
             <BookOpen className="w-4 h-4" />
-            <Link href="/revision" className="hover:text-foreground transition-colors">Révision Étude+</Link>
+            <Link href="/revision" className="hover:text-foreground transition-colors">{t("revision.breadcrumb.hub")}</Link>
             <ChevronRight className="w-3 h-3" />
             <Link href={`/revision/${slug}`} className="hover:text-foreground transition-colors">{subject}</Link>
             <ChevronRight className="w-3 h-3" />
-            <Link href={`/revision/${slug}/banque-de-questions`} className="hover:text-foreground transition-colors">Banque de Questions</Link>
+            <Link href={`/revision/${slug}/banque-de-questions`} className="hover:text-foreground transition-colors">{t("revision.subject.sections.questionBank.title")}</Link>
             <ChevronRight className="w-3 h-3" />
             <span className="text-foreground font-medium truncate max-w-[200px]">{topic}</span>
           </div>
@@ -420,14 +425,14 @@ export function BanqueDeQuestionsTopic() {
               <Construction className="w-8 h-8 text-amber-500" />
             </div>
             <div>
-              <h3 className="text-lg font-bold">Questions en préparation</h3>
+              <h3 className="text-lg font-bold">{t("revision.questionTopic.inPrep")}</h3>
               <p className="text-muted-foreground text-sm mt-1 max-w-xs mx-auto">
-                Les questions pour <strong>{topic}</strong> seront disponibles très bientôt.
+                {t("revision.questionTopic.questionComingSoon", { topic })}
               </p>
             </div>
             <Link href={`/revision/${slug}/banque-de-questions`}>
               <button className="inline-flex items-center gap-2 px-4 py-2.5 border border-border rounded-xl text-sm font-semibold hover:bg-muted transition-colors">
-                <ChevronLeft className="w-4 h-4" /> Voir tous les chapitres
+                <ChevronLeft className="w-4 h-4" /> {t("revision.questionTopic.seeAllChapters")}
               </button>
             </Link>
           </div>
@@ -441,13 +446,13 @@ export function BanqueDeQuestionsTopic() {
               <div className="flex items-center gap-3 flex-wrap">
                 <button onClick={() => goTo(currentIdx - 1)} disabled={currentIdx === 0}
                   className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-border text-xs font-semibold hover:bg-muted disabled:opacity-30 transition-colors">
-                  <ChevronLeft className="w-3.5 h-3.5" /> Préc.
+                  <ChevronLeft className="w-3.5 h-3.5" /> {t("revision.questionTopic.prev")}
                 </button>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {questions.map((q: any, i: number) => {
                     const m = selfMarks[q.id];
                     return (
-                      <button key={q.id} onClick={() => goTo(i)} title={`Question ${i + 1}`}
+                      <button key={q.id} onClick={() => goTo(i)} title={t("revision.questionTopic.questionN", { n: i + 1 })}
                         className={cn(
                           "w-7 h-7 rounded-full text-[11px] font-bold transition-all border-2",
                           i === currentIdx ? "bg-primary border-primary text-primary-foreground scale-110 shadow"
@@ -463,14 +468,14 @@ export function BanqueDeQuestionsTopic() {
                 </div>
                 <button onClick={() => goTo(currentIdx + 1)} disabled={currentIdx === totalQuestions - 1}
                   className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-border text-xs font-semibold hover:bg-muted disabled:opacity-30 transition-colors">
-                  Suiv. <ChevronRight className="w-3.5 h-3.5" />
+                  {t("revision.questionTopic.next")} <ChevronRight className="w-3.5 h-3.5" />
                 </button>
                 <span className="ml-auto text-sm text-muted-foreground font-medium">
                   {currentIdx + 1} / {totalQuestions}
                 </span>
               </div>
 
-              <h2 className="text-2xl font-bold tracking-tight">Question {currentIdx + 1}</h2>
+              <h2 className="text-2xl font-bold tracking-tight">{t("revision.questionTopic.questionN", { n: currentIdx + 1 })}</h2>
               <QuestionCard question={currentQuestion} selfMark={selfMark} showMarkScheme={showMarkScheme} />
             </div>
 

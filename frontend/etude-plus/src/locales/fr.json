@@ -65,7 +65,10 @@
       "title3": "progressez vite.",
       "subtitle": "Pratiquez par sujet, testez vos connaissances avec des quiz, et suivez votre progression avec Étude+.",
       "cta": "Commencer gratuitement",
-      "learnMore": "En savoir plus"
+      "learnMore": "En savoir plus",
+      "improves": "améliore",
+      "yourGrades": "vos notes.",
+      "subtitle2": "Accédez à des banques de questions, des examens pratiques et un scoring de préparation pour vous préparer à tous les défis académiques."
     },
     "trust": {
       "noCommitment": "Sans engagement",
@@ -119,6 +122,150 @@
       "contact": "Contact",
       "login": "Connexion",
       "copyright": "© 2025 Étude+. Tous droits réservés."
+    },
+    "tabs": {
+      "live": {
+        "label": "Banque de Questions",
+        "title": "Pratiquez par sujet",
+        "subtitle": "Des milliers de questions classées par matière, chapitre et niveau pour réviser efficacement.",
+        "point1": "Questions conformes au programme national",
+        "point2": "Classées par matière, chapitre et niveau",
+        "point3": "Nouvelles questions ajoutées régulièrement"
+      },
+      "resources": {
+        "label": "Ressources",
+        "title": "Tout votre contenu, bien organisé",
+        "subtitle": "Retrouvez facilement fiches, annales et supports de révision classés par matière.",
+        "point1": "Fiches et annales par matière et chapitre",
+        "point2": "Notions clés à retenir",
+        "point3": "Accès rapide aux contenus essentiels"
+      },
+      "assessments": {
+        "label": "Quiz & Examens",
+        "title": "Entraînez-vous avec méthode",
+        "subtitle": "Préparez-vous avec des quiz et examens blancs dans un espace structuré.",
+        "point1": "Quiz interactifs par chapitre",
+        "point2": "Examens blancs chronométrés",
+        "point3": "Correction et analyse de vos erreurs"
+      },
+      "dashboard": {
+        "label": "Tableau de Bord",
+        "title": "Suivez votre progression",
+        "subtitle": "Gardez une vue claire sur vos révisions, vos résultats et vos points à améliorer.",
+        "point1": "Vue d'ensemble personnalisée",
+        "point2": "Progression par matière",
+        "point3": "Historique de vos entraînements"
+      }
+    },
+    "subjects": {
+      "math": "Mathématiques",
+      "physics": "Physique",
+      "chemistry": "Chimie",
+      "svt": "SVT",
+      "arabic": "Arabe",
+      "french": "Français",
+      "english": "Anglais",
+      "histgeo": "Histoire-Géo",
+      "philosophy": "Philosophie",
+      "computing": "Informatique"
+    }
+  },
+  "revision": {
+    "breadcrumb": {
+      "hub": "Révision Étude+"
+    },
+    "subject": {
+      "chooseResource": "Choisissez une ressource pour commencer à réviser.",
+      "sections": {
+        "questionBank": {
+          "title": "Banque de Questions",
+          "description": "Questions classées par chapitre avec correction immédiate et auto-évaluation.",
+          "badge": "Recommandé"
+        },
+        "blankExams": {
+          "title": "Examens Blancs",
+          "description": "Sujets d'examens des années précédentes avec corrigés. Reçois ta note sur 20.",
+          "badge": "Populaire"
+        },
+        "practiceExams": {
+          "title": "Examens Pratiques",
+          "description": "Entraîne-toi sur un ensemble de questions en conditions d'examen. Note finale sur 20."
+        },
+        "flashcards": {
+          "title": "Flashcards",
+          "description": "Mémorise les définitions et formules clés avec la répétition espacée."
+        }
+      },
+      "start": "Commencer"
+    },
+    "chapters": {
+      "selectChapter": "Sélectionne un chapitre pour commencer à réviser.",
+      "selectFlashcardChapter": "Sélectionne un chapitre pour réviser avec les flashcards.",
+      "levelNotSet": "Niveau non défini",
+      "configureLevel": "Configure ton niveau scolaire",
+      "toSeeChapters": "pour voir les chapitres adaptés.",
+      "loadError": "Impossible de charger les chapitres",
+      "retry": "Réessayer",
+      "comingSoon": "Chapitres bientôt disponibles",
+      "contentInPrep": "Le contenu pour {{subject}} est en cours de préparation.",
+      "soon": "Bientôt",
+      "start": "Commencer",
+      "viewChapter": "Voir le chapitre",
+      "card": "carte",
+      "cards": "cartes",
+      "question": "question",
+      "questions": "questions"
+    },
+    "flashcardsTopic": {
+      "subtitle": "Mémorise les définitions, formules et concepts essentiels.",
+      "inPrep": "Flashcards en préparation",
+      "comingSoon": "Les flashcards pour {{topic}} arrivent bientôt !",
+      "backToChapters": "← Retour aux chapitres",
+      "deckMode": "Mode carte",
+      "browseMode": "Toutes les cartes",
+      "question": "Question",
+      "clickToReveal": "Cliquer pour voir la réponse",
+      "answer": "Réponse",
+      "prevCard": "Carte précédente",
+      "restart": "Recommencer",
+      "nextCard": "Carte suivante"
+    },
+    "questionTopic": {
+      "withCalc": "Calculatrice",
+      "noCalc": "Sans calculatrice",
+      "difficulty": {
+        "facile": "Facile",
+        "moyen": "Moyen",
+        "difficile": "Difficile"
+      },
+      "markScheme": "Corrigé / Barème",
+      "markSchemeNA": "Corrigé non disponible pour cette question.",
+      "saved": "Sauvegardé",
+      "save": "Sauvegarder",
+      "correctMark": "Correct ✓",
+      "complete": "Complet",
+      "selfAssess": "Auto-évaluation",
+      "correct": "Correct",
+      "partial": "Partiel",
+      "incorrect": "Incorrect",
+      "aiFeedback": "Feedback IA",
+      "soon": "Bientôt",
+      "progress": "Progression",
+      "saving": "Enregistrement...",
+      "finish": "Terminer la révision",
+      "sessionSaved": "Révision enregistrée",
+      "result": "Résultat : {{grade}}/20",
+      "goodLuck": "Bonne continuation !",
+      "noneEvaluated": "Aucune question évaluée",
+      "done": "Révision terminée !",
+      "newSession": "Nouvelle révision",
+      "otherChapters": "Autres chapitres",
+      "inPrep": "Questions en préparation",
+      "questionComingSoon": "Les questions pour {{topic}} seront disponibles très bientôt.",
+      "seeAllChapters": "Voir tous les chapitres",
+      "prev": "Préc.",
+      "next": "Suiv.",
+      "questionN": "Question {{n}}"
     }
   },
   "common": {

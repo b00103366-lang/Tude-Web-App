@@ -13,53 +13,61 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 
 
-const TABS = [
-  {
-    id: "live",
-    label: "Banque de Questions",
-    icon: Video,
-    color: "#f59e0b",
-    title: "Pratiquez par sujet",
-    subtitle: "Des milliers de questions classées par matière, chapitre et niveau pour réviser efficacement.",
-    points: ["Questions conformes au programme national", "Classées par matière, chapitre et niveau", "Nouvelles questions ajoutées régulièrement"],
-  },
-  {
-    id: "resources",
-    label: "Ressources",
-    icon: BookOpen,
-    color: "#fb923c",
-    title: "Tout votre contenu, bien organisé",
-    subtitle: "Retrouvez facilement fiches, annales et supports de révision classés par matière.",
-    points: ["Fiches et annales par matière et chapitre", "Notions clés à retenir", "Accès rapide aux contenus essentiels"],
-  },
-  {
-    id: "assessments",
-    label: "Quiz & Examens",
-    icon: Trophy,
-    color: "#10b981",
-    title: "Entraînez-vous avec méthode",
-    subtitle: "Préparez-vous avec des quiz et examens blancs dans un espace structuré.",
-    points: ["Quiz interactifs par chapitre", "Examens blancs chronométrés", "Correction et analyse de vos erreurs"],
-  },
-  {
-    id: "dashboard",
-    label: "Tableau de Bord",
-    icon: GraduationCap,
-    color: "#3b82f6",
-    title: "Suivez votre progression",
-    subtitle: "Gardez une vue claire sur vos révisions, vos résultats et vos points à améliorer.",
-    points: ["Vue d'ensemble personnalisée", "Progression par matière", "Historique de vos entraînements"],
-  },
-];
-
-const SUBJECTS = [
-  "Mathématiques", "Physique", "Chimie", "SVT", "Arabe",
-  "Français", "Anglais", "Histoire-Géo", "Philosophie", "Informatique",
-];
-
 export function Landing() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("live");
+
+  const TABS = [
+    {
+      id: "live",
+      label: t("landing.tabs.live.label"),
+      icon: Video,
+      color: "#f59e0b",
+      title: t("landing.tabs.live.title"),
+      subtitle: t("landing.tabs.live.subtitle"),
+      points: [t("landing.tabs.live.point1"), t("landing.tabs.live.point2"), t("landing.tabs.live.point3")],
+    },
+    {
+      id: "resources",
+      label: t("landing.tabs.resources.label"),
+      icon: BookOpen,
+      color: "#fb923c",
+      title: t("landing.tabs.resources.title"),
+      subtitle: t("landing.tabs.resources.subtitle"),
+      points: [t("landing.tabs.resources.point1"), t("landing.tabs.resources.point2"), t("landing.tabs.resources.point3")],
+    },
+    {
+      id: "assessments",
+      label: t("landing.tabs.assessments.label"),
+      icon: Trophy,
+      color: "#10b981",
+      title: t("landing.tabs.assessments.title"),
+      subtitle: t("landing.tabs.assessments.subtitle"),
+      points: [t("landing.tabs.assessments.point1"), t("landing.tabs.assessments.point2"), t("landing.tabs.assessments.point3")],
+    },
+    {
+      id: "dashboard",
+      label: t("landing.tabs.dashboard.label"),
+      icon: GraduationCap,
+      color: "#3b82f6",
+      title: t("landing.tabs.dashboard.title"),
+      subtitle: t("landing.tabs.dashboard.subtitle"),
+      points: [t("landing.tabs.dashboard.point1"), t("landing.tabs.dashboard.point2"), t("landing.tabs.dashboard.point3")],
+    },
+  ];
+
+  const SUBJECTS = [
+    t("landing.subjects.math"),
+    t("landing.subjects.physics"),
+    t("landing.subjects.chemistry"),
+    t("landing.subjects.svt"),
+    t("landing.subjects.arabic"),
+    t("landing.subjects.french"),
+    t("landing.subjects.english"),
+    t("landing.subjects.histgeo"),
+    t("landing.subjects.philosophy"),
+    t("landing.subjects.computing"),
+  ];
 
 
   return (
@@ -97,13 +105,13 @@ export function Landing() {
                 >
                   Étude+
                 </span>
-                {" "}améliore
+                {" "}{t("landing.hero.improves")}
                 <br />
-                vos notes.
+                {t("landing.hero.yourGrades")}
               </h1>
 
               <p className="text-xl text-gray-600 mb-10 leading-relaxed">
-                Accédez à des banques de questions, des examens pratiques et un scoring de préparation pour vous préparer à tous les défis académiques.
+                {t("landing.hero.subtitle2")}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-12">
@@ -223,8 +231,8 @@ export function Landing() {
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <FadeIn>
               <div className="text-center max-w-2xl mx-auto mb-12">
-                <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-3">Pourquoi Étude+ ?</p>
-                <h2 className="text-4xl font-serif font-bold text-gray-900">Tout pour réviser intelligemment</h2>
+                <p className="text-sm font-bold uppercase tracking-widest text-amber-600 mb-3">{t("landing.features.sectionLabel")}</p>
+                <h2 className="text-4xl font-serif font-bold text-gray-900">{t("landing.features.sectionTitle")}</h2>
               </div>
             </FadeIn>
 

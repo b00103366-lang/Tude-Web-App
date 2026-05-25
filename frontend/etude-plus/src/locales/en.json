@@ -64,7 +64,10 @@
       "title3": "one click away.",
       "subtitle": "Connect with the best Tunisian teachers, attend interactive live classes, and reach your goals with Étude+.",
       "cta": "Get started for free",
-      "learnMore": "Learn more"
+      "learnMore": "Learn more",
+      "improves": "improves",
+      "yourGrades": "your grades.",
+      "subtitle2": "Access question banks, practice exams, and preparation scoring to get ready for all academic challenges."
     },
     "trust": {
       "noCommitment": "No commitment",
@@ -118,6 +121,150 @@
       "contact": "Contact",
       "login": "Log in",
       "copyright": "© 2025 Étude+. All rights reserved."
+    },
+    "tabs": {
+      "live": {
+        "label": "Question Bank",
+        "title": "Practice by subject",
+        "subtitle": "Thousands of questions organized by subject, chapter, and level to revise effectively.",
+        "point1": "Questions aligned with the national curriculum",
+        "point2": "Organized by subject, chapter, and level",
+        "point3": "New questions added regularly"
+      },
+      "resources": {
+        "label": "Resources",
+        "title": "All your content, well organized",
+        "subtitle": "Easily find revision notes, past papers, and study materials organized by subject.",
+        "point1": "Notes and past papers by subject and chapter",
+        "point2": "Key concepts to remember",
+        "point3": "Quick access to essential content"
+      },
+      "assessments": {
+        "label": "Quiz & Exams",
+        "title": "Practice with method",
+        "subtitle": "Prepare with quizzes and mock exams in a structured environment.",
+        "point1": "Interactive quizzes by chapter",
+        "point2": "Timed mock exams",
+        "point3": "Correction and analysis of your mistakes"
+      },
+      "dashboard": {
+        "label": "Dashboard",
+        "title": "Track your progress",
+        "subtitle": "Get a clear view of your revision sessions, results, and areas to improve.",
+        "point1": "Personalized overview",
+        "point2": "Progress by subject",
+        "point3": "History of your sessions"
+      }
+    },
+    "subjects": {
+      "math": "Mathematics",
+      "physics": "Physics",
+      "chemistry": "Chemistry",
+      "svt": "Biology",
+      "arabic": "Arabic",
+      "french": "French",
+      "english": "English",
+      "histgeo": "History-Geography",
+      "philosophy": "Philosophy",
+      "computing": "Computing"
+    }
+  },
+  "revision": {
+    "breadcrumb": {
+      "hub": "Étude+ Revision"
+    },
+    "subject": {
+      "chooseResource": "Choose a resource to start revising.",
+      "sections": {
+        "questionBank": {
+          "title": "Question Bank",
+          "description": "Questions organized by chapter with instant marking and self-assessment.",
+          "badge": "Recommended"
+        },
+        "blankExams": {
+          "title": "Past Papers",
+          "description": "Past exam papers with mark schemes. Get your score out of 20.",
+          "badge": "Popular"
+        },
+        "practiceExams": {
+          "title": "Practice Exams",
+          "description": "Practice a set of questions under exam conditions. Final score out of 20."
+        },
+        "flashcards": {
+          "title": "Flashcards",
+          "description": "Memorize key definitions and formulas with spaced repetition."
+        }
+      },
+      "start": "Start"
+    },
+    "chapters": {
+      "selectChapter": "Select a chapter to start revising.",
+      "selectFlashcardChapter": "Select a chapter to revise with flashcards.",
+      "levelNotSet": "Level not set",
+      "configureLevel": "Set your grade level",
+      "toSeeChapters": "to see relevant chapters.",
+      "loadError": "Unable to load chapters",
+      "retry": "Try again",
+      "comingSoon": "Chapters coming soon",
+      "contentInPrep": "Content for {{subject}} is being prepared.",
+      "soon": "Soon",
+      "start": "Start",
+      "viewChapter": "View chapter",
+      "card": "card",
+      "cards": "cards",
+      "question": "question",
+      "questions": "questions"
+    },
+    "flashcardsTopic": {
+      "subtitle": "Memorize key definitions, formulas, and concepts.",
+      "inPrep": "Flashcards in preparation",
+      "comingSoon": "Flashcards for {{topic}} are coming soon!",
+      "backToChapters": "← Back to chapters",
+      "deckMode": "Card mode",
+      "browseMode": "All cards",
+      "question": "Question",
+      "clickToReveal": "Click to reveal the answer",
+      "answer": "Answer",
+      "prevCard": "Previous card",
+      "restart": "Restart",
+      "nextCard": "Next card"
+    },
+    "questionTopic": {
+      "withCalc": "Calculator",
+      "noCalc": "No calculator",
+      "difficulty": {
+        "facile": "Easy",
+        "moyen": "Medium",
+        "difficile": "Hard"
+      },
+      "markScheme": "Mark Scheme",
+      "markSchemeNA": "Mark scheme not available for this question.",
+      "saved": "Saved",
+      "save": "Save",
+      "correctMark": "Correct ✓",
+      "complete": "Complete",
+      "selfAssess": "Self-assessment",
+      "correct": "Correct",
+      "partial": "Partial",
+      "incorrect": "Incorrect",
+      "aiFeedback": "AI Feedback",
+      "soon": "Soon",
+      "progress": "Progress",
+      "saving": "Saving...",
+      "finish": "Finish session",
+      "sessionSaved": "Session saved",
+      "result": "Result: {{grade}}/20",
+      "goodLuck": "Keep it up!",
+      "noneEvaluated": "No questions evaluated",
+      "done": "Session complete!",
+      "newSession": "New session",
+      "otherChapters": "Other chapters",
+      "inPrep": "Questions in preparation",
+      "questionComingSoon": "Questions for {{topic}} will be available very soon.",
+      "seeAllChapters": "See all chapters",
+      "prev": "Prev.",
+      "next": "Next",
+      "questionN": "Question {{n}}"
     }
   },
   "common": {
