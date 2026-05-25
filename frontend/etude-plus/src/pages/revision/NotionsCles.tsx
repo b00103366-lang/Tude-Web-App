@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card } from "@/components/ui/Premium";
 import { Link, useRoute } from "wouter";
@@ -25,6 +26,7 @@ async function apiFetch(path: string) {
 }
 
 export function NotionsCles() {
+  const { t } = useTranslation();
   const [, params] = useRoute("/revision/:subject/notions-cles");
   const subject = params?.subject ? (subjectFromSlug(params.subject) ?? decodeURIComponent(params.subject)) : "";
   const { user } = useAuth();
@@ -54,14 +56,14 @@ export function NotionsCles() {
         <div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1 flex-wrap">
             <BookOpen className="w-4 h-4" />
-            <Link href="/revision" className="hover:text-foreground transition-colors">Révision Étude+</Link>
+            <Link href="/revision" className="hover:text-foreground transition-colors">{t("revisionPages.notionsCles.breadcrumbHub")}</Link>
             <ChevronRight className="w-3 h-3" />
             <Link href={`/revision/${subjectToSlug(subject)}`} className="hover:text-foreground transition-colors">{subject}</Link>
             <ChevronRight className="w-3 h-3" />
-            <span>Notions Clés</span>
+            <span>{t("revisionPages.notionsCles.breadcrumbSection")}</span>
           </div>
-          <h1 className="text-2xl font-bold">Notions Clés — {subject}</h1>
-          <p className="text-muted-foreground mt-1">Résumés et définitions essentielles par chapitre.</p>
+          <h1 className="text-2xl font-bold">{t("revisionPages.notionsCles.title", { subject })}</h1>
+          <p className="text-muted-foreground mt-1">{t("revisionPages.notionsCles.subtitle")}</p>
         </div>
 
         {/* Topic filter */}
@@ -73,7 +75,7 @@ export function NotionsCles() {
                 !selectedTopic ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
               )}
             >
-              Tout
+              {t("revisionPages.notionsCles.all")}
             </button>
             {topics.map(t => (
               <button
@@ -100,9 +102,9 @@ export function NotionsCles() {
             <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
               <Construction className="w-8 h-8 text-amber-500" />
             </div>
-            <h2 className="text-lg font-bold">En cours de préparation</h2>
+            <h2 className="text-lg font-bold">{t("revisionPages.notionsCles.inPrep")}</h2>
             <p className="text-muted-foreground max-w-sm">
-              Les notions clés pour <strong>{subject}</strong> seront disponibles très bientôt.
+              {t("revisionPages.notionsCles.inPrepDesc", { subject })}
             </p>
           </div>
         )}
@@ -139,7 +141,7 @@ export function NotionsCles() {
                       </p>
                       {notion.example && (
                         <div className="rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 p-4">
-                          <p className="text-xs font-bold text-purple-700 dark:text-purple-300 mb-1">Exemple</p>
+                          <p className="text-xs font-bold text-purple-700 dark:text-purple-300 mb-1">{t("revisionPages.notionsCles.example")}</p>
                           <p className="text-sm text-purple-800 dark:text-purple-200 whitespace-pre-wrap">
                             {notion.example}
                           </p>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, FadeIn } from "@/components/ui/Premium";
 import { useQuery } from "@tanstack/react-query";
@@ -45,13 +46,14 @@ function TrendIcon({ current, previous }: { current: number; previous?: number }
   return <Minus className="w-4 h-4 text-muted-foreground" />;
 }
 
-function typeLabel(type: string) {
-  if (type === "past_paper") return "Annale";
-  return "Entraînement";
-}
-
 export function StudentProgress() {
+  const { t } = useTranslation();
   const [subjectFilter, setSubjectFilter] = useState<string>("all");
+
+  function typeLabel(type: string) {
+    if (type === "past_paper") return t("studentProgress.typePastPaper");
+    return t("studentProgress.typeTraining");
+  }
 
   const { data: overview, isLoading: loadingOverview } = useQuery({
     queryKey: ["progress-overview"],
@@ -101,11 +103,11 @@ export function StudentProgress() {
         <div className="mb-8">
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
             <BarChart3 className="w-4 h-4" />
-            <span>Ma progression</span>
+            <span>{t("studentProgress.breadcrumb")}</span>
           </div>
-          <h1 className="text-2xl font-bold">Ma progression</h1>
+          <h1 className="text-2xl font-bold">{t("studentProgress.title")}</h1>
           <p className="text-muted-foreground mt-1">
-            Analyse tes résultats, identifie tes points faibles et suis ton évolution.
+            {t("studentProgress.subtitle")}
           </p>
         </div>
 
@@ -120,7 +122,7 @@ export function StudentProgress() {
                   : "bg-muted text-muted-foreground hover:bg-muted/80"
               }`}
             >
-              Toutes les matières
+              {t("studentProgress.allSubjects")}
             </button>
             {subjects.map((s: string) => (
               <button
@@ -142,13 +144,13 @@ export function StudentProgress() {
         {!isLoading && (!overview?.totalAttempts) && (
           <Card className="p-12 text-center">
             <BookOpen className="w-12 h-12 text-muted-foreground opacity-30 mx-auto mb-4" />
-            <h3 className="text-xl font-bold mb-2">Aucune donnée pour l'instant</h3>
+            <h3 className="text-xl font-bold mb-2">{t("studentProgress.noData")}</h3>
             <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-              Complète tes premières révisions pour voir ta progression apparaître ici.
+              {t("studentProgress.noDataDesc")}
             </p>
             <Link href="/revision">
               <button className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
-                Commencer à réviser <ChevronRight className="w-4 h-4" />
+                {t("studentProgress.startRevising")} <ChevronRight className="w-4 h-4" />
               </button>
             </Link>
           </Card>
@@ -159,7 +161,7 @@ export function StudentProgress() {
             {/* ── KPI summary ─────────────────────────────────────────────────── */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="p-5 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-none shadow-xl shadow-primary/20 col-span-2 lg:col-span-1">
-                <p className="text-sm text-primary-foreground/80 mb-2">Moyenne générale</p>
+                <p className="text-sm text-primary-foreground/80 mb-2">{t("studentProgress.overallAverage")}</p>
                 {loadingOverview ? (
                   <div className="h-10 bg-white/20 rounded-xl animate-pulse" />
                 ) : (
@@ -170,19 +172,19 @@ export function StudentProgress() {
                 )}
               </Card>
               <Card className="p-5">
-                <p className="text-sm text-muted-foreground mb-2">Révisions totales</p>
+                <p className="text-sm text-muted-foreground mb-2">{t("studentProgress.totalRevisions")}</p>
                 {loadingOverview ? <div className="h-9 bg-muted rounded-xl animate-pulse" /> : (
                   <p className="text-3xl font-bold">{overview?.totalAttempts ?? 0}</p>
                 )}
               </Card>
               <Card className="p-5">
-                <p className="text-sm text-muted-foreground mb-2">Matières travaillées</p>
+                <p className="text-sm text-muted-foreground mb-2">{t("studentProgress.subjectsWorked")}</p>
                 {loadingOverview ? <div className="h-9 bg-muted rounded-xl animate-pulse" /> : (
                   <p className="text-3xl font-bold">{overview?.subjectAverages?.length ?? 0}</p>
                 )}
               </Card>
               <Card className="p-5">
-                <p className="text-sm text-muted-foreground mb-2">Points faibles identifiés</p>
+                <p className="text-sm text-muted-foreground mb-2">{t("studentProgress.weakPointsCount")}</p>
                 {loadingWeak ? <div className="h-9 bg-muted rounded-xl animate-pulse" /> : (
                   <p className="text-3xl font-bold">{weakTopics.filter((t: any) => t.correctRate < 60).length}</p>
                 )}
@@ -194,7 +196,7 @@ export function StudentProgress() {
               <Card className="p-6">
                 <div className="flex items-center gap-3 mb-6">
                   <TrendingUp className="w-5 h-5 text-primary" />
-                  <h2 className="text-lg font-bold">Évolution de tes notes</h2>
+                  <h2 className="text-lg font-bold">{t("studentProgress.gradeEvolution")}</h2>
                 </div>
                 <ResponsiveContainer width="100%" height={220}>
                   <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
@@ -226,7 +228,7 @@ export function StudentProgress() {
               <Card className="p-6">
                 <div className="flex items-center gap-3 mb-6">
                   <Target className="w-5 h-5 text-primary" />
-                  <h2 className="text-lg font-bold">Moyenne par matière</h2>
+                  <h2 className="text-lg font-bold">{t("studentProgress.averageBySubject")}</h2>
                 </div>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart
@@ -259,7 +261,7 @@ export function StudentProgress() {
               <Card className="p-6">
                 <div className="flex items-center gap-3 mb-5">
                   <AlertTriangle className="w-5 h-5 text-amber-500" />
-                  <h2 className="text-lg font-bold">Points faibles</h2>
+                  <h2 className="text-lg font-bold">{t("studentProgress.weakPoints")}</h2>
                 </div>
                 {loadingWeak ? (
                   <div className="space-y-3">
@@ -267,7 +269,7 @@ export function StudentProgress() {
                   </div>
                 ) : weakTopics.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">
-                    Continue à pratiquer pour identifier tes points faibles.
+                    {t("studentProgress.continuePractice")}
                   </p>
                 ) : (
                   <div className="space-y-3">
@@ -294,7 +296,7 @@ export function StudentProgress() {
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-3">
                     <BookOpen className="w-5 h-5 text-primary" />
-                    <h2 className="text-lg font-bold">Historique</h2>
+                    <h2 className="text-lg font-bold">{t("studentProgress.history")}</h2>
                   </div>
                 </div>
                 {loadingHistory ? (
@@ -303,7 +305,7 @@ export function StudentProgress() {
                   </div>
                 ) : history.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">
-                    Aucune révision enregistrée{subjectFilter !== "all" ? " pour cette matière" : ""}.
+                    {subjectFilter !== "all" ? t("studentProgress.noHistorySubject") : t("studentProgress.noHistory")}
                   </p>
                 ) : (
                   <div className="space-y-2 max-h-80 overflow-y-auto pr-1">

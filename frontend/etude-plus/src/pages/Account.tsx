@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader, Card, FadeIn, Button, Input, Label, Badge } from "@/components/ui/Premium";
@@ -12,34 +13,35 @@ import { fr } from "date-fns/locale";
 import { formatTND } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
-const ROLE_LABELS: Record<string, string> = {
-  student: "Élève",
-  professor: "Professeur",
-  admin: "Administrateur",
-  super_admin: "Super Administrateur",
-};
-
-const TABS = [
-  { id: "profile",  label: "Mon Profil",         icon: User },
-  { id: "payments", label: "Historique paiements", icon: CreditCard },
-  { id: "terms",    label: "CGU & Confidentialité", icon: FileText },
-];
-
-function statusBadge(status: string) {
-  if (status === "completed") return <Badge variant="success"><CheckCircle className="w-3 h-3 mr-1" />Complété</Badge>;
-  if (status === "pending")   return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />En attente</Badge>;
-  return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />{status}</Badge>;
-}
-
 export function Account() {
+  const { t } = useTranslation();
   const { user, logoutFn } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("profile");
   const { data: myTransactions = [] } = useGetMyTransactions() as any;
 
+  const ROLE_LABELS: Record<string, string> = {
+    student: t("account.roleStudent"),
+    professor: t("account.roleProfessor"),
+    admin: t("account.roleAdmin"),
+    super_admin: t("account.roleSuperAdmin"),
+  };
+
+  const TABS = [
+    { id: "profile",  label: t("account.tabProfile"),   icon: User },
+    { id: "payments", label: t("account.tabPayments"),  icon: CreditCard },
+    { id: "terms",    label: t("account.tabTerms"),     icon: FileText },
+  ];
+
+  function statusBadge(status: string) {
+    if (status === "completed") return <Badge variant="success"><CheckCircle className="w-3 h-3 mr-1" />{t("account.statusCompleted")}</Badge>;
+    if (status === "pending")   return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />{t("account.statusPending")}</Badge>;
+    return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />{status}</Badge>;
+  }
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    toast({ title: "Profil mis à jour", description: "Vos informations ont été enregistrées." });
+    toast({ title: t("account.profileUpdated"), description: t("account.profileUpdatedDesc") });
   };
 
   if (!user) return null;
@@ -48,8 +50,8 @@ export function Account() {
     <DashboardLayout>
       <FadeIn>
         <PageHeader
-          title="Mon Compte"
-          description="Gérez votre profil, vos paiements et vos préférences."
+          title={t("account.title")}
+          description={t("account.description")}
         />
 
         <div className="flex flex-col lg:flex-row gap-8 max-w-5xl">
@@ -95,7 +97,7 @@ export function Account() {
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
-                  Se déconnecter
+                  {t("account.logout")}
                 </button>
               </div>
             </Card>
@@ -106,17 +108,17 @@ export function Account() {
             {/* Profile tab */}
             {activeTab === "profile" && (
               <Card className="p-8">
-                <h2 className="text-xl font-bold mb-6 pb-4 border-b border-border">Informations personnelles</h2>
+                <h2 className="text-xl font-bold mb-6 pb-4 border-b border-border">{t("account.profileTitle")}</h2>
                 <form onSubmit={handleSave} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
-                      <Label>Nom complet</Label>
+                      <Label>{t("account.fullName")}</Label>
                       <Input defaultValue={user.fullName} />
                     </div>
                     <div>
-                      <Label>Email</Label>
+                      <Label>{t("account.email")}</Label>
                       <Input defaultValue={user.email} disabled className="opacity-60 cursor-not-allowed" />
-                      <p className="text-xs text-muted-foreground mt-1">L'email ne peut pas être modifié.</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t("account.emailNote")}</p>
                     </div>
                   </div>
 
@@ -124,14 +126,14 @@ export function Account() {
                     <div>
                       <Label>
                         <MapPin className="w-3.5 h-3.5 inline mr-1" />
-                        Ville
+                        {t("account.city")}
                       </Label>
                       <Input defaultValue={(user as any).city ?? ""} placeholder="Ex: Tunis" />
                     </div>
                     <div>
                       <Label>
                         <GraduationCap className="w-3.5 h-3.5 inline mr-1" />
-                        Niveau scolaire
+                        {t("account.gradeLevel")}
                       </Label>
                       <Input defaultValue={(user as any).gradeLevel ?? ""} placeholder="Ex: Baccalauréat" />
                     </div>
@@ -141,13 +143,13 @@ export function Account() {
                   <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl">
                     <ShieldCheck className="w-5 h-5 text-green-600 shrink-0" />
                     <div>
-                      <p className="font-semibold text-green-800 text-sm">Compte vérifié</p>
-                      <p className="text-xs text-green-600">Votre email est confirmé et votre compte est actif.</p>
+                      <p className="font-semibold text-green-800 text-sm">{t("account.verifiedAccount")}</p>
+                      <p className="text-xs text-green-600">{t("account.verifiedDesc")}</p>
                     </div>
                   </div>
 
                   <div className="flex justify-end">
-                    <Button type="submit">Sauvegarder les modifications</Button>
+                    <Button type="submit">{t("account.save")}</Button>
                   </div>
                 </form>
               </Card>
@@ -158,34 +160,34 @@ export function Account() {
               <div className="space-y-6">
                 {/* Payment method info */}
                 <Card className="p-6">
-                  <h2 className="text-xl font-bold mb-4">Mode de paiement</h2>
+                  <h2 className="text-xl font-bold mb-4">{t("account.paymentMethod")}</h2>
                   <div className="flex items-center gap-4 p-4 bg-muted/40 rounded-xl border border-border">
                     <div className="w-12 h-8 rounded bg-gradient-to-r from-amber-400 to-orange-500 flex items-center justify-center">
                       <span className="text-white font-bold text-xs">TND</span>
                     </div>
                     <div>
-                      <p className="font-semibold text-sm">Paiement en Dinars Tunisiens</p>
+                      <p className="font-semibold text-sm">{t("account.paymentTND")}</p>
                       <p className="text-xs text-muted-foreground">
-                        Paiements sécurisés via le système intégré Étude+
+                        {t("account.paymentSecure")}
                       </p>
                     </div>
-                    <Badge variant="success" className="ml-auto">Actif</Badge>
+                    <Badge variant="success" className="ml-auto">{t("account.active")}</Badge>
                   </div>
                 </Card>
 
                 {/* Transaction history */}
                 <Card className="overflow-hidden">
                   <div className="p-5 border-b border-border">
-                    <h2 className="text-xl font-bold">Historique des paiements</h2>
+                    <h2 className="text-xl font-bold">{t("account.paymentHistory")}</h2>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {myTransactions.length} transaction{myTransactions.length !== 1 ? "s" : ""}
+                      {myTransactions.length} {myTransactions.length !== 1 ? t("account.transactions_plural") : t("account.transactions")}
                     </p>
                   </div>
 
                   {myTransactions.length === 0 ? (
                     <div className="py-16 text-center text-muted-foreground">
                       <CreditCard className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                      <p>Aucun paiement pour l'instant.</p>
+                      <p>{t("account.noPayments")}</p>
                     </div>
                   ) : (
                     <div className="divide-y divide-border">
@@ -215,7 +217,7 @@ export function Account() {
             {activeTab === "terms" && (
               <Card className="p-8">
                 <h2 className="text-xl font-bold mb-6 pb-4 border-b border-border">
-                  Conditions Générales d'Utilisation
+                  {t("account.termsTitle")}
                 </h2>
                 <div className="prose prose-sm max-w-none text-muted-foreground space-y-6">
                   <div>

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card } from "@/components/ui/Premium";
 import { Link, useRoute } from "wouter";
@@ -5,44 +6,45 @@ import { BookOpen, ChevronRight, FileText, Trophy, BarChart3, ArrowRight } from 
 import { subjectToSlug, subjectFromSlug } from "@/lib/educationConfig";
 import { cn } from "@/lib/utils";
 
-const OPTIONS = [
-  {
-    icon: FileText,
-    title: "Banque de Questions",
-    description: "Entraîne-toi sur des questions ciblées par chapitre. Correction immédiate avec le corrigé détaillé.",
-    href: "banque-de-questions",
-    color: "bg-blue-500/10 border-blue-200 dark:bg-blue-500/20 dark:border-blue-800",
-    iconColor: "text-blue-600 dark:text-blue-400",
-    badge: "Recommandé",
-    badgeColor: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300",
-  },
-  {
-    icon: Trophy,
-    title: "Annales Officielles",
-    description: "Passe de vraies annales d'examens des années précédentes. Reçois ta note sur 20 à la fin.",
-    href: "annales",
-    color: "bg-amber-500/10 border-amber-200 dark:bg-amber-500/20 dark:border-amber-800",
-    iconColor: "text-amber-600 dark:text-amber-400",
-    badge: "Populaire",
-    badgeColor: "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300",
-  },
-  {
-    icon: BarChart3,
-    title: "Ma Progression",
-    description: "Consulte tes moyennes par matière, tes points faibles et l'évolution de tes notes sur 20.",
-    href: "/student/progress",
-    color: "bg-green-500/10 border-green-200 dark:bg-green-500/20 dark:border-green-800",
-    iconColor: "text-green-600 dark:text-green-400",
-    badge: null,
-    badgeColor: "",
-    absolute: true,
-  },
-];
-
 export function ExamensBlancs() {
+  const { t } = useTranslation();
   const [, params] = useRoute("/revision/:subject/examens-blancs");
   const subject = params?.subject ? (subjectFromSlug(params.subject) ?? decodeURIComponent(params.subject)) : "";
   const subjectSlug = subjectToSlug(subject);
+
+  const OPTIONS = [
+    {
+      icon: FileText,
+      title: t("revisionPages.examensBlancs.questionBank"),
+      description: t("revisionPages.examensBlancs.questionBankDesc"),
+      href: "banque-de-questions",
+      color: "bg-blue-500/10 border-blue-200 dark:bg-blue-500/20 dark:border-blue-800",
+      iconColor: "text-blue-600 dark:text-blue-400",
+      badge: t("revisionPages.examensBlancs.recommended"),
+      badgeColor: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300",
+    },
+    {
+      icon: Trophy,
+      title: t("revisionPages.examensBlancs.officialAnnales"),
+      description: t("revisionPages.examensBlancs.officialAnnalesDesc"),
+      href: "annales",
+      color: "bg-amber-500/10 border-amber-200 dark:bg-amber-500/20 dark:border-amber-800",
+      iconColor: "text-amber-600 dark:text-amber-400",
+      badge: t("revisionPages.examensBlancs.popular"),
+      badgeColor: "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300",
+    },
+    {
+      icon: BarChart3,
+      title: t("revisionPages.examensBlancs.myProgress"),
+      description: t("revisionPages.examensBlancs.myProgressDesc"),
+      href: "/student/progress",
+      color: "bg-green-500/10 border-green-200 dark:bg-green-500/20 dark:border-green-800",
+      iconColor: "text-green-600 dark:text-green-400",
+      badge: null as string | null,
+      badgeColor: "",
+      absolute: true,
+    },
+  ];
 
   return (
     <DashboardLayout>
@@ -51,15 +53,15 @@ export function ExamensBlancs() {
         <div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1 flex-wrap">
             <BookOpen className="w-4 h-4" />
-            <Link href="/revision" className="hover:text-foreground transition-colors">Révision Étude+</Link>
+            <Link href="/revision" className="hover:text-foreground transition-colors">{t("revisionPages.examensBlancs.breadcrumbHub")}</Link>
             <ChevronRight className="w-3 h-3" />
             <Link href={`/revision/${subjectSlug}`} className="hover:text-foreground transition-colors">{subject}</Link>
             <ChevronRight className="w-3 h-3" />
-            <span>Examens Blancs</span>
+            <span>{t("revisionPages.examensBlancs.breadcrumbSection")}</span>
           </div>
-          <h1 className="text-2xl font-bold">Examens Blancs — {subject}</h1>
+          <h1 className="text-2xl font-bold">{t("revisionPages.examensBlancs.title", { subject })}</h1>
           <p className="text-muted-foreground mt-1">
-            Prépare-toi aux examens avec des entraînements ciblés et des annales officielles notées sur 20.
+            {t("revisionPages.examensBlancs.subtitle")}
           </p>
         </div>
 
@@ -88,7 +90,7 @@ export function ExamensBlancs() {
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">{opt.description}</p>
                   </div>
                   <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors">
-                    <span>Commencer</span>
+                    <span>{t("revisionPages.examensBlancs.start")}</span>
                     <ArrowRight className="w-3 h-3" />
                   </div>
                 </Card>

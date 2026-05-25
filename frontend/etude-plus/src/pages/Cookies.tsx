@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Cookie, Shield, BarChart2, Megaphone, Settings } from "lucide-react";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
 import { CookieSettingsModal } from "@/components/CookieSettingsModal";
 
 export function Cookies() {
+  const { t } = useTranslation();
   const { consent, resetConsent } = useCookieConsent();
   const [showSettings, setShowSettings] = useState(false);
 
@@ -15,7 +17,7 @@ export function Cookies() {
       <div className="min-h-screen bg-background">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
           <Link href="/" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary mb-8 transition-colors">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Retour à l'accueil
+            <ArrowLeft className="w-4 h-4 mr-2" /> {t("legal.backHome")}
           </Link>
 
           <div className="flex items-center gap-3 mb-8">
@@ -42,7 +44,9 @@ export function Cookies() {
               <div className="flex items-center gap-3 mb-3">
                 <Shield className="w-5 h-5 text-primary" />
                 <h2 className="text-lg font-semibold">Cookies nécessaires</h2>
-                <span className="ml-auto text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">Toujours actifs</span>
+                <span className="ml-auto text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                  {t("legal.alwaysActive")}
+                </span>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed mb-4">
                 Ces cookies sont indispensables au fonctionnement d'Étude+. Ils ne peuvent pas être désactivés.
@@ -81,7 +85,7 @@ export function Cookies() {
                 <BarChart2 className="w-5 h-5 text-primary" />
                 <h2 className="text-lg font-semibold">Cookies analytiques</h2>
                 <span className={`ml-auto text-xs font-medium px-2 py-0.5 rounded-full ${consent?.analytics ? "text-green-600 bg-green-50" : "text-muted-foreground bg-muted"}`}>
-                  {consent?.analytics ? "Activés" : "Désactivés"}
+                  {consent?.analytics ? t("legal.enabled") : t("legal.disabled")}
                 </span>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed mb-4">
@@ -112,7 +116,7 @@ export function Cookies() {
                 <Megaphone className="w-5 h-5 text-primary" />
                 <h2 className="text-lg font-semibold">Cookies marketing</h2>
                 <span className={`ml-auto text-xs font-medium px-2 py-0.5 rounded-full ${consent?.marketing ? "text-green-600 bg-green-50" : "text-muted-foreground bg-muted"}`}>
-                  {consent?.marketing ? "Activés" : "Désactivés"}
+                  {consent?.marketing ? t("legal.enabled") : t("legal.disabled")}
                 </span>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
@@ -135,7 +139,7 @@ export function Cookies() {
           {/* Manage button */}
           <div className="mt-10 p-6 bg-primary/5 border border-primary/20 rounded-2xl flex items-center justify-between gap-4">
             <div>
-              <p className="font-semibold text-sm">Gérer mes préférences</p>
+              <p className="font-semibold text-sm">{t("legal.managePreferences")}</p>
               <p className="text-xs text-muted-foreground mt-0.5">Modifiez vos choix de cookies à tout moment.</p>
             </div>
             <button
@@ -143,7 +147,7 @@ export function Cookies() {
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:opacity-90 transition-opacity shrink-0"
             >
               <Settings className="w-4 h-4" />
-              Personnaliser
+              {t("legal.customize")}
             </button>
           </div>
         </div>

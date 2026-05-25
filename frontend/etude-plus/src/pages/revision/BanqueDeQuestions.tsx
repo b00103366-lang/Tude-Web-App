@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Link } from "wouter";
@@ -32,6 +33,7 @@ const SUBJECT_EMOJIS: Record<string, string> = {
 };
 
 export function RevisionHub() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const gradeLevel: string = (user as any)?.studentProfile?.gradeLevel ?? "";
   const educationSection: string | null = (user as any)?.studentProfile?.educationSection ?? null;
@@ -43,13 +45,12 @@ export function RevisionHub() {
           <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto">
             <AlertCircle className="w-8 h-8 text-amber-600" />
           </div>
-          <h2 className="text-xl font-bold">Niveau non défini</h2>
+          <h2 className="text-xl font-bold">{t("revision.chapters.levelNotSet")}</h2>
           <p className="text-muted-foreground">
-            Veuillez définir votre niveau scolaire dans{" "}
+            {t("revision.chapters.configureLevel")}{" "}
             <Link href="/student/settings" className="text-primary underline underline-offset-2">
-              les paramètres
-            </Link>{" "}
-            pour accéder à la Révision Étude+.
+              {t("revisionPages.hub.levelNotDefinedDesc")}
+            </Link>
           </p>
         </div>
       </DashboardLayout>
@@ -68,11 +69,11 @@ export function RevisionHub() {
         <div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
             <BookOpen className="w-4 h-4" />
-            <span>Révision Étude+</span>
+            <span>{t("revision.breadcrumb.hub")}</span>
           </div>
-          <h1 className="text-2xl font-bold">Révision Étude+</h1>
+          <h1 className="text-2xl font-bold">{t("revision.breadcrumb.hub")}</h1>
           <p className="text-muted-foreground mt-1">
-            {gradeLabel}{sectionLabel ? ` — ${sectionLabel}` : ""} · Choisissez une matière pour commencer.
+            {gradeLabel}{sectionLabel ? ` — ${sectionLabel}` : ""} · {t("revisionPages.hub.chooseSubject")}
           </p>
         </div>
 
@@ -89,7 +90,7 @@ export function RevisionHub() {
                 <p className="font-semibold text-sm leading-snug text-gray-900">{subject}</p>
               </div>
               <div className="flex items-center gap-1 text-xs text-gray-700 opacity-60 group-hover:opacity-100 transition-opacity mt-auto">
-                <span>Réviser</span>
+                <span>{t("revisionPages.hub.revise")}</span>
                 <ChevronRight className="w-3 h-3" />
               </div>
             </Link>

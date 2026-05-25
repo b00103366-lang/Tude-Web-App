@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { Navbar } from "@/components/layout/Navbar";
 import { MathBackground } from "@/components/ui/MathBackground";
@@ -27,25 +28,26 @@ const CURRICULUM_SUBJECTS = [
   { name: "Comptabilité",   icon: Calculator, color: "#14b8a6", bg: "bg-teal-50 border-teal-200", tag: "Sciences Humaines" },
 ];
 
-const GRADE_LEVELS = [
-  "Tous les niveaux",
-  "Primaire",
-  "Collège 7ème", "Collège 8ème", "Collège 9ème",
-  "Lycée 1ère année", "Lycée 2ème année", "3ème année secondaire",
-  "Baccalauréat",
-];
-
 export function PublicBrowse() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
-  const [selectedLevel, setSelectedLevel] = useState("Tous les niveaux");
+  const [selectedLevel, setSelectedLevel] = useState(t("publicBrowse.allLevels"));
   const [showFilters, setShowFilters] = useState(false);
+
+  const GRADE_LEVELS = [
+    t("publicBrowse.allLevels"),
+    "Primaire",
+    "Collège 7ème", "Collège 8ème", "Collège 9ème",
+    "Lycée 1ère année", "Lycée 2ème année", "3ème année secondaire",
+    "Baccalauréat",
+  ];
 
   const { data, isLoading } = useListClasses({
     search: search || undefined,
     subject: selectedSubject ?? undefined,
-    gradeLevel: selectedLevel !== "Tous les niveaux" ? selectedLevel : undefined,
+    gradeLevel: selectedLevel !== t("publicBrowse.allLevels") ? selectedLevel : undefined,
   });
 
   const classes = (data?.classes ?? []) as any[];

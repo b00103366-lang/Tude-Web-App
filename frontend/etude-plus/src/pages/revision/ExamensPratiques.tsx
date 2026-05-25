@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card } from "@/components/ui/Premium";
 import { Link, useRoute } from "wouter";
@@ -62,19 +63,22 @@ const DIFFICULTY_COLOR: Record<string, string> = {
   difficile: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
-const MARK_OPTIONS: { value: SelfMark; label: string; icon: typeof CheckCircle2; color: string }[] = [
-  { value: "correct",   label: "Correct",   icon: CheckCircle2, color: "text-green-600 bg-green-50 border-green-200 hover:bg-green-100 dark:bg-green-900/20 dark:border-green-800" },
-  { value: "partial",   label: "Partiel",   icon: MinusCircle,  color: "text-amber-600 bg-amber-50 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:border-amber-800" },
-  { value: "incorrect", label: "Incorrect", icon: XCircle,      color: "text-red-600 bg-red-50 border-red-200 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-800" },
+const MARK_OPTION_DEFS: { value: SelfMark; labelKey: string; icon: typeof CheckCircle2; color: string }[] = [
+  { value: "correct",   labelKey: "revisionPages.annales.markCorrect",   icon: CheckCircle2, color: "text-green-600 bg-green-50 border-green-200 hover:bg-green-100 dark:bg-green-900/20 dark:border-green-800" },
+  { value: "partial",   labelKey: "revisionPages.annales.markPartial",   icon: MinusCircle,  color: "text-amber-600 bg-amber-50 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:border-amber-800" },
+  { value: "incorrect", labelKey: "revisionPages.annales.markIncorrect", icon: XCircle,      color: "text-red-600 bg-red-50 border-red-200 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-800" },
 ];
 
 export function ExamensPratiques() {
+  const { t } = useTranslation();
   const [, params] = useRoute("/revision/:subject/examens-pratiques");
   const subject = params?.subject ? (subjectFromSlug(params.subject) ?? decodeURIComponent(params.subject)) : "";
   const slug = subjectToSlug(subject);
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const MARK_OPTIONS = MARK_OPTION_DEFS.map(opt => ({ ...opt, label: t(opt.labelKey) }));
 
   const gradeLevel: string = (user as any)?.studentProfile?.gradeLevel ?? "";
   const sectionKey: string | null = (user as any)?.studentProfile?.educationSection ?? null;
@@ -141,7 +145,7 @@ export function ExamensPratiques() {
   function handleSubmit() {
     const markedCount = Object.keys(selfMarks).length;
     if (markedCount === 0) {
-      toast({ title: "Aucune réponse évaluée", description: "Évalue au moins une question avant de soumettre." });
+      toast({ title: t("revisionPages.examensPratiques.noEval"), description: t("revisionPages.examensPratiques.evalFirst") });
       return;
     }
 
@@ -195,7 +199,7 @@ export function ExamensPratiques() {
             <Trophy className="w-10 h-10 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold mb-1">Résultat de l'examen pratique</h1>
+            <h1 className="text-3xl font-bold mb-1">{t("revisionPages.examensPratiques.resultTitle")}</h1>
             <p className="text-muted-foreground">{subject}</p>
           </div>
           {grade !== null && (
@@ -205,20 +209,20 @@ export function ExamensPratiques() {
             </div>
           )}
           <p className="text-muted-foreground">
-            {Object.values(selfMarks).filter(m => m === "correct").length} correcte(s) ·{" "}
-            {Object.values(selfMarks).filter(m => m === "partial").length} partielle(s) ·{" "}
-            {Object.values(selfMarks).filter(m => m === "incorrect").length} incorrecte(s)
+            {Object.values(selfMarks).filter(m => m === "correct").length} {t("revisionPages.annales.correct")} ·{" "}
+            {Object.values(selfMarks).filter(m => m === "partial").length} {t("revisionPages.annales.partial")} ·{" "}
+            {Object.values(selfMarks).filter(m => m === "incorrect").length} {t("revisionPages.annales.incorrect")}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
             <button
               onClick={() => { setExamStarted(false); setSubmitted(false); setSelfMarks({}); setShowScheme({}); setShuffledQuestions([]); }}
               className="px-5 py-2.5 border border-border rounded-xl text-sm font-semibold hover:bg-muted transition-colors"
             >
-              Recommencer
+              {t("revisionPages.examensPratiques.restart")}
             </button>
             <Link href="/student/progress">
               <button className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
-                Voir ma progression <ArrowRight className="w-4 h-4" />
+                {t("revisionPages.examensPratiques.viewProgress")} <ArrowRight className="w-4 h-4" />
               </button>
             </Link>
           </div>
@@ -235,15 +239,15 @@ export function ExamensPratiques() {
           <div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2 flex-wrap">
               <BookOpen className="w-4 h-4" />
-              <Link href="/revision" className="hover:text-foreground transition-colors">Révision Étude+</Link>
+              <Link href="/revision" className="hover:text-foreground transition-colors">{t("revisionPages.examensPratiques.breadcrumbHub")}</Link>
               <ChevronRight className="w-3 h-3" />
               <Link href={`/revision/${slug}`} className="hover:text-foreground transition-colors">{subject}</Link>
               <ChevronRight className="w-3 h-3" />
-              <span className="text-foreground font-medium">Examens Pratiques</span>
+              <span className="text-foreground font-medium">{t("revisionPages.examensPratiques.breadcrumbSection")}</span>
             </div>
-            <h1 className="text-2xl font-bold">Examens Pratiques — {subject}</h1>
+            <h1 className="text-2xl font-bold">{t("revisionPages.examensPratiques.title", { subject })}</h1>
             <p className="text-muted-foreground mt-1">
-              Réponds à un ensemble de questions en conditions d'examen. Les corrigés ne s'affichent qu'après que tu aies évalué ta réponse.
+              {t("revisionPages.examensPratiques.subtitle")}
             </p>
           </div>
 
@@ -252,9 +256,9 @@ export function ExamensPratiques() {
               <div className="flex gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-amber-800 dark:text-amber-300">Niveau non défini</p>
+                  <p className="font-semibold text-amber-800 dark:text-amber-300">{t("revisionPages.examensPratiques.levelNotSet")}</p>
                   <p className="text-sm text-amber-700 dark:text-amber-400">
-                    <Link href="/student/settings" className="underline">Configure ton niveau</Link> pour accéder aux examens pratiques.
+                    <Link href="/student/settings" className="underline">{t("revisionPages.examensPratiques.configureLevel")}</Link> {t("revisionPages.examensPratiques.toAccessExams")}
                   </p>
                 </div>
               </div>
@@ -267,19 +271,19 @@ export function ExamensPratiques() {
                 <ClipboardList className="w-8 h-8 text-green-600 dark:text-green-400" />
               </div>
               <div className="space-y-2">
-                <h2 className="text-lg font-bold">Prêt à commencer ?</h2>
+                <h2 className="text-lg font-bold">{t("revisionPages.examensPratiques.readyTitle")}</h2>
                 <p className="text-sm text-muted-foreground max-w-md">
-                  15 questions tirées aléatoirement dans tous les chapitres de {subject}. Réponds à chacune, révèle le corrigé quand tu es prêt, puis évalue-toi honnêtement. Ta note sur 20 est calculée à la fin.
+                  {t("revisionPages.examensPratiques.readyDesc", { subject })}
                 </p>
                 <div className="flex flex-wrap gap-2 pt-1">
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-muted border border-border text-muted-foreground">
-                    Tirage aléatoire
+                    {t("revisionPages.examensPratiques.randomDraw")}
                   </span>
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-muted border border-border text-muted-foreground">
-                    Tous chapitres
+                    {t("revisionPages.examensPratiques.allChapters")}
                   </span>
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-muted border border-border text-muted-foreground">
-                    Note sur 20
+                    {t("revisionPages.examensPratiques.scoredOn20")}
                   </span>
                 </div>
               </div>
@@ -287,7 +291,7 @@ export function ExamensPratiques() {
                 onClick={() => setExamStarted(true)}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-colors"
               >
-                Commencer l'examen <ArrowRight className="w-4 h-4" />
+                {t("revisionPages.examensPratiques.startExam")} <ArrowRight className="w-4 h-4" />
               </button>
             </Card>
           )}
@@ -308,14 +312,14 @@ export function ExamensPratiques() {
             onClick={() => { setExamStarted(false); setSelfMarks({}); setShowScheme({}); setShuffledQuestions([]); }}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
           >
-            <ArrowLeft className="w-4 h-4" /> Retour
+            <ArrowLeft className="w-4 h-4" /> {t("revisionPages.examensPratiques.back")}
           </button>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
               <ClipboardList className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Examen Pratique — {subject}</h1>
+              <h1 className="text-xl font-bold">{t("revisionPages.examensPratiques.examTitle", { subject })}</h1>
               {!isLoading && questions.length > 0 && (
                 <p className="text-sm text-muted-foreground">{questions.length} question{questions.length > 1 ? "s" : ""}</p>
               )}
@@ -324,9 +328,9 @@ export function ExamensPratiques() {
         </div>
 
         <div className="rounded-xl border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800 p-4 text-sm">
-          <p className="font-semibold text-green-800 dark:text-green-300">Mode Examen Pratique</p>
+          <p className="font-semibold text-green-800 dark:text-green-300">{t("revisionPages.examensPratiques.examMode")}</p>
           <p className="text-muted-foreground mt-0.5">
-            Réponds à chaque question, puis révèle le corrigé et évalue ta réponse honnêtement. Ton score sera calculé à la soumission.
+            {t("revisionPages.examensPratiques.examModeDesc")}
           </p>
         </div>
 
@@ -339,17 +343,17 @@ export function ExamensPratiques() {
         {isError && (
           <Card className="p-8 text-center">
             <AlertCircle className="w-10 h-10 text-muted-foreground opacity-40 mx-auto mb-3" />
-            <p className="font-semibold">Impossible de charger les questions</p>
-            <p className="text-sm text-muted-foreground mt-1">Vérifie ta connexion et réessaie.</p>
+            <p className="font-semibold">{t("revisionPages.examensPratiques.loadError")}</p>
+            <p className="text-sm text-muted-foreground mt-1">{t("revisionPages.examensPratiques.checkConnection")}</p>
           </Card>
         )}
 
         {!isLoading && !isError && questions.length === 0 && (
           <Card className="p-12 text-center">
             <ClipboardList className="w-12 h-12 text-muted-foreground opacity-30 mx-auto mb-4" />
-            <h3 className="text-lg font-bold mb-2">Aucune question disponible</h3>
+            <h3 className="text-lg font-bold mb-2">{t("revisionPages.examensPratiques.noQuestions")}</h3>
             <p className="text-muted-foreground max-w-sm mx-auto">
-              Les questions pour <strong>{subject}</strong> seront disponibles très bientôt.
+              {t("revisionPages.examensPratiques.noQuestionsDesc", { subject })}
             </p>
           </Card>
         )}
@@ -382,7 +386,7 @@ export function ExamensPratiques() {
                         </span>
                         {q.requiresCalculator && (
                           <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Calculator className="w-3 h-3" /> Calculatrice
+                            <Calculator className="w-3 h-3" /> {t("revisionPages.examensPratiques.calculator")}
                           </span>
                         )}
                         {q.totalMarks && (
@@ -426,12 +430,12 @@ export function ExamensPratiques() {
                       className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border text-xs font-semibold hover:bg-muted transition-colors"
                     >
                       {schemeVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      {schemeVisible ? "Masquer le corrigé" : "Voir le corrigé"}
+                      {schemeVisible ? t("revisionPages.examensPratiques.hideSolution") : t("revisionPages.examensPratiques.showSolution")}
                     </button>
 
                     {schemeVisible && q.markScheme.length > 0 && (
                       <div className="rounded-xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-4 space-y-2">
-                        <p className="text-xs font-bold text-green-800 dark:text-green-300">Corrigé</p>
+                        <p className="text-xs font-bold text-green-800 dark:text-green-300">{t("revisionPages.examensPratiques.solution")}</p>
                         {q.markScheme.map(ms => (
                           <div key={ms.id} className="flex gap-2 text-sm">
                             {q.parts.length > 1 && (
@@ -449,12 +453,12 @@ export function ExamensPratiques() {
                     )}
 
                     {schemeVisible && q.markScheme.length === 0 && (
-                      <p className="text-xs text-muted-foreground">Corrigé non disponible.</p>
+                      <p className="text-xs text-muted-foreground">{t("revisionPages.examensPratiques.solutionNA")}</p>
                     )}
 
                     <div>
                       <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
-                        Évalue ta réponse
+                        {t("revisionPages.examensPratiques.assessAnswer")}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {MARK_OPTIONS.map(opt => {
@@ -497,7 +501,7 @@ export function ExamensPratiques() {
                 disabled={markedCount === 0 || saveAttempt.isPending}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {saveAttempt.isPending ? "Enregistrement..." : "Soumettre l'examen"}
+                {saveAttempt.isPending ? t("revisionPages.examensPratiques.saving") : t("revisionPages.examensPratiques.submitExam")}
                 <Trophy className="w-4 h-4" />
               </button>
             </Card>

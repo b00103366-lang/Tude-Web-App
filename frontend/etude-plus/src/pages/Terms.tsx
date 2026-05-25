@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Printer, ChevronDown, ChevronUp } from "lucide-react";
 
 const SECTIONS = [
@@ -56,6 +57,7 @@ function Email({ addr }: { addr: string }) {
 }
 
 export function Terms() {
+  const { t } = useTranslation();
   const [activeId, setActiveId] = useState<string>("");
   const [tocOpen, setTocOpen] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -122,7 +124,7 @@ export function Terms() {
             className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <Printer className="w-4 h-4" />
-            Imprimer
+            {t("legal.print")}
           </button>
         </div>
       </div>
@@ -133,7 +135,7 @@ export function Terms() {
           className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700"
           onClick={() => setTocOpen(o => !o)}
         >
-          <span>Table des matières</span>
+          <span>{t("legal.tableOfContents")}</span>
           {tocOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
         {tocOpen && (
@@ -149,7 +151,9 @@ export function Terms() {
           {/* Sticky sidebar TOC — desktop */}
           <aside className="hidden lg:block print:hidden">
             <div className="sticky top-20">
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3 px-3">Table des matières</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3 px-3">
+                {t("legal.tableOfContents")}
+              </p>
               <TocList />
             </div>
           </aside>
@@ -159,7 +163,7 @@ export function Terms() {
             {/* Header */}
             <div className="mb-10">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold mb-4">
-                Document légal
+                {t("legal.legalDocument")}
               </div>
               <h1 className="text-3xl font-serif font-bold text-[#1a1a2e] mb-2">Conditions d'utilisation</h1>
               <p className="text-sm text-gray-400">Dernière mise à jour : Mars 2025</p>
@@ -393,10 +397,10 @@ export function Terms() {
             {/* Footer nav */}
             <div className="mt-12 pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500 print:hidden">
               <Link href="/" className="flex items-center gap-2 hover:text-amber-600 transition-colors font-medium">
-                <ArrowLeft className="w-4 h-4" /> Retour à l'accueil
+                <ArrowLeft className="w-4 h-4" /> {t("legal.backHome")}
               </Link>
               <button onClick={() => window.print()} className="flex items-center gap-2 hover:text-gray-800 transition-colors">
-                <Printer className="w-4 h-4" /> Imprimer ce document
+                <Printer className="w-4 h-4" /> {t("legal.printDoc")}
               </button>
             </div>
           </article>

@@ -1,15 +1,18 @@
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button, FadeIn } from "@/components/ui/Premium";
-import { BookOpen, BarChart3, Sparkles, ArrowRight, CheckCircle2 } from "lucide-react";
-
-const FEATURES = [
-  { icon: BookOpen,  text: "Banque de questions par matière et chapitre" },
-  { icon: Sparkles,  text: "Annales, flashcards et notions clés" },
-  { icon: BarChart3, text: "Suivi de ta progression en temps réel" },
-];
+import { BookOpen, BarChart3, Sparkles, ArrowRight } from "lucide-react";
 
 export function SelectRole() {
+  const { t } = useTranslation();
+
+  const features = [
+    { icon: BookOpen,  textKey: "selectRole.feature1" },
+    { icon: Sparkles,  textKey: "selectRole.feature2" },
+    { icon: BarChart3, textKey: "selectRole.feature3" },
+  ];
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
       <div className="absolute inset-0 bg-math-pattern opacity-[0.03] pointer-events-none" />
@@ -24,21 +27,20 @@ export function SelectRole() {
             </div>
 
             <h1 className="text-3xl sm:text-4xl font-serif font-bold mb-3">
-              Bienvenue sur <span className="text-primary">Étude+</span>
+              {t("selectRole.welcome")} <span className="text-primary">Étude+</span>
             </h1>
             <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-              La plateforme de révision pour les élèves tunisiens.
-              Commence à réviser intelligemment dès aujourd'hui.
+              {t("selectRole.subtitle")}
             </p>
 
             {/* Feature list */}
             <ul className="space-y-3 mb-10 text-left">
-              {FEATURES.map(({ icon: Icon, text }) => (
-                <li key={text} className="flex items-center gap-3">
+              {features.map(({ icon: Icon, textKey }) => (
+                <li key={textKey} className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                     <Icon className="w-4 h-4 text-primary" />
                   </div>
-                  <span className="text-sm text-muted-foreground">{text}</span>
+                  <span className="text-sm text-muted-foreground">{t(textKey)}</span>
                 </li>
               ))}
             </ul>
@@ -46,15 +48,15 @@ export function SelectRole() {
             {/* CTA */}
             <Link href="/register">
               <Button size="lg" className="w-full gap-2 text-base">
-                Créer mon compte gratuitement
+                {t("selectRole.cta")}
                 <ArrowRight className="w-5 h-5" />
               </Button>
             </Link>
 
             <p className="mt-6 text-sm text-muted-foreground">
-              Déjà inscrit ?{" "}
+              {t("selectRole.alreadyRegistered")}{" "}
               <Link href="/login" className="text-primary font-semibold hover:underline">
-                Se connecter
+                {t("selectRole.login")}
               </Link>
             </p>
           </FadeIn>

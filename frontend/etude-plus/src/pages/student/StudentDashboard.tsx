@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, FadeIn } from "@/components/ui/Premium";
@@ -40,54 +41,55 @@ function gradeColor(g: number) {
   return "text-red-600 dark:text-red-400";
 }
 
-function typeLabel(type: string) {
-  if (type === "past_paper") return "Annale";
-  return "Entraînement";
-}
-
-const LEARNING_MODULES = [
-  {
-    icon: Library,
-    key: "banque-de-questions",
-    title: "Questions",
-    description: "Questions par chapitre avec correction immédiate.",
-    color: "hover:border-blue-300 dark:hover:border-blue-700",
-    iconBg: "bg-blue-500/10 dark:bg-blue-500/20",
-    iconColor: "text-blue-600 dark:text-blue-400",
-  },
-  {
-    icon: FileText,
-    key: "examens-blancs",
-    title: "Past Papers",
-    description: "Annales officielles notées sur 20.",
-    color: "hover:border-amber-300 dark:hover:border-amber-700",
-    iconBg: "bg-amber-500/10 dark:bg-amber-500/20",
-    iconColor: "text-amber-600 dark:text-amber-400",
-  },
-  {
-    icon: ClipboardList,
-    key: "examens-pratiques",
-    title: "Practice Exams",
-    description: "15 questions aléatoires, note finale sur 20.",
-    color: "hover:border-green-300 dark:hover:border-green-700",
-    iconBg: "bg-green-500/10 dark:bg-green-500/20",
-    iconColor: "text-green-600 dark:text-green-400",
-  },
-  {
-    icon: Layers,
-    key: "flashcards",
-    title: "Flashcards",
-    description: "Mémorise les définitions et formules clés.",
-    color: "hover:border-rose-300 dark:hover:border-rose-700",
-    iconBg: "bg-rose-500/10 dark:bg-rose-500/20",
-    iconColor: "text-rose-600 dark:text-rose-400",
-  },
-] as const;
-
 export function StudentDashboard() {
+  const { t } = useTranslation();
   const { user } = useAuth();
-  const firstName = user?.fullName?.split(" ")[0] ?? "Élève";
+  const firstName = user?.fullName?.split(" ")[0] ?? t("studentDashboard.defaultName", { defaultValue: "Élève" });
   const gradeLevel = (user as any)?.studentProfile?.gradeLevel;
+
+  function typeLabel(type: string) {
+    if (type === "past_paper") return t("studentDashboard.typePastPaper");
+    return t("studentDashboard.typeTraining");
+  }
+
+  const LEARNING_MODULES = [
+    {
+      icon: Library,
+      key: "banque-de-questions",
+      title: t("studentDashboard.questionsModule"),
+      description: t("studentDashboard.questionsModuleDesc"),
+      color: "hover:border-blue-300 dark:hover:border-blue-700",
+      iconBg: "bg-blue-500/10 dark:bg-blue-500/20",
+      iconColor: "text-blue-600 dark:text-blue-400",
+    },
+    {
+      icon: FileText,
+      key: "examens-blancs",
+      title: t("studentDashboard.pastPapersModule"),
+      description: t("studentDashboard.pastPapersModuleDesc"),
+      color: "hover:border-amber-300 dark:hover:border-amber-700",
+      iconBg: "bg-amber-500/10 dark:bg-amber-500/20",
+      iconColor: "text-amber-600 dark:text-amber-400",
+    },
+    {
+      icon: ClipboardList,
+      key: "examens-pratiques",
+      title: t("studentDashboard.practiceExamsModule"),
+      description: t("studentDashboard.practiceExamsModuleDesc"),
+      color: "hover:border-green-300 dark:hover:border-green-700",
+      iconBg: "bg-green-500/10 dark:bg-green-500/20",
+      iconColor: "text-green-600 dark:text-green-400",
+    },
+    {
+      icon: Layers,
+      key: "flashcards",
+      title: t("studentDashboard.flashcardsModule"),
+      description: t("studentDashboard.flashcardsModuleDesc"),
+      color: "hover:border-rose-300 dark:hover:border-rose-700",
+      iconBg: "bg-rose-500/10 dark:bg-rose-500/20",
+      iconColor: "text-rose-600 dark:text-rose-400",
+    },
+  ];
 
   const { data: overview, isLoading } = useQuery({
     queryKey: ["progress-overview"],
@@ -104,10 +106,10 @@ export function StudentDashboard() {
         {/* ── Header ─────────────────────────────────────────────────────────── */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Bonjour, {firstName} 👋
+            {t("studentDashboard.greeting", { name: firstName })}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Voici l'état de ta préparation aux examens.
+            {t("studentDashboard.subtitle")}
           </p>
         </div>
 
@@ -120,7 +122,7 @@ export function StudentDashboard() {
               <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
                 <Trophy className="w-5 h-5 text-white" />
               </div>
-              <p className="text-sm font-medium text-primary-foreground/80">Moyenne générale</p>
+              <p className="text-sm font-medium text-primary-foreground/80">{t("studentDashboard.overallAverage")}</p>
             </div>
             {isLoading ? (
               <div className="h-10 w-20 bg-white/20 rounded-xl animate-pulse" />
@@ -139,7 +141,7 @@ export function StudentDashboard() {
               <div className="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center">
                 <BookOpen className="w-5 h-5 text-blue-600" />
               </div>
-              <p className="text-sm font-medium text-muted-foreground">Révisions</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("studentDashboard.revisions")}</p>
             </div>
             {isLoading ? (
               <div className="h-9 w-16 bg-muted rounded-xl animate-pulse" />
@@ -153,7 +155,7 @@ export function StudentDashboard() {
               <div className="w-9 h-9 bg-purple-500/10 rounded-xl flex items-center justify-center">
                 <Flame className="w-5 h-5 text-purple-600" />
               </div>
-              <p className="text-sm font-medium text-muted-foreground">Matières actives</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("studentDashboard.activeSubjects")}</p>
             </div>
             {isLoading ? (
               <div className="h-9 w-16 bg-muted rounded-xl animate-pulse" />
@@ -167,7 +169,7 @@ export function StudentDashboard() {
               <div className="w-9 h-9 bg-green-500/10 rounded-xl flex items-center justify-center">
                 <Target className="w-5 h-5 text-green-600" />
               </div>
-              <p className="text-sm font-medium text-muted-foreground">Meilleure matière</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("studentDashboard.bestSubject")}</p>
             </div>
             {isLoading ? (
               <div className="h-9 w-24 bg-muted rounded-xl animate-pulse" />
@@ -190,9 +192,9 @@ export function StudentDashboard() {
           {/* ── Left: recent sessions ────────────────────────────────────────── */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold">Dernières révisions</h2>
+              <h2 className="text-lg font-bold">{t("studentDashboard.recentRevisions")}</h2>
               <Link href="/student/progress" className="text-sm text-primary flex items-center gap-1 hover:underline">
-                Tout voir <ChevronRight className="w-4 h-4" />
+                {t("studentDashboard.viewAll")} <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
 
@@ -204,14 +206,14 @@ export function StudentDashboard() {
               <Card className="p-8 text-center">
                 <BookOpen className="w-10 h-10 text-muted-foreground opacity-30 mx-auto mb-3" />
                 <p className="font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Aucune révision pour l'instant
+                  {t("studentDashboard.noRevisions")}
                 </p>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Lance ta première révision pour voir tes résultats ici.
+                  {t("studentDashboard.noRevisionsDesc")}
                 </p>
                 <Link href="/revision">
                   <button className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
-                    <Sparkles className="w-4 h-4" /> Commencer à réviser
+                    <Sparkles className="w-4 h-4" /> {t("studentDashboard.startRevising")}
                   </button>
                 </Link>
               </Card>
@@ -250,14 +252,14 @@ export function StudentDashboard() {
           <div className="space-y-4">
 
             {/* Subject averages */}
-            <h2 className="text-lg font-bold">Par matière</h2>
+            <h2 className="text-lg font-bold">{t("studentDashboard.bySubject")}</h2>
             {isLoading ? (
               <div className="space-y-2">
                 {[1, 2, 3].map(i => <div key={i} className="h-12 bg-muted rounded-2xl animate-pulse" />)}
               </div>
             ) : !hasStats ? (
               <Card className="p-5 text-center">
-                <p className="text-sm text-muted-foreground">Les moyennes par matière apparaîtront ici après tes premières révisions.</p>
+                <p className="text-sm text-muted-foreground">{t("studentDashboard.subjectsAfterRevision")}</p>
               </Card>
             ) : (
               <div className="space-y-2">
@@ -284,9 +286,9 @@ export function StudentDashboard() {
                 <div className="flex gap-3">
                   <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Niveau non défini</p>
+                    <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{t("studentDashboard.levelNotDefined")}</p>
                     <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
-                      <Link href="/student/settings" className="underline">Configure ton niveau</Link> pour accéder au contenu adapté.
+                      <Link href="/student/settings" className="underline">{t("studentDashboard.levelNotDefinedDesc")}</Link> {t("studentDashboard.toAccessContent")}
                     </p>
                   </div>
                 </div>
@@ -298,9 +300,9 @@ export function StudentDashboard() {
         {/* ── 4 Learning module cards ───────────────────────────────────────────── */}
         <div className="mt-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold">Modules d'apprentissage</h2>
+            <h2 className="text-lg font-bold">{t("studentDashboard.learningModules")}</h2>
             <Link href="/revision" className="text-sm text-primary flex items-center gap-1 hover:underline">
-              Voir tout <ChevronRight className="w-4 h-4" />
+              {t("studentDashboard.viewAllModules")} <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -315,7 +317,7 @@ export function StudentDashboard() {
                     <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{mod.description}</p>
                   </div>
                   <div className="flex items-center gap-1 text-xs font-semibold text-muted-foreground group-hover:text-foreground transition-colors">
-                    <span>Commencer</span>
+                    <span>{t("studentDashboard.start")}</span>
                     <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                   </div>
                 </div>

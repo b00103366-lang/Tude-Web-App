@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card } from "@/components/ui/Premium";
@@ -72,18 +73,21 @@ function parseAnналeSolution(raw: string | null): any[] {
   }
 }
 
-const MARK_OPTIONS: { value: SelfMark; label: string; icon: any; color: string }[] = [
-  { value: "correct",   label: "Correct",   icon: CheckCircle2, color: "text-green-600 bg-green-50 border-green-200 hover:bg-green-100 dark:bg-green-900/20 dark:border-green-800" },
-  { value: "partial",   label: "Partiel",   icon: MinusCircle,  color: "text-amber-600 bg-amber-50 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:border-amber-800" },
-  { value: "incorrect", label: "Incorrect", icon: XCircle,      color: "text-red-600 bg-red-50 border-red-200 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-800" },
+const MARK_OPTION_DEFS: { value: SelfMark; labelKey: string; icon: any; color: string }[] = [
+  { value: "correct",   labelKey: "revisionPages.annales.markCorrect",   icon: CheckCircle2, color: "text-green-600 bg-green-50 border-green-200 hover:bg-green-100 dark:bg-green-900/20 dark:border-green-800" },
+  { value: "partial",   labelKey: "revisionPages.annales.markPartial",   icon: MinusCircle,  color: "text-amber-600 bg-amber-50 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:border-amber-800" },
+  { value: "incorrect", labelKey: "revisionPages.annales.markIncorrect", icon: XCircle,      color: "text-red-600 bg-red-50 border-red-200 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-800" },
 ];
 
 export function Annales() {
+  const { t } = useTranslation();
   const [, params] = useRoute("/revision/:subject/examens-blancs");
   const subject = params?.subject ? (subjectFromSlug(params.subject) ?? decodeURIComponent(params.subject)) : "";
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const MARK_OPTIONS = MARK_OPTION_DEFS.map(opt => ({ ...opt, label: t(opt.labelKey) }));
 
   const gradeLevel: string = (user as any)?.studentProfile?.gradeLevel ?? "";
   const sectionKey: string | null = (user as any)?.studentProfile?.educationSection ?? null;
@@ -123,10 +127,10 @@ export function Annales() {
       queryClient.invalidateQueries({ queryKey: ["progress-overview"] });
       queryClient.invalidateQueries({ queryKey: ["progress-history"] });
       toast({
-        title: "Résultat enregistré",
+        title: t("revisionPages.annales.resultSaved"),
         description: data.gradeOutOf20 !== null
-          ? `Note obtenue : ${data.gradeOutOf20.toFixed(1)}/20`
-          : "Bonne continuation !",
+          ? t("revisionPages.annales.grade", { grade: data.gradeOutOf20.toFixed(1) })
+          : t("revisionPages.annales.goodLuck"),
       });
     },
   });
@@ -149,7 +153,7 @@ export function Annales() {
 
     const allMarks = Object.values(selfMarks);
     if (allMarks.length === 0) {
-      toast({ title: "Aucune réponse évaluée", description: "Évalue au moins une réponse avant de soumettre." });
+      toast({ title: t("revisionPages.annales.noEval"), description: t("revisionPages.annales.evalFirst") });
       return;
     }
 
@@ -193,7 +197,7 @@ export function Annales() {
             <Trophy className="w-10 h-10 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold mb-1">Résultat de l'annale</h1>
+            <h1 className="text-3xl font-bold mb-1">{t("revisionPages.annales.resultTitle")}</h1>
             {activeAnnale?.year && (
               <p className="text-muted-foreground">{subject} — {activeAnnale.year}</p>
             )}
@@ -205,20 +209,20 @@ export function Annales() {
             </div>
           ) : null}
           <p className="text-muted-foreground">
-            {Object.values(selfMarks).filter(m => m === "correct").length} correcte(s) ·{" "}
-            {Object.values(selfMarks).filter(m => m === "partial").length} partielle(s) ·{" "}
-            {Object.values(selfMarks).filter(m => m === "incorrect").length} incorrecte(s)
+            {Object.values(selfMarks).filter(m => m === "correct").length} {t("revisionPages.annales.correct")} ·{" "}
+            {Object.values(selfMarks).filter(m => m === "partial").length} {t("revisionPages.annales.partial")} ·{" "}
+            {Object.values(selfMarks).filter(m => m === "incorrect").length} {t("revisionPages.annales.incorrect")}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
             <button
               onClick={() => { setView("list"); setSessionDone(false); }}
               className="px-5 py-2.5 border border-border rounded-xl text-sm font-semibold hover:bg-muted transition-colors"
             >
-              Retour aux examens blancs
+              {t("revisionPages.annales.backToExams")}
             </button>
             <Link href="/student/progress">
               <button className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
-                Voir ma progression <ArrowRight className="w-4 h-4" />
+                {t("revisionPages.annales.viewProgress")} <ArrowRight className="w-4 h-4" />
               </button>
             </Link>
           </div>
@@ -242,7 +246,7 @@ export function Annales() {
               onClick={() => setView("list")}
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
             >
-              <ArrowLeft className="w-4 h-4" /> Retour aux examens blancs
+              <ArrowLeft className="w-4 h-4" /> {t("revisionPages.annales.backToExams")}
             </button>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
@@ -260,16 +264,16 @@ export function Annales() {
           </div>
 
           <div className="rounded-xl border border-primary/20 bg-primary/5 dark:bg-primary/10 p-4 text-sm">
-            <p className="font-semibold text-primary">Mode Annale</p>
+            <p className="font-semibold text-primary">{t("revisionPages.annales.examMode")}</p>
             <p className="text-muted-foreground mt-0.5">
-              Lis chaque question attentivement, essaie d'y répondre, puis consulte le corrigé et évalue-toi honnêtement.
+              {t("revisionPages.annales.examModeDesc")}
             </p>
           </div>
 
           {/* Questions */}
           {questions.length === 0 ? (
             <Card className="p-8 text-center">
-              <p className="text-muted-foreground">Le contenu de cette annale est en cours de traitement.</p>
+              <p className="text-muted-foreground">{t("revisionPages.annales.contentProcessing")}</p>
             </Card>
           ) : (
             <div className="space-y-5">
@@ -331,12 +335,12 @@ export function Annales() {
                         className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border text-xs font-semibold hover:bg-muted transition-colors"
                       >
                         {corrVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        {corrVisible ? "Masquer le corrigé" : "Voir le corrigé"}
+                        {corrVisible ? t("revisionPages.annales.hideSolution") : t("revisionPages.annales.showSolution")}
                       </button>
 
                       {corrVisible && solution && (
                         <div className="mt-3 rounded-xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-4">
-                          <p className="text-xs font-bold text-green-800 dark:text-green-300 mb-2">Corrigé</p>
+                          <p className="text-xs font-bold text-green-800 dark:text-green-300 mb-2">{t("revisionPages.annales.solution")}</p>
                           <div className="text-sm text-green-900 dark:text-green-200 whitespace-pre-wrap">
                             {typeof solution === "string" ? solution :
                               solution.answer ?? solution.expected ?? JSON.stringify(solution)}
@@ -348,13 +352,13 @@ export function Annales() {
                       )}
 
                       {corrVisible && !solution && (
-                        <p className="mt-2 text-xs text-muted-foreground">Corrigé non disponible pour cette question.</p>
+                        <p className="mt-2 text-xs text-muted-foreground">{t("revisionPages.annales.solutionNA")}</p>
                       )}
 
                       {/* Self-mark */}
                       <div className="mt-4">
                         <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
-                          Évalue ta réponse
+                          {t("revisionPages.annales.assessAnswer")}
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {MARK_OPTIONS.map(opt => {
@@ -397,7 +401,7 @@ export function Annales() {
                   disabled={markedCount === 0 || saveAttempt.isPending}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {saveAttempt.isPending ? "Enregistrement..." : "Soumettre l'annale"}
+                  {saveAttempt.isPending ? t("revisionPages.annales.saving") : t("revisionPages.annales.submit")}
                   <Trophy className="w-4 h-4" />
                 </button>
               </Card>
@@ -415,15 +419,15 @@ export function Annales() {
         <div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1 flex-wrap">
             <BookOpen className="w-4 h-4" />
-            <Link href="/revision" className="hover:text-foreground transition-colors">Révision Étude+</Link>
+            <Link href="/revision" className="hover:text-foreground transition-colors">{t("revisionPages.annales.breadcrumbHub")}</Link>
             <ChevronRight className="w-3 h-3" />
             <Link href={`/revision/${subjectToSlug(subject)}`} className="hover:text-foreground transition-colors">{subject}</Link>
             <ChevronRight className="w-3 h-3" />
-            <span>Examens Blancs</span>
+            <span>{t("revisionPages.annales.breadcrumbSection")}</span>
           </div>
-          <h1 className="text-2xl font-bold">Examens Blancs — {subject}</h1>
+          <h1 className="text-2xl font-bold">{t("revisionPages.annales.title", { subject })}</h1>
           <p className="text-muted-foreground mt-1">
-            Sujets d'examens des années précédentes. Réponds aux questions et reçois ta note sur 20.
+            {t("revisionPages.annales.subtitle")}
           </p>
         </div>
 
@@ -432,9 +436,9 @@ export function Annales() {
             <div className="flex gap-3">
               <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold text-amber-800 dark:text-amber-300">Niveau non défini</p>
+                <p className="font-semibold text-amber-800 dark:text-amber-300">{t("revisionPages.annales.levelNotSet")}</p>
                 <p className="text-sm text-amber-700 dark:text-amber-400">
-                  <Link href="/student/settings" className="underline">Configure ton niveau</Link> pour voir les annales adaptées.
+                  <Link href="/student/settings" className="underline">{t("revisionPages.annales.configureLevel")}</Link> {t("revisionPages.annales.toSeeAdapted")}
                 </p>
               </div>
             </div>
@@ -459,9 +463,9 @@ export function Annales() {
         {!isLoading && annales.length === 0 && gradeLevel && (
           <Card className="p-12 text-center">
             <FileText className="w-12 h-12 text-muted-foreground opacity-30 mx-auto mb-4" />
-            <h3 className="text-lg font-bold mb-2">En cours de préparation</h3>
+            <h3 className="text-lg font-bold mb-2">{t("revisionPages.annales.inPrep")}</h3>
             <p className="text-muted-foreground max-w-sm mx-auto">
-              Les annales pour <strong>{subject}</strong> seront disponibles très bientôt, classées par année.
+              {t("revisionPages.annales.inPrepDesc", { subject })}
             </p>
           </Card>
         )}
@@ -500,7 +504,7 @@ export function Annales() {
                   onClick={() => startExam(annale)}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors shrink-0"
                 >
-                  Commencer <ArrowRight className="w-4 h-4" />
+                  {t("revisionPages.annales.start")} <ArrowRight className="w-4 h-4" />
                 </button>
               </Card>
             ))}
