@@ -10,7 +10,7 @@ import { KeyRound, Loader2, GraduationCap, Save } from "lucide-react";
 import { getLevelLabel } from "@/lib/educationConfig";
 import { useTranslation } from "react-i18next";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "";
+const SUPABASE_FN = "https://hilqkzjqysqjbfftqlkf.supabase.co/functions/v1";
 
 function ChangePasswordCard() {
   const { t } = useTranslation();
@@ -72,7 +72,7 @@ function EducationLevelCard() {
     setSaving(true);
     try {
       const token = getToken();
-      const res = await fetch(`${API_URL}/api/users/${(user as any).id}`, {
+      const res = await fetch(`${SUPABASE_FN}/users/${(user as any).id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ gradeLevel: niveauKey, educationSection: sectionKey }),

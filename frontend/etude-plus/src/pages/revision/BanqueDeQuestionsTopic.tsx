@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+const SUPABASE_FN = "https://hilqkzjqysqjbfftqlkf.supabase.co/functions/v1";
 
 async function apiFetch(path: string) {
   const token = getToken();
@@ -295,7 +296,7 @@ export function BanqueDeQuestionsTopic() {
   const saveAttempt = useMutation({
     mutationFn: async (body: any) => {
       const token = getToken();
-      const res = await fetch(`${API_URL}/api/progress/attempts`, {
+      const res = await fetch(`${SUPABASE_FN}/progress/attempts`, {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(body),
