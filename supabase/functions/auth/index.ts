@@ -479,12 +479,12 @@ function handleLogout(): Response {
 
 async function sendOtpEmail(to: string, code: string): Promise<void> {
   const apiKey = Deno.env.get("RESEND_API_KEY");
-  if (!apiKey) {
-    console.warn("[auth] RESEND_API_KEY not set — skipping OTP email, code:", code);
-    return;
-  }
-  const from = Deno.env.get("RESEND_FROM") ?? "Étude+ <noreply@etude.tn>";
-  await fetch("https://api.resend.com/emails", {
+  if (!apiKey) throw new Error("RESEND_API_KEY is not configured");
+
+  const from = Deno.env.get("RESEND_FROM");
+  if (!from) throw new Error("RESEND_FROM is not configured");
+
+  const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${apiKey}`,
@@ -503,6 +503,14 @@ async function sendOtpEmail(to: string, code: string): Promise<void> {
         </div>`,
     }),
   });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "(unreadable)");
+    console.error(`[auth/send-code] resend failed status=${res.status} body=${body}`);
+    throw new Error(`Resend rejected the request: ${res.status}`);
+  }
+
+  console.log("[auth/send-code] resend accepted");
 }
 
 // ── Phase 1 route handlers ────────────────────────────────────────────────────
@@ -534,14 +542,12 @@ async function handleSendCode(req: Request, sql: SqlClient): Promise<Response> {
     INSERT INTO email_verifications (email, code, expires_at, used)
     VALUES (${normalizedEmail}, ${code}, ${expiresAt}, false)
   `;
+  console.log("[auth/send-code] verification row inserted");
 
-  // Await the email — edge functions terminate on response, so fire-and-forget
-  // never completes. Resend is fast enough that blocking here is acceptable.
-  try {
-    await sendOtpEmail(normalizedEmail, code);
-  } catch (e) {
-    console.error("[auth/send-code] email error:", e);
-  }
+  console.log("[auth/send-code] sending email");
+  await sendOtpEmail(normalizedEmail, code);
+  // sendOtpEmail throws on any failure — error propagates to the top-level
+  // handler which returns 500, so the client never sees a false success.
 
   return json({ success: true, message: "Code envoyé" });
 }
