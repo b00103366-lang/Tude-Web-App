@@ -535,10 +535,13 @@ async function handleSendCode(req: Request, sql: SqlClient): Promise<Response> {
     VALUES (${normalizedEmail}, ${code}, ${expiresAt}, false)
   `;
 
-  // Fire-and-forget — never block the response on email delivery
-  sendOtpEmail(normalizedEmail, code).catch((e) =>
-    console.error("[auth/send-code] email error:", e),
-  );
+  // Await the email — edge functions terminate on response, so fire-and-forget
+  // never completes. Resend is fast enough that blocking here is acceptable.
+  try {
+    await sendOtpEmail(normalizedEmail, code);
+  } catch (e) {
+    console.error("[auth/send-code] email error:", e);
+  }
 
   return json({ success: true, message: "Code envoyé" });
 }
