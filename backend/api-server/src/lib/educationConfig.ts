@@ -47,176 +47,148 @@ export const SIMPLE_LEVELS = {
 // ── Section levels (require a section key) ───────────────────────────────────
 
 export const SECTION_LEVELS = {
+  // 2ème: 4 official orientations (meslak)
   "2eme": {
     label: "2ème secondaire",
     sections: {
+      "lettres": {
+        label: "Lettres",
+        subjects: [
+          "Arabe", "Français", "Anglais", "Philosophie", "Histoire-Géographie",
+          "Mathématiques", "Éducation Islamique",
+          "Allemand", "Italien", "Espagnol",
+        ],
+      },
       "sciences": {
         label: "Sciences",
         subjects: [
           "Mathématiques", "Physique-Chimie", "Sciences Naturelles",
           "Arabe", "Français", "Anglais", "Histoire-Géographie",
-          "Informatique", "Sport", "Allemand",
+          "Informatique", "Allemand",
         ],
       },
-      "lettres": {
-        label: "Lettres",
-        subjects: [
-          "Arabe", "Français", "Anglais", "Philosophie", "Histoire-Géographie",
-          "Mathématiques", "Éducation Islamique", "Sport",
-          "Allemand", "Italien", "Espagnol",
-        ],
-      },
-      "economie": {
-        label: "Économie",
+      "economie_services": {
+        label: "Économie et Services",
         subjects: [
           "Mathématiques", "Économie", "Gestion", "Comptabilité",
           "Arabe", "Français", "Anglais", "Histoire-Géographie",
-          "Informatique", "Sport",
+          "Informatique",
         ],
       },
-      "technique": {
-        label: "Technique",
+      "technologie_informatique": {
+        label: "Technologie de l'Informatique",
         subjects: [
           "Mathématiques", "Physique-Chimie", "Technologie",
-          "Sciences de l'Ingénieur", "Arabe", "Français", "Anglais",
-          "Informatique", "Sport",
-        ],
-      },
-      "sport": {
-        label: "Sport",
-        subjects: [
-          "Sport", "Sciences Naturelles", "Mathématiques",
-          "Physique-Chimie", "Arabe", "Français", "Anglais",
-          "Histoire-Géographie",
-        ],
-      },
-      "informatique": {
-        label: "Informatique",
-        subjects: [
-          "Informatique", "Mathématiques", "Physique-Chimie",
-          "Arabe", "Français", "Anglais", "Sciences Naturelles", "Sport",
+          "Sciences de l'Ingénieur", "Informatique",
+          "Arabe", "Français", "Anglais",
         ],
       },
     },
   },
+  // 3ème: 6 official sections (shu'ba)
   "3eme": {
     label: "3ème année",
     sections: {
-      "sciences_maths": {
-        label: "Sciences Mathématiques",
-        subjects: [
-          "Mathématiques", "Physique-Chimie", "Sciences Naturelles",
-          "Arabe", "Français", "Anglais", "Philosophie",
-          "Histoire-Géographie", "Informatique", "Sport",
-        ],
-      },
-      "sciences_exp": {
-        label: "Sciences Expérimentales",
-        subjects: [
-          "Mathématiques", "Physique-Chimie", "Sciences Naturelles",
-          "Arabe", "Français", "Anglais", "Philosophie",
-          "Histoire-Géographie", "Sport",
-        ],
-      },
-      "technique": {
-        label: "Sciences Techniques",
-        subjects: [
-          "Mathématiques", "Physique-Chimie", "Technologie",
-          "Sciences de l'Ingénieur", "Arabe", "Français", "Anglais",
-          "Philosophie", "Informatique", "Sport",
-        ],
-      },
-      "economie": {
-        label: "Économie et Gestion",
-        subjects: [
-          "Mathématiques", "Économie", "Gestion", "Comptabilité",
-          "Arabe", "Français", "Anglais", "Histoire-Géographie",
-          "Philosophie", "Informatique", "Sport",
-        ],
-      },
       "lettres": {
         label: "Lettres",
         subjects: [
           "Arabe", "Français", "Anglais", "Philosophie",
           "Histoire-Géographie", "Mathématiques",
-          "Éducation Islamique", "Sport",
+          "Éducation Islamique",
           "Allemand", "Italien", "Espagnol",
         ],
       },
-      "sport": {
-        label: "Sport",
+      "mathematiques": {
+        label: "Mathématiques",
         subjects: [
-          "Sport", "Sciences Naturelles", "Mathématiques",
-          "Physique-Chimie", "Arabe", "Français", "Anglais",
+          "Mathématiques", "Physique-Chimie", "Sciences Naturelles",
+          "Arabe", "Français", "Anglais", "Philosophie",
+          "Histoire-Géographie", "Informatique",
+        ],
+      },
+      "sciences_experimentales": {
+        label: "Sciences Expérimentales",
+        subjects: [
+          "Mathématiques", "Physique-Chimie", "Sciences Naturelles",
+          "Arabe", "Français", "Anglais", "Philosophie",
           "Histoire-Géographie",
         ],
       },
-      "informatique": {
-        label: "Informatique",
+      "sciences_techniques": {
+        label: "Sciences Techniques",
+        subjects: [
+          "Mathématiques", "Physique-Chimie", "Technologie",
+          "Sciences de l'Ingénieur", "Arabe", "Français", "Anglais",
+          "Philosophie", "Informatique",
+        ],
+      },
+      "economie_gestion": {
+        label: "Économie et Gestion",
+        subjects: [
+          "Mathématiques", "Économie", "Gestion", "Comptabilité",
+          "Arabe", "Français", "Anglais", "Histoire-Géographie",
+          "Philosophie", "Informatique",
+        ],
+      },
+      "sciences_informatique": {
+        label: "Sciences de l'Informatique",
         subjects: [
           "Informatique", "Mathématiques", "Physique-Chimie",
-          "Arabe", "Français", "Anglais", "Philosophie", "Sport",
+          "Arabe", "Français", "Anglais", "Philosophie",
         ],
       },
     },
   },
+  // Bac: 6 official sections (shu'ba) — same keys as 3ème
   "bac": {
     label: "Baccalauréat",
     sections: {
-      "sciences_maths": {
-        label: "Sciences Mathématiques",
-        subjects: [
-          "Mathématiques", "Physique-Chimie", "Sciences Naturelles",
-          "Arabe", "Français", "Anglais", "Philosophie",
-          "Histoire-Géographie", "Informatique", "Sport",
-        ],
-      },
-      "sciences_exp": {
-        label: "Sciences Expérimentales",
-        subjects: [
-          "Mathématiques", "Physique-Chimie", "Sciences Naturelles",
-          "Arabe", "Français", "Anglais", "Philosophie",
-          "Histoire-Géographie", "Sport",
-        ],
-      },
-      "technique": {
-        label: "Sciences Techniques",
-        subjects: [
-          "Mathématiques", "Physique-Chimie", "Technologie",
-          "Sciences de l'Ingénieur", "Arabe", "Français", "Anglais",
-          "Philosophie", "Informatique", "Sport",
-        ],
-      },
-      "economie": {
-        label: "Économie et Gestion",
-        subjects: [
-          "Mathématiques", "Économie", "Gestion", "Comptabilité",
-          "Arabe", "Français", "Anglais", "Histoire-Géographie",
-          "Philosophie", "Informatique", "Sport",
-        ],
-      },
       "lettres": {
         label: "Lettres",
         subjects: [
           "Arabe", "Français", "Anglais", "Philosophie",
           "Histoire-Géographie", "Mathématiques",
-          "Éducation Islamique", "Sport",
+          "Éducation Islamique",
           "Allemand", "Italien", "Espagnol",
         ],
       },
-      "sport": {
-        label: "Sport",
+      "mathematiques": {
+        label: "Mathématiques",
         subjects: [
-          "Sport", "Sciences Naturelles", "Mathématiques",
-          "Physique-Chimie", "Arabe", "Français", "Anglais",
+          "Mathématiques", "Physique-Chimie", "Sciences Naturelles",
+          "Arabe", "Français", "Anglais", "Philosophie",
+          "Histoire-Géographie", "Informatique",
+        ],
+      },
+      "sciences_experimentales": {
+        label: "Sciences Expérimentales",
+        subjects: [
+          "Mathématiques", "Physique-Chimie", "Sciences Naturelles",
+          "Arabe", "Français", "Anglais", "Philosophie",
           "Histoire-Géographie",
         ],
       },
-      "informatique": {
-        label: "Informatique",
+      "sciences_techniques": {
+        label: "Sciences Techniques",
+        subjects: [
+          "Mathématiques", "Physique-Chimie", "Technologie",
+          "Sciences de l'Ingénieur", "Arabe", "Français", "Anglais",
+          "Philosophie", "Informatique",
+        ],
+      },
+      "economie_gestion": {
+        label: "Économie et Gestion",
+        subjects: [
+          "Mathématiques", "Économie", "Gestion", "Comptabilité",
+          "Arabe", "Français", "Anglais", "Histoire-Géographie",
+          "Philosophie", "Informatique",
+        ],
+      },
+      "sciences_informatique": {
+        label: "Sciences de l'Informatique",
         subjects: [
           "Informatique", "Mathématiques", "Physique-Chimie",
-          "Arabe", "Français", "Anglais", "Philosophie", "Sport",
+          "Arabe", "Français", "Anglais", "Philosophie",
         ],
       },
     },
@@ -254,8 +226,35 @@ export function getNiveauLabel(niveauKey: string): string {
       ?? niveauKey;
 }
 
+const LEGACY_SECTION_DISPLAY: Record<string, Record<string, string>> = {
+  "2eme": {
+    "economie":     "Économie (ancien)",
+    "technique":    "Technique (ancien)",
+    "sport":        "Sport (ancien)",
+    "informatique": "Informatique (ancien)",
+  },
+  "3eme": {
+    "sciences_maths": "Sciences Mathématiques (ancien)",
+    "sciences_exp":   "Sciences Expérimentales (ancien)",
+    "technique":      "Sciences Techniques (ancien)",
+    "economie":       "Économie et Gestion (ancien)",
+    "sport":          "Sport (ancien)",
+    "informatique":   "Sciences de l'Informatique (ancien)",
+  },
+  "bac": {
+    "sciences_maths": "Sciences Mathématiques (ancien)",
+    "sciences_exp":   "Sciences Expérimentales (ancien)",
+    "technique":      "Sciences Techniques (ancien)",
+    "economie":       "Économie et Gestion (ancien)",
+    "sport":          "Sport (ancien)",
+    "informatique":   "Sciences de l'Informatique (ancien)",
+  },
+};
+
 export function getSectionLabel(niveauKey: string, sectionKey: string): string {
-  return (SECTION_LEVELS as any)[niveauKey]?.sections?.[sectionKey]?.label ?? sectionKey;
+  return (SECTION_LEVELS as any)[niveauKey]?.sections?.[sectionKey]?.label
+    ?? LEGACY_SECTION_DISPLAY[niveauKey]?.[sectionKey]
+    ?? sectionKey;
 }
 
 export function getSectionsForNiveau(niveauKey: string): Record<string, { label: string; subjects: readonly string[] }> {

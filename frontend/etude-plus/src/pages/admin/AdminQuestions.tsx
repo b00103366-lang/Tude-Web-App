@@ -36,30 +36,30 @@ async function kbFetch(url: string, opts: RequestInit = {}) {
 type GradeOption = { value: string; label: string; sectionKey?: string };
 
 const GRADE_OPTIONS: GradeOption[] = [
-  { value: "7eme",             label: "7ème année de base" },
-  { value: "8eme",             label: "8ème année de base" },
-  { value: "9eme",             label: "9ème année de base" },
-  { value: "1ere_secondaire",  label: "1ère année secondaire" },
-  { value: "2eme", sectionKey: "sciences",     label: "2ème — Sciences" },
-  { value: "2eme", sectionKey: "lettres",      label: "2ème — Lettres" },
-  { value: "2eme", sectionKey: "economie",     label: "2ème — Économie" },
-  { value: "2eme", sectionKey: "technique",    label: "2ème — Technique" },
-  { value: "2eme", sectionKey: "sport",        label: "2ème — Sport" },
-  { value: "2eme", sectionKey: "informatique", label: "2ème — Informatique" },
-  { value: "3eme", sectionKey: "sciences_maths", label: "3ème — Sciences Maths" },
-  { value: "3eme", sectionKey: "sciences_exp",   label: "3ème — Sciences Exp" },
-  { value: "3eme", sectionKey: "technique",      label: "3ème — Technique" },
-  { value: "3eme", sectionKey: "economie",       label: "3ème — Économie" },
-  { value: "3eme", sectionKey: "lettres",        label: "3ème — Lettres" },
-  { value: "3eme", sectionKey: "sport",          label: "3ème — Sport" },
-  { value: "3eme", sectionKey: "informatique",   label: "3ème — Informatique" },
-  { value: "bac",  sectionKey: "sciences_maths", label: "Bac — Sciences Maths" },
-  { value: "bac",  sectionKey: "sciences_exp",   label: "Bac — Sciences Exp" },
-  { value: "bac",  sectionKey: "technique",      label: "Bac — Technique" },
-  { value: "bac",  sectionKey: "economie",       label: "Bac — Économie" },
-  { value: "bac",  sectionKey: "lettres",        label: "Bac — Lettres" },
-  { value: "bac",  sectionKey: "sport",          label: "Bac — Sport" },
-  { value: "bac",  sectionKey: "informatique",   label: "Bac — Informatique" },
+  // Collège & 1ère secondaire (tronc commun)
+  { value: "7eme",            label: "7ème année de base" },
+  { value: "8eme",            label: "8ème année de base" },
+  { value: "9eme",            label: "9ème année de base" },
+  { value: "1ere_secondaire", label: "1ère année secondaire" },
+  // 2ème — 4 orientations (مسلك)
+  { value: "2eme", sectionKey: "lettres",                  label: "2ème — Lettres" },
+  { value: "2eme", sectionKey: "sciences",                 label: "2ème — Sciences" },
+  { value: "2eme", sectionKey: "economie_services",        label: "2ème — Économie et Services" },
+  { value: "2eme", sectionKey: "technologie_informatique", label: "2ème — Technologie de l'Informatique" },
+  // 3ème — 6 sections (شعبة)
+  { value: "3eme", sectionKey: "lettres",                  label: "3ème — Lettres" },
+  { value: "3eme", sectionKey: "mathematiques",            label: "3ème — Mathématiques" },
+  { value: "3eme", sectionKey: "sciences_experimentales",  label: "3ème — Sciences Expérimentales" },
+  { value: "3eme", sectionKey: "sciences_techniques",      label: "3ème — Sciences Techniques" },
+  { value: "3eme", sectionKey: "economie_gestion",         label: "3ème — Économie et Gestion" },
+  { value: "3eme", sectionKey: "sciences_informatique",    label: "3ème — Sciences de l'Informatique" },
+  // Bac — 6 sections (شعبة)
+  { value: "bac",  sectionKey: "lettres",                  label: "Bac — Lettres" },
+  { value: "bac",  sectionKey: "mathematiques",            label: "Bac — Mathématiques" },
+  { value: "bac",  sectionKey: "sciences_experimentales",  label: "Bac — Sciences Expérimentales" },
+  { value: "bac",  sectionKey: "sciences_techniques",      label: "Bac — Sciences Techniques" },
+  { value: "bac",  sectionKey: "economie_gestion",         label: "Bac — Économie et Gestion" },
+  { value: "bac",  sectionKey: "sciences_informatique",    label: "Bac — Sciences de l'Informatique" },
 ];
 
 const CONTENT_TYPES = [

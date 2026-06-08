@@ -119,30 +119,30 @@ type GradeFolder = {
 // ── Grade level list ─────────────────────────────────────────────────────────
 
 const GRADE_FOLDERS: GradeFolder[] = [
-  { gradeLevel: "7eme",            sectionKey: null,            label: "7ème année de base" },
-  { gradeLevel: "8eme",            sectionKey: null,            label: "8ème année de base" },
-  { gradeLevel: "9eme",            sectionKey: null,            label: "9ème année de base" },
-  { gradeLevel: "1ere_secondaire", sectionKey: null,            label: "1ère Secondaire" },
-  { gradeLevel: "2eme",            sectionKey: "sciences",      label: "2ème — Sciences" },
-  { gradeLevel: "2eme",            sectionKey: "lettres",       label: "2ème — Lettres" },
-  { gradeLevel: "2eme",            sectionKey: "economie",      label: "2ème — Économie" },
-  { gradeLevel: "2eme",            sectionKey: "technique",     label: "2ème — Technique" },
-  { gradeLevel: "2eme",            sectionKey: "sport",         label: "2ème — Sport" },
-  { gradeLevel: "2eme",            sectionKey: "informatique",  label: "2ème — Informatique" },
-  { gradeLevel: "3eme",            sectionKey: "sciences_maths",label: "3ème — Sciences Maths" },
-  { gradeLevel: "3eme",            sectionKey: "sciences_exp",  label: "3ème — Sciences Exp" },
-  { gradeLevel: "3eme",            sectionKey: "technique",     label: "3ème — Technique" },
-  { gradeLevel: "3eme",            sectionKey: "economie",      label: "3ème — Économie" },
-  { gradeLevel: "3eme",            sectionKey: "lettres",       label: "3ème — Lettres" },
-  { gradeLevel: "3eme",            sectionKey: "sport",         label: "3ème — Sport" },
-  { gradeLevel: "3eme",            sectionKey: "informatique",  label: "3ème — Informatique" },
-  { gradeLevel: "bac",             sectionKey: "sciences_maths",label: "Bac — Sciences Maths" },
-  { gradeLevel: "bac",             sectionKey: "sciences_exp",  label: "Bac — Sciences Exp" },
-  { gradeLevel: "bac",             sectionKey: "technique",     label: "Bac — Technique" },
-  { gradeLevel: "bac",             sectionKey: "economie",      label: "Bac — Économie" },
-  { gradeLevel: "bac",             sectionKey: "lettres",       label: "Bac — Lettres" },
-  { gradeLevel: "bac",             sectionKey: "sport",         label: "Bac — Sport" },
-  { gradeLevel: "bac",             sectionKey: "informatique",  label: "Bac — Informatique" },
+  // Collège & 1ère secondaire (tronc commun)
+  { gradeLevel: "7eme",            sectionKey: null,                         label: "7ème année de base" },
+  { gradeLevel: "8eme",            sectionKey: null,                         label: "8ème année de base" },
+  { gradeLevel: "9eme",            sectionKey: null,                         label: "9ème année de base" },
+  { gradeLevel: "1ere_secondaire", sectionKey: null,                         label: "1ère Secondaire" },
+  // 2ème — 4 orientations (مسلك)
+  { gradeLevel: "2eme",            sectionKey: "lettres",                    label: "2ème — Lettres" },
+  { gradeLevel: "2eme",            sectionKey: "sciences",                   label: "2ème — Sciences" },
+  { gradeLevel: "2eme",            sectionKey: "economie_services",          label: "2ème — Économie et Services" },
+  { gradeLevel: "2eme",            sectionKey: "technologie_informatique",   label: "2ème — Technologie de l'Informatique" },
+  // 3ème — 6 sections (شعبة)
+  { gradeLevel: "3eme",            sectionKey: "lettres",                    label: "3ème — Lettres" },
+  { gradeLevel: "3eme",            sectionKey: "mathematiques",              label: "3ème — Mathématiques" },
+  { gradeLevel: "3eme",            sectionKey: "sciences_experimentales",    label: "3ème — Sciences Expérimentales" },
+  { gradeLevel: "3eme",            sectionKey: "sciences_techniques",        label: "3ème — Sciences Techniques" },
+  { gradeLevel: "3eme",            sectionKey: "economie_gestion",           label: "3ème — Économie et Gestion" },
+  { gradeLevel: "3eme",            sectionKey: "sciences_informatique",      label: "3ème — Sciences de l'Informatique" },
+  // Bac — 6 sections (شعبة)
+  { gradeLevel: "bac",             sectionKey: "lettres",                    label: "Bac — Lettres" },
+  { gradeLevel: "bac",             sectionKey: "mathematiques",              label: "Bac — Mathématiques" },
+  { gradeLevel: "bac",             sectionKey: "sciences_experimentales",    label: "Bac — Sciences Expérimentales" },
+  { gradeLevel: "bac",             sectionKey: "sciences_techniques",        label: "Bac — Sciences Techniques" },
+  { gradeLevel: "bac",             sectionKey: "economie_gestion",           label: "Bac — Économie et Gestion" },
+  { gradeLevel: "bac",             sectionKey: "sciences_informatique",      label: "Bac — Sciences de l'Informatique" },
 ];
 
 const CONTENT_TYPES = [
