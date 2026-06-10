@@ -67,6 +67,7 @@ import { AdminAnalytics } from "@/pages/admin/AdminAnalytics";
 import { KnowledgeBase } from "@/pages/admin/KnowledgeBase";
 import { AdminKnowledgeBase } from "@/pages/admin/AdminKnowledgeBase";
 import { AdminManualQuestion } from "@/pages/admin/AdminManualQuestion";
+import { AdminCurriculum } from "@/pages/admin/AdminCurriculum";
 
 // Legal pages
 import { Terms } from "@/pages/Terms";
@@ -283,6 +284,10 @@ function Router() {
       {/* Manual question entry — bypass AI pipeline */}
       <Route path="/admin/manual-question">
         {() => <ProtectedRoute component={AdminManualQuestion} allowedRoles={["admin", "super_admin"]} />}
+      </Route>
+      {/* Curriculum browser — navigate class → subject → chapter → content */}
+      <Route path="/admin/curriculum">
+        {() => <ProtectedRoute component={AdminCurriculum} allowedRoles={["admin", "super_admin"]} />}
       </Route>
 
       {/* Hidden legacy KB tool — accessed by typing /kb directly */}

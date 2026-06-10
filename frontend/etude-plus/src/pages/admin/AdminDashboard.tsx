@@ -4,7 +4,7 @@ import { PageHeader, Card, FadeIn, Button, Badge } from "@/components/ui/Premium
 import {
   Users, GraduationCap, DollarSign, AlertCircle, Clock,
   ShieldCheck, TrendingUp, UserX, Activity, Zap, ArrowRight,
-  CheckCircle2, XCircle, FileText,
+  CheckCircle2, XCircle, FileText, BookOpen,
 } from "lucide-react";
 import { formatTND } from "@/lib/utils";
 import { Link } from "wouter";
@@ -250,6 +250,13 @@ export function AdminDashboard() {
             <h3 className="font-bold text-lg mb-5">{t("admin.dashboard.quickAccess")}</h3>
             <div className="space-y-2.5">
               {[
+                {
+                  label: "Curriculum",
+                  href: "/admin/curriculum",
+                  icon: BookOpen,
+                  desc: "Matières et chapitres par niveau",
+                  color: "bg-green-100 text-green-600",
+                },
                 {
                   label: t("admin.dashboard.manageUsers"),
                   href: "/admin/users",

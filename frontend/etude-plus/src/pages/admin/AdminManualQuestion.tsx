@@ -5,7 +5,7 @@
  * Route: /admin/manual-question
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card } from "@/components/ui/Premium";
 import {
@@ -53,11 +53,30 @@ const GRADE_OPTIONS: GradeOption[] = [
 ];
 
 const ALL_SUBJECTS = [
-  "Mathématiques", "Physique-Chimie", "Sciences Naturelles", "Informatique",
-  "Arabe", "Français", "Anglais", "Espagnol", "Allemand", "Italien",
-  "Histoire-Géographie", "Philosophie", "Économie", "Gestion", "Comptabilité",
-  "Technologie", "Sciences de l'Ingénieur", "Sport",
-  "Éducation Islamique", "Éducation Artistique", "Éducation Musicale", "Éducation Civique",
+  // 1ère secondaire — official subjects
+  "Mathématiques",
+  "Sciences Physiques",
+  "Sciences de la Vie et de la Terre",
+  "Technologie",
+  "Français",
+  "الجغرافيا",
+  "التاريخ",
+  "اللغة العربية / التربية الإسلامية",
+  // Upper levels
+  "Physique-Chimie",
+  "Sciences Naturelles",
+  "Informatique",
+  "Arabe",
+  "Anglais",
+  "Espagnol",
+  "Allemand",
+  "Italien",
+  "Histoire-Géographie",
+  "Philosophie",
+  "Économie",
+  "Gestion",
+  "Comptabilité",
+  "Sciences de l'Ingénieur",
 ];
 
 const QUESTION_TYPES = ["Exercice", "QCM", "Problème", "Rédaction"];
@@ -77,6 +96,39 @@ const selectCls = () =>
   cn("w-full h-10 rounded-xl border border-border bg-background px-3 text-sm",
      "focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all");
 
+// ── Chapter loader ─────────────────────────────────────────────────────────────
+
+const SUPABASE_FN_MQ = "https://hilqkzjqysqjbfftqlkf.supabase.co/functions/v1";
+
+function useChapterOptions(gradeKey: GradeOption | null, subject: string) {
+  const [chapters, setChapters] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (!gradeKey || !subject) { setChapters([]); return; }
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    setLoading(true);
+    const params = new URLSearchParams({ levelCode: gradeKey.value, subject });
+    if (gradeKey.sectionKey) params.set("sectionKey", gradeKey.sectionKey);
+    const token = (window as any).__etude_token ?? localStorage.getItem("auth_token") ?? "";
+    fetch(`${SUPABASE_FN_MQ}/curriculum/chapters?${params}`, {
+      signal: ctrl.signal,
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then((data: Array<{ name: string }>) => {
+        if (!ctrl.signal.aborted) setChapters(data.map(c => c.name));
+      })
+      .catch(() => {})
+      .finally(() => { if (!ctrl.signal.aborted) setLoading(false); });
+  }, [gradeKey?.value, gradeKey?.sectionKey, subject]);
+
+  return { chapters, loading };
+}
+
 // ── Context picker (reused by all tabs) ───────────────────────────────────────
 
 function ContextPicker({
@@ -88,11 +140,15 @@ function ContextPicker({
   gradeKey: GradeOption | null; setGradeKey: (v: GradeOption | null) => void;
   topic: string; setTopic: (v: string) => void;
 }) {
+  const { chapters, loading: chaptersLoading } = useChapterOptions(gradeKey, subject);
+  const rtlSubjects = new Set(["الجغرافيا", "التاريخ", "اللغة العربية / التربية الإسلامية"]);
+  const isRtl = rtlSubjects.has(subject);
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <div>
         <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Matière *</label>
-        <select value={subject} onChange={e => setSubject(e.target.value)} className={selectCls()} required>
+        <select value={subject} onChange={e => { setSubject(e.target.value); setTopic(""); }} className={selectCls()} required>
           <option value="">Sélectionner...</option>
           {ALL_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
@@ -104,6 +160,7 @@ function ContextPicker({
           onChange={e => {
             const [val, sk] = e.target.value.split("__");
             setGradeKey(GRADE_OPTIONS.find(g => g.value === val && (g.sectionKey ?? "") === sk) ?? null);
+            setTopic("");
           }}
           className={selectCls()} required
         >
@@ -116,9 +173,31 @@ function ContextPicker({
         </select>
       </div>
       <div>
-        <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Chapitre / Thème *</label>
-        <input type="text" value={topic} onChange={e => setTopic(e.target.value)}
-          placeholder="ex. Fonctions linéaires" className={inputCls()} required />
+        <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">
+          Chapitre / Thème *
+        </label>
+        {chapters.length > 0 ? (
+          <select
+            value={topic}
+            onChange={e => setTopic(e.target.value)}
+            className={cn(selectCls(), isRtl && "text-right")}
+            dir={isRtl ? "rtl" : "ltr"}
+            required
+          >
+            <option value="">{chaptersLoading ? "Chargement…" : "Sélectionner…"}</option>
+            {chapters.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        ) : (
+          <input
+            type="text"
+            value={topic}
+            onChange={e => setTopic(e.target.value)}
+            placeholder={chaptersLoading ? "Chargement des chapitres…" : "ex. Fonctions linéaires"}
+            className={cn(inputCls(), isRtl && "text-right")}
+            dir={isRtl ? "rtl" : "ltr"}
+            required
+          />
+        )}
       </div>
     </div>
   );
