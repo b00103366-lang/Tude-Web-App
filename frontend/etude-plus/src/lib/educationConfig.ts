@@ -45,9 +45,10 @@ export const SIMPLE_LEVELS = {
     shortLabel: "1ère Sec",
     cycle: "lycee" as const,
     subjects: [
-      "Mathématiques", "Arabe", "Français", "Anglais", "Sciences Naturelles",
-      "Physique-Chimie", "Histoire-Géographie", "Philosophie",
-      "Informatique", "Sport", "Allemand", "Italien",
+      "Mathématiques", "Arabe", "Français", "Anglais",
+      "Sciences Naturelles", "Physique-Chimie",
+      "Histoire", "Géographie",
+      "Technique", "Éducation Islamique",
     ],
   },
 } as const;
@@ -358,6 +359,21 @@ export const ALL_SUBJECTS: string[] = [
     ...Object.values(SECTION_LEVELS).flatMap(nv => Object.values(nv.sections).flatMap(s => [...s.subjects])),
   ]),
 ].sort((a, b) => a.localeCompare(b, "fr"));
+
+// ── Cycle visibility flag ─────────────────────────────────────────────────────
+/**
+ * Controls which education cycles appear in student-facing level pickers.
+ *
+ * To re-enable Collège:  change to  ["college", "lycee"]
+ * To add Primaire later: add        "primaire"
+ */
+export const ENABLED_CYCLES: readonly ("college" | "lycee")[] = ["lycee"] as const;
+
+export function isCycleEnabled(cycle: "college" | "lycee"): boolean {
+  return (ENABLED_CYCLES as readonly string[]).includes(cycle);
+}
+
+// ── ─────────────────────────────────────────────────────────────────────────────
 
 /** Grouped tree — all groups use compound keys so professor registration stays backward-compat */
 export const LEVEL_TREE = [

@@ -10,8 +10,8 @@ import {
   Search, Star, Clock, MapPin, BookOpen, Filter, ArrowRight,
   GraduationCap, FlaskConical, Globe, Calculator, Cpu, Feather
 } from "lucide-react";
-import { formatTND } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { formatTND, cn } from "@/lib/utils";
+import { isCycleEnabled } from "@/lib/educationConfig";
 
 const CURRICULUM_SUBJECTS = [
   { name: "Mathématiques",  icon: Calculator,  color: "#f59e0b", bg: "bg-amber-50 border-amber-200", tag: "Sciences" },
@@ -38,8 +38,8 @@ export function PublicBrowse() {
 
   const GRADE_LEVELS = [
     t("publicBrowse.allLevels"),
-    "Primaire",
-    "Collège 7ème", "Collège 8ème", "Collège 9ème",
+    // Primaire and Collège hidden — re-enable by adding "college" to ENABLED_CYCLES in educationConfig.ts
+    ...(!isCycleEnabled("college") ? [] : ["Collège 7ème", "Collège 8ème", "Collège 9ème"]),
     "Lycée 1ère année", "Lycée 2ème année", "3ème année secondaire",
     "Baccalauréat",
   ];

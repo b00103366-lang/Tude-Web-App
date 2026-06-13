@@ -4,6 +4,7 @@ import {
   SIMPLE_LEVELS, SECTION_LEVELS,
   getNiveauLabel, getSectionLabel,
   isSimpleLevel, isSectionLevel,
+  ENABLED_CYCLES, isCycleEnabled,
 } from "@/lib/educationConfig";
 import { cn } from "@/lib/utils";
 
@@ -20,8 +21,10 @@ interface LevelPickerProps {
 }
 
 function detectCycle(niveauKey: string): Cycle {
-  if (!niveauKey) return null;
-  if (["7eme", "8eme", "9eme"].includes(niveauKey)) return "college";
+  if (!niveauKey) return ENABLED_CYCLES[0] ?? null;
+  if (["7eme", "8eme", "9eme"].includes(niveauKey)) {
+    return isCycleEnabled("college") ? "college" : (ENABLED_CYCLES[0] ?? null);
+  }
   return "lycee";
 }
 
@@ -86,40 +89,36 @@ export function LevelPicker({ niveauValue, sectionValue, onChange, className }: 
     ? Object.entries((SECTION_LEVELS as any)[lyceeYear]?.sections ?? {})
     : [];
 
+  // Cycle buttons — only the ones enabled in ENABLED_CYCLES
+  const visibleCycles = [
+    { id: "college" as const, label: "Collège", sub: "7ème – 9ème de base" },
+    { id: "lycee"   as const, label: "Lycée",   sub: "1ère année – Bac" },
+  ].filter(c => isCycleEnabled(c.id));
+
   return (
     <div className={cn("space-y-3", className)}>
-      {/* Step 1 — Cycle */}
-      <div className="grid grid-cols-3 gap-2">
-        {[
-          { id: "college" as Cycle, label: "Collège", sub: "7ème – 9ème de base" },
-          { id: "lycee" as Cycle,   label: "Lycée",   sub: "1ère année – Bac" },
-        ].map(({ id, label, sub }) => (
-          <button
-            key={id!}
-            type="button"
-            onClick={() => handleCycle(id)}
-            className={cn(
-              "p-3 rounded-xl border-2 text-left transition-all",
-              cycle === id ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
-            )}
-          >
-            <p className={cn("font-bold text-sm", cycle === id && "text-primary")}>{label}</p>
-            <p className="text-xs text-muted-foreground">{sub}</p>
-          </button>
-        ))}
-        {/* Primary school is not yet supported */}
-        <button
-          type="button"
-          disabled
-          className="p-3 rounded-xl border-2 border-dashed border-border text-left opacity-50 cursor-not-allowed"
-        >
-          <p className="font-bold text-sm text-muted-foreground">Primaire</p>
-          <p className="text-xs text-muted-foreground">Bientôt disponible</p>
-        </button>
-      </div>
+      {/* Step 1 — Cycle (hidden when only one cycle is enabled) */}
+      {visibleCycles.length > 1 && (
+        <div className="grid grid-cols-3 gap-2">
+          {visibleCycles.map(({ id, label, sub }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => handleCycle(id)}
+              className={cn(
+                "p-3 rounded-xl border-2 text-left transition-all",
+                cycle === id ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+              )}
+            >
+              <p className={cn("font-bold text-sm", cycle === id && "text-primary")}>{label}</p>
+              <p className="text-xs text-muted-foreground">{sub}</p>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Step 2 — Collège: pick year directly */}
-      {cycle === "college" && (
+      {cycle === "college" && isCycleEnabled("college") && (
         <div className="grid grid-cols-3 gap-2">
           {(["7eme", "8eme", "9eme"] as const).map(k => {
             const labels: Record<string, string> = { "7eme": "7ème", "8eme": "8ème", "9eme": "9ème" };
