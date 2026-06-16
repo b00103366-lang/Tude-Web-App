@@ -102,15 +102,15 @@ export function RevisionSubject() {
                 </div>
 
                 <div className="flex-1 space-y-1.5">
-                  <h3 className="font-bold text-base text-gray-900 dark:text-gray-100 leading-snug">
+                  <h3 className="font-bold text-base text-gray-900 leading-snug">
                     {section.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                  <p className="text-sm text-gray-700 leading-relaxed">
                     {section.description}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground group-hover:text-foreground transition-colors">
+                <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
                   <span>{t("revision.subject.start")}</span>
                   <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                 </div>

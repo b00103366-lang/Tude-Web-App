@@ -48,5 +48,9 @@ Thumbs.db
 .cache/
 .local/
 .env
+.env.local
+.env.*.local
 **/.env
+**/.env.local
+**/.env.*.local
 backend/api-server/local-uploads/

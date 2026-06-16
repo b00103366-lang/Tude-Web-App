@@ -6,13 +6,14 @@
  * Shows an empty state if the chapter has no questions yet — the chapter still renders.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Link, useRoute } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getToken } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
 import { subjectFromSlug, subjectToSlug } from "@/lib/educationConfig";
+import { getFallbackQuestions, getQualitativeFeedback } from "@/lib/questionsFallback";
 import {
   BookOpen, ChevronRight, ChevronLeft, Eye, EyeOff,
   CheckCircle2, XCircle, MinusCircle, Trophy, ArrowRight,
@@ -90,16 +91,46 @@ function QuestionCard({
         )}
       </div>
 
-      <div className="px-6 py-8 space-y-6">
+      <div
+        className="px-6 py-8 space-y-5"
+        dir={question.direction === "rtl" ? "rtl" : undefined}
+      >
+        {/* Instruction (new format) — falls back to nothing for legacy rows */}
+        {question.instruction && (
+          <p className="text-sm font-semibold text-muted-foreground">{question.instruction}</p>
+        )}
+
+        {/* Legacy context block (HTML) — shown only for old DB rows */}
         {question.context && (
           <div
             className="text-sm bg-muted/40 rounded-xl p-4 border border-border leading-relaxed prose prose-sm dark:prose-invert max-w-none"
             dangerouslySetInnerHTML={{ __html: question.context }}
           />
         )}
-        <p className="text-base font-medium leading-relaxed whitespace-pre-wrap">{question.questionText}</p>
 
-        {question.parts?.length > 0 && (
+        <p className="text-base font-medium leading-relaxed whitespace-pre-wrap">
+          {question.question ?? question.questionText}
+        </p>
+
+        {/* New format: multiple-choice options A/B/C/D */}
+        {Array.isArray(question.options) && question.options.length > 0 && (
+          <div className="space-y-2 pt-1">
+            {question.options.map((opt: any) => (
+              <div
+                key={opt.label}
+                className="flex gap-3 items-start p-3 rounded-xl border border-border bg-muted/20"
+              >
+                <span className="inline-flex w-7 h-7 rounded-full bg-primary/10 items-center justify-center text-xs font-bold text-primary shrink-0">
+                  {opt.label}
+                </span>
+                <p className="text-sm leading-relaxed flex-1">{opt.text}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Legacy format: question parts (multi-part exercises) */}
+        {Array.isArray(question.parts) && question.parts.length > 0 && (
           <div className="space-y-4 pt-2">
             {question.parts.map((part: any, i: number) => (
               <div key={part.id ?? i} className="flex gap-4">
@@ -108,7 +139,9 @@ function QuestionCard({
                 </span>
                 <div className="flex-1">
                   <p className="text-sm leading-relaxed">{part.text}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{part.marks} pt{part.marks > 1 ? "s" : ""}</p>
+                  {typeof part.marks === "number" && (
+                    <p className="text-xs text-muted-foreground mt-0.5">{part.marks} pt{part.marks > 1 ? "s" : ""}</p>
+                  )}
                 </div>
               </div>
             ))}
@@ -116,12 +149,28 @@ function QuestionCard({
         )}
 
         {showMarkScheme && (
-          <div className="mt-6 rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-5 space-y-4">
+          <div className="mt-4 rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-5 space-y-3">
             <div className="flex items-center gap-2">
               <BookMarked className="w-4 h-4 text-emerald-600" />
-              <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">{t("revision.questionTopic.markScheme")}</p>
+              <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
+                {t("revision.questionTopic.markScheme")}
+              </p>
             </div>
-            {question.markScheme?.length > 0 ? (
+
+            {/* New format mark scheme */}
+            {question.correctAnswer && (
+              <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
+                Bonne réponse : <span className="font-bold">{question.correctAnswer}</span>
+              </p>
+            )}
+            {question.explanation && (
+              <p className="text-sm text-emerald-900 dark:text-emerald-200 whitespace-pre-wrap">
+                {question.explanation}
+              </p>
+            )}
+
+            {/* Legacy format mark scheme (array of part answers) */}
+            {Array.isArray(question.markScheme) && question.markScheme.length > 0 && (
               <div className="space-y-3">
                 {question.markScheme.map((ms: any, i: number) => (
                   <div key={ms.id ?? i} className="flex gap-3">
@@ -139,8 +188,14 @@ function QuestionCard({
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-sm text-emerald-700 dark:text-emerald-400">{t("revision.questionTopic.markSchemeNA")}</p>
+            )}
+
+            {!question.correctAnswer
+              && !question.explanation
+              && (!Array.isArray(question.markScheme) || question.markScheme.length === 0) && (
+              <p className="text-sm text-emerald-700 dark:text-emerald-400">
+                {t("revision.questionTopic.markSchemeNA")}
+              </p>
             )}
           </div>
         )}
@@ -277,6 +332,7 @@ export function BanqueDeQuestionsTopic() {
   const [selfMarks, setSelfMarks]           = useState<Record<number, SelfMark>>({});
   const [bookmarks, setBookmarks]           = useState<Set<number>>(new Set());
   const [sessionDone, setSessionDone]       = useState(false);
+  const [feedback, setFeedback]             = useState<string | null>(null);
 
   const questionsUrl = `https://hilqkzjqysqjbfftqlkf.supabase.co/functions/v1/revision-questions?${new URLSearchParams({
     subject, gradeLevel: levelCode, topic,
@@ -290,6 +346,13 @@ export function BanqueDeQuestionsTopic() {
     enabled: !!levelCode && !!subject && !!topic,
     staleTime: 10 * 60 * 1000,
   });
+
+  const displayQuestions = useMemo(
+    () => (!isLoading && questions.length === 0)
+      ? getFallbackQuestions(levelCode, subject, topic, sectionKey)
+      : questions,
+    [isLoading, questions, levelCode, subject, topic, sectionKey],
+  );
 
   useEffect(() => {
     setCurrentIdx(0);
@@ -319,10 +382,10 @@ export function BanqueDeQuestionsTopic() {
     },
   });
 
-  const currentQuestion = questions[currentIdx] ?? null;
+  const currentQuestion = displayQuestions[currentIdx] ?? null;
   const selfMark        = currentQuestion ? (selfMarks[currentQuestion.id] ?? null) : null;
   const markedCount     = Object.keys(selfMarks).length;
-  const totalQuestions  = questions.length;
+  const totalQuestions  = displayQuestions.length;
 
   function goTo(idx: number) {
     setCurrentIdx(Math.max(0, Math.min(idx, totalQuestions - 1)));
@@ -330,33 +393,43 @@ export function BanqueDeQuestionsTopic() {
   }
 
   function handleFinish() {
-    const marked = questions.filter((q: any) => selfMarks[q.id]);
+    const marked = displayQuestions.filter((q: any) => selfMarks[q.id]);
     if (!marked.length) { toast({ title: t("revision.questionTopic.noneEvaluated") }); return; }
-    const totalMarks   = marked.reduce((s: number, q: any) => s + (q.totalMarks ?? 1), 0);
-    const marksAwarded = marked.reduce((s: number, q: any) => {
-      const m = selfMarks[q.id]; const qm = q.totalMarks ?? 1;
-      return m === "correct" ? s + qm : m === "partial" ? s + Math.floor(qm / 2) : s;
+
+    // Compute qualitative score locally: correct = 1, partial = 0.5, incorrect = 0
+    const score = marked.reduce((s: number, q: any) => {
+      const m = selfMarks[q.id];
+      return m === "correct" ? s + 1 : m === "partial" ? s + 0.5 : s;
     }, 0);
-    saveAttempt.mutate({
-      type: "practice", subject, gradeLevel: levelCode, sectionKey, topic,
-      totalMarks, marksAwarded,
-      questionsCount: marked.length,
-      correctCount: Object.values(selfMarks).filter(m => m === "correct").length,
-      answers: marked.map((q: any) => ({
-        questionId: q.id, subject, topic,
-        isCorrect: selfMarks[q.id] === "correct",
-        marksAwarded: selfMarks[q.id] === "correct" ? (q.totalMarks ?? 1)
-          : selfMarks[q.id] === "partial" ? Math.floor((q.totalMarks ?? 1) / 2) : 0,
-        marksAvailable: q.totalMarks ?? 1,
-      })),
-    });
+    setFeedback(getQualitativeFeedback(score, displayQuestions.length));
+
+    // Persist attempt only for real DB-backed questions (positive IDs).
+    const allRealIds = marked.every((q: any) => q.id > 0);
+    if (allRealIds) {
+      const totalMarks   = marked.reduce((s: number, q: any) => s + (q.totalMarks ?? 1), 0);
+      const marksAwarded = marked.reduce((s: number, q: any) => {
+        const m = selfMarks[q.id]; const qm = q.totalMarks ?? 1;
+        return m === "correct" ? s + qm : m === "partial" ? s + Math.floor(qm / 2) : s;
+      }, 0);
+      saveAttempt.mutate({
+        type: "practice", subject, gradeLevel: levelCode, sectionKey, topic,
+        totalMarks, marksAwarded,
+        questionsCount: marked.length,
+        correctCount: Object.values(selfMarks).filter(m => m === "correct").length,
+        answers: marked.map((q: any) => ({
+          questionId: q.id, subject, topic,
+          isCorrect: selfMarks[q.id] === "correct",
+          marksAwarded: selfMarks[q.id] === "correct" ? (q.totalMarks ?? 1)
+            : selfMarks[q.id] === "partial" ? Math.floor((q.totalMarks ?? 1) / 2) : 0,
+          marksAvailable: q.totalMarks ?? 1,
+        })),
+      });
+    }
     setSessionDone(true);
   }
 
-  // Result screen
-  if (sessionDone && saveAttempt.data) {
-    const grade = saveAttempt.data.gradeOutOf20;
-    const gradeColor = grade >= 15 ? "text-emerald-600" : grade >= 10 ? "text-amber-600" : "text-red-600";
+  // Result screen — qualitative feedback (no grade out of 20).
+  if (sessionDone) {
     return (
       <DashboardLayout>
         <div className="max-w-lg mx-auto py-20 text-center space-y-6">
@@ -367,15 +440,17 @@ export function BanqueDeQuestionsTopic() {
             <h1 className="text-2xl font-bold mb-1">{t("revision.questionTopic.done")}</h1>
             <p className="text-muted-foreground">{topic}</p>
           </div>
-          {grade !== null && (
-            <div className="py-4">
-              <p className={cn("text-6xl font-bold", gradeColor)}>{grade.toFixed(1)}</p>
-              <p className="text-xl text-muted-foreground mt-1">/20</p>
+          {feedback && (
+            <div className="py-4 px-4">
+              <p className="text-lg font-semibold text-foreground leading-relaxed">{feedback}</p>
             </div>
           )}
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
             <button
-              onClick={() => { setSelfMarks({}); setBookmarks(new Set()); setShowMarkScheme(false); setSessionDone(false); setCurrentIdx(0); }}
+              onClick={() => {
+                setSelfMarks({}); setBookmarks(new Set()); setShowMarkScheme(false);
+                setSessionDone(false); setCurrentIdx(0); setFeedback(null);
+              }}
               className="px-5 py-2.5 border border-border rounded-xl text-sm font-semibold hover:bg-muted transition-colors"
             >
               {t("revision.questionTopic.newSession")}
@@ -419,7 +494,7 @@ export function BanqueDeQuestionsTopic() {
         )}
 
         {/* Empty — chapter exists but no questions yet */}
-        {!isLoading && questions.length === 0 && (
+        {!isLoading && displayQuestions.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 text-center rounded-2xl border border-dashed border-border space-y-4">
             <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
               <Construction className="w-8 h-8 text-amber-500" />
@@ -439,7 +514,7 @@ export function BanqueDeQuestionsTopic() {
         )}
 
         {/* Two-panel question viewer */}
-        {!isLoading && questions.length > 0 && currentQuestion && (
+        {!isLoading && displayQuestions.length > 0 && currentQuestion && (
           <div className="grid lg:grid-cols-[1fr_300px] gap-5 items-start">
             <div className="space-y-4">
               {/* Navigation */}
@@ -449,7 +524,7 @@ export function BanqueDeQuestionsTopic() {
                   <ChevronLeft className="w-3.5 h-3.5" /> {t("revision.questionTopic.prev")}
                 </button>
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  {questions.map((q: any, i: number) => {
+                  {displayQuestions.map((q: any, i: number) => {
                     const m = selfMarks[q.id];
                     return (
                       <button key={q.id} onClick={() => goTo(i)} title={t("revision.questionTopic.questionN", { n: i + 1 })}

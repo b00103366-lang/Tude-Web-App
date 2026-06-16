@@ -59,7 +59,7 @@ export function AnnouncementsWidget() {
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="font-bold text-sm">{ann.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                      <p className="text-xs text-black mt-0.5 flex items-center gap-1.5">
                         {isPlatform
                           ? <span className="text-primary font-semibold">Étude+</span>
                           : <span>{ann.author?.fullName}</span>}
@@ -69,13 +69,13 @@ export function AnnouncementsWidget() {
                     </div>
                     <button
                       onClick={() => setDismissed(s => new Set(s).add(ann.id))}
-                      className="text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-0.5"
+                      className="text-black hover:text-primary transition-colors shrink-0 mt-0.5"
                       title="Fermer"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">{ann.body}</p>
+                  <p className="text-sm text-black mt-1.5 leading-relaxed">{ann.body}</p>
                 </div>
               </div>
             );

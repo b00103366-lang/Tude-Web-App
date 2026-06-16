@@ -65,38 +65,43 @@ export const SECTION_LEVELS = {
       "lettres": {
         label: "Lettres",
         subjects: [
-          "Arabe", "Français", "Anglais", "Philosophie", "Histoire-Géographie",
-          "Mathématiques", "Éducation Islamique",
-          "Allemand", "Italien", "Espagnol",
+          "Arabe", "Français", "Anglais", "Histoire", "Géographie",
+          "Éducation Islamique", "Éducation Civique", "Mathématiques", "SVT",
         ],
       },
       "sciences": {
         label: "Sciences",
         subjects: [
-          "Mathématiques", "Physique-Chimie", "Sciences Naturelles",
-          "Arabe", "Français", "Anglais", "Histoire-Géographie",
-          "Informatique", "Allemand",
+          "Mathématiques", "Physique-Chimie", "SVT",
+          "Arabe", "Français", "Anglais",
+          "Histoire", "Géographie",
+          "Éducation Islamique", "Éducation Civique",
         ],
       },
       "economie_services": {
         label: "Économie et Services",
         subjects: [
-          "Mathématiques", "Économie", "Gestion", "Comptabilité",
-          "Arabe", "Français", "Anglais", "Histoire-Géographie",
-          "Informatique",
+          "Mathématiques", "Économie / Gestion",
+          "Arabe", "Français", "Anglais",
+          "Histoire", "Géographie",
+          "Éducation Islamique", "Éducation Civique",
         ],
       },
       "technologie_informatique": {
         label: "Technologie de l'Informatique",
         subjects: [
-          "Mathématiques", "Physique-Chimie", "Technologie",
-          "Sciences de l'Ingénieur", "Informatique",
+          "Mathématiques", "Physique-Chimie", "Informatique",
           "Arabe", "Français", "Anglais",
+          "Histoire", "Géographie",
+          "Éducation Islamique", "Éducation Civique",
         ],
       },
     },
   },
   // 3ème: 6 official sections (shu'ba)
+  // Éducation Islamique and Éducation Civique omitted — no valid lycée 3ème curriculum yet.
+  // Physique-Chimie omitted from Sciences techniques and Sciences de l'informatique.
+  // Informatique omitted from Sciences de l'informatique — track has Algorithmique, SER, TIC.
   "3eme": {
     label: "3ème année",
     shortLabel: "3ème",
@@ -105,49 +110,56 @@ export const SECTION_LEVELS = {
       "lettres": {
         label: "Lettres",
         subjects: [
-          "Arabe", "Français", "Anglais", "Philosophie",
-          "Histoire-Géographie", "Mathématiques",
-          "Éducation Islamique",
-          "Allemand", "Italien", "Espagnol",
+          "Arabe", "Français", "Anglais",
+          "Histoire", "Géographie",
+          "Informatique", "SVT", "Philosophie",
         ],
       },
       "mathematiques": {
         label: "Mathématiques",
         subjects: [
-          "Mathématiques", "Physique-Chimie", "Sciences Naturelles",
-          "Arabe", "Français", "Anglais", "Philosophie",
-          "Histoire-Géographie", "Informatique",
+          "Mathématiques", "Physique-Chimie", "SVT",
+          "Arabe", "Français", "Anglais",
+          "Histoire", "Géographie",
+          "Informatique", "Philosophie",
         ],
       },
       "sciences_experimentales": {
-        label: "Sciences Expérimentales",
+        label: "Sciences expérimentales",
         subjects: [
-          "Mathématiques", "Physique-Chimie", "Sciences Naturelles",
-          "Arabe", "Français", "Anglais", "Philosophie",
-          "Histoire-Géographie",
+          "Mathématiques", "Physique-Chimie", "SVT",
+          "Arabe", "Français", "Anglais",
+          "Histoire", "Géographie",
+          "Informatique", "Philosophie",
         ],
       },
       "sciences_techniques": {
-        label: "Sciences Techniques",
+        label: "Sciences techniques",
         subjects: [
-          "Mathématiques", "Physique-Chimie", "Technologie",
-          "Sciences de l'Ingénieur", "Arabe", "Français", "Anglais",
-          "Philosophie", "Informatique",
+          "Mathématiques", "Génie Électrique", "Génie Mécanique",
+          "Informatique",
+          "Arabe", "Français", "Anglais",
+          "Histoire", "Géographie", "Philosophie",
         ],
       },
       "economie_gestion": {
         label: "Économie et Gestion",
         subjects: [
-          "Mathématiques", "Économie", "Gestion", "Comptabilité",
-          "Arabe", "Français", "Anglais", "Histoire-Géographie",
-          "Philosophie", "Informatique",
+          "Mathématiques", "Économie", "Gestion",
+          "Arabe", "Français", "Anglais",
+          "Histoire", "Géographie",
+          "Informatique", "Philosophie",
         ],
       },
       "sciences_informatique": {
-        label: "Sciences de l'Informatique",
+        label: "Sciences de l'informatique",
         subjects: [
-          "Informatique", "Mathématiques", "Physique-Chimie",
-          "Arabe", "Français", "Anglais", "Philosophie",
+          "Mathématiques",
+          "Algorithmique et Programmation",
+          "Systèmes d'exploitation et Réseaux",
+          "TIC",
+          "Arabe", "Français", "Anglais",
+          "Histoire", "Géographie", "Philosophie",
         ],
       },
     },
@@ -161,49 +173,51 @@ export const SECTION_LEVELS = {
       "lettres": {
         label: "Lettres",
         subjects: [
-          "Arabe", "Français", "Anglais", "Philosophie",
-          "Histoire-Géographie", "Mathématiques",
-          "Éducation Islamique",
-          "Allemand", "Italien", "Espagnol",
+          "Arabe", "Français", "Anglais",
+          "Histoire", "Géographie",
+          "SVT", "Informatique", "Philosophie",
         ],
       },
       "mathematiques": {
         label: "Mathématiques",
         subjects: [
-          "Mathématiques", "Physique-Chimie", "Sciences Naturelles",
-          "Arabe", "Français", "Anglais", "Philosophie",
-          "Histoire-Géographie", "Informatique",
+          "Arabe", "Français", "Anglais",
+          "Mathématiques", "Physique-Chimie", "SVT", "Informatique",
+          "Histoire", "Géographie", "Philosophie",
         ],
       },
       "sciences_experimentales": {
         label: "Sciences Expérimentales",
         subjects: [
-          "Mathématiques", "Physique-Chimie", "Sciences Naturelles",
-          "Arabe", "Français", "Anglais", "Philosophie",
-          "Histoire-Géographie",
+          "Arabe", "Français", "Anglais",
+          "Mathématiques", "Physique-Chimie", "SVT", "Informatique",
+          "Histoire", "Géographie", "Philosophie",
         ],
       },
       "sciences_techniques": {
         label: "Sciences Techniques",
         subjects: [
-          "Mathématiques", "Physique-Chimie", "Technologie",
-          "Sciences de l'Ingénieur", "Arabe", "Français", "Anglais",
-          "Philosophie", "Informatique",
+          "Arabe", "Français", "Anglais",
+          "Mathématiques", "Physique-Chimie", "Informatique",
+          "Génie Électrique", "Génie Mécanique",
+          "Histoire", "Géographie", "Philosophie",
         ],
       },
       "economie_gestion": {
         label: "Économie et Gestion",
         subjects: [
-          "Mathématiques", "Économie", "Gestion", "Comptabilité",
-          "Arabe", "Français", "Anglais", "Histoire-Géographie",
-          "Philosophie", "Informatique",
+          "Arabe", "Français", "Anglais",
+          "Mathématiques", "Économie", "Gestion", "Informatique",
+          "Histoire", "Géographie", "Philosophie",
         ],
       },
       "sciences_informatique": {
         label: "Sciences de l'Informatique",
         subjects: [
-          "Informatique", "Mathématiques", "Physique-Chimie",
-          "Arabe", "Français", "Anglais", "Philosophie",
+          "Arabe", "Français", "Anglais",
+          "Mathématiques", "Physique-Chimie",
+          "Algorithmique et Programmation", "Bases de Données", "TIC",
+          "Histoire", "Géographie", "Philosophie",
         ],
       },
     },

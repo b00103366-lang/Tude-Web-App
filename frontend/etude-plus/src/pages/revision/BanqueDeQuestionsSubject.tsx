@@ -6,6 +6,7 @@ import { getToken } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
 import { subjectFromSlug, subjectToSlug } from "@/lib/educationConfig";
 import { getFallbackChapters } from "@/lib/curriculumFallback";
+import { getFallbackQuestions } from "@/lib/questionsFallback";
 import { BookOpen, ChevronRight, ChevronLeft, AlertCircle, FileQuestion, FolderOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -83,9 +84,9 @@ export function BanqueDeQuestionsSubject() {
   const chapters = useMemo<DisplayChapter[]>(() => {
     const raw = apiChapters.length > 0
       ? apiChapters.map(c => ({ name: c.name, group: c.shortName ?? null, questionCount: c.questionCount }))
-      : getFallbackChapters(levelCode, subject).map(c => ({ name: c.name, group: c.group, questionCount: 0 }));
+      : getFallbackChapters(levelCode, subject, sectionKey).map(c => ({ name: c.name, group: c.group, questionCount: getFallbackQuestions(levelCode, subject, c.name, sectionKey).length }));
     return raw.map((c, i) => ({ ...c, index: i + 1 }));
-  }, [apiChapters, levelCode, subject]);
+  }, [apiChapters, levelCode, subject, sectionKey]);
 
   // Group chapters, preserving insertion order
   const groups = useMemo(() => {
