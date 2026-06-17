@@ -175,19 +175,33 @@ Deno.serve(async (req: Request): Promise<Response> => {
   // ── POST: create question ─────────────────────────────────────────────────
   if (req.method === "POST") {
     const body = await req.json();
-    const { subject, gradeLevel, sectionKey, topic, type, difficulty, questionText, totalMarks, parts: bodyParts, markScheme } = body;
+    const {
+      subject, gradeLevel, sectionKey, topic, type, difficulty, questionText, totalMarks,
+      parts: bodyParts, markScheme,
+      // New-shape fields (all optional; admins may continue to use legacy parts/markScheme)
+      instruction, options, correctAnswer, explanation, direction, source, status: bodyStatus,
+    } = body;
 
     if (!subject || !gradeLevel || !topic || !questionText) {
       return json({ error: "subject, gradeLevel, topic, questionText are required" }, 400);
     }
 
+    const optionsJson = options !== undefined && options !== null ? JSON.stringify(options) : null;
+    const VALID_STATUSES = ["draft", "published", "archived"];
+    const status = bodyStatus && VALID_STATUSES.includes(bodyStatus) ? bodyStatus : "published";
+
     const [qRow] = await sql`
       INSERT INTO questions
-        (subject, grade_level, section_key, topic, type, difficulty, question_text, total_marks, status, kb_file_id)
+        (subject, grade_level, section_key, topic, type, difficulty, question_text, total_marks,
+         status, kb_file_id,
+         instruction, options, correct_answer, explanation, direction, source)
       VALUES
         (${subject}, ${gradeLevel}, ${sectionKey ?? null}, ${topic},
          ${type ?? "Exercice"}, ${difficulty ?? "moyen"}, ${questionText},
-         ${totalMarks ?? null}, 'published', NULL)
+         ${totalMarks ?? null}, ${status}, NULL,
+         ${instruction ?? null}, ${optionsJson}::jsonb,
+         ${correctAnswer ?? null}, ${explanation ?? null},
+         ${direction ?? null}, ${source ?? null})
       RETURNING *
     `;
 
@@ -223,22 +237,37 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (isNaN(id)) return json({ error: "?id= required" }, 400);
 
     const body = await req.json();
-    const { subject, gradeLevel, sectionKey, topic, type, difficulty, questionText, totalMarks, parts: bodyParts, markScheme } = body;
+    const {
+      subject, gradeLevel, sectionKey, topic, type, difficulty, questionText, totalMarks,
+      parts: bodyParts, markScheme,
+      instruction, options, correctAnswer, explanation, direction, source, status: bodyStatus,
+    } = body;
 
     if (!subject || !gradeLevel || !topic || !questionText) {
       return json({ error: "subject, gradeLevel, topic, questionText are required" }, 400);
     }
 
+    const optionsJson = options !== undefined && options !== null ? JSON.stringify(options) : null;
+    const VALID_STATUSES = ["draft", "published", "archived"];
+    const statusToSet = bodyStatus && VALID_STATUSES.includes(bodyStatus) ? bodyStatus : null;
+
     const updated = await sql`
       UPDATE questions SET
-        subject      = ${subject},
-        grade_level  = ${gradeLevel},
-        section_key  = ${sectionKey ?? null},
-        topic        = ${topic},
-        type         = ${type ?? "Exercice"},
-        difficulty   = ${difficulty ?? "moyen"},
+        subject       = ${subject},
+        grade_level   = ${gradeLevel},
+        section_key   = ${sectionKey ?? null},
+        topic         = ${topic},
+        type          = ${type ?? "Exercice"},
+        difficulty    = ${difficulty ?? "moyen"},
         question_text = ${questionText},
-        total_marks  = ${totalMarks ?? null}
+        total_marks   = ${totalMarks ?? null},
+        instruction   = ${instruction ?? null},
+        options       = ${optionsJson}::jsonb,
+        correct_answer = ${correctAnswer ?? null},
+        explanation   = ${explanation ?? null},
+        direction     = ${direction ?? null},
+        source        = ${source ?? null},
+        status        = COALESCE(${statusToSet}, status)
       WHERE id = ${id}
       RETURNING *
     `;

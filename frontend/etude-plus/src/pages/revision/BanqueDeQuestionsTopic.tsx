@@ -83,9 +83,8 @@ function QuestionCard({
           {question.requiresCalculator ? t("revision.questionTopic.withCalc") : t("revision.questionTopic.noCalc")}
         </div>
         <DifficultyBadge difficulty={question.difficulty} />
-        {question.totalMarks && (
-          <span className="text-xs text-muted-foreground">{question.totalMarks} pt{question.totalMarks > 1 ? "s" : ""}</span>
-        )}
+        {/* Points intentionally hidden from student view per product spec.
+            totalMarks is still stored for admin/scoring and used internally. */}
         {question.estimatedTimeMinutes && (
           <span className="text-xs text-muted-foreground ml-auto">~{question.estimatedTimeMinutes} min</span>
         )}
@@ -139,9 +138,7 @@ function QuestionCard({
                 </span>
                 <div className="flex-1">
                   <p className="text-sm leading-relaxed">{part.text}</p>
-                  {typeof part.marks === "number" && (
-                    <p className="text-xs text-muted-foreground mt-0.5">{part.marks} pt{part.marks > 1 ? "s" : ""}</p>
-                  )}
+                  {/* Per-part marks hidden from student view per product spec. */}
                 </div>
               </div>
             ))}

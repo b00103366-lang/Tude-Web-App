@@ -37,7 +37,7 @@ export interface FallbackQuestion {
   estimatedTimeMinutes: number;
   requiresCalculator:   boolean;
   direction:            "ltr" | "rtl";
-  source:               "manual-starter";
+  source:               "manual-starter" | "manual-starter-2eme";
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -1360,6 +1360,8 @@ const ISLAM_1ERE: Record<string, FallbackQuestion[]> = {
 // AGGREGATED EXPORT
 // ──────────────────────────────────────────────────────────────────────────────
 
+import { QUESTIONS_FALLBACK_2EME } from "./questionsFallback2eme";
+
 export const QUESTIONS_FALLBACK: Record<string, FallbackQuestion[]> = {
   ...MATH_1ERE,
   ...PHYSIQUE_1ERE,
@@ -1369,6 +1371,7 @@ export const QUESTIONS_FALLBACK: Record<string, FallbackQuestion[]> = {
   ...GEO_1ERE,
   ...TECHNIQUE_1ERE,
   ...ISLAM_1ERE,
+  ...QUESTIONS_FALLBACK_2EME,
 };
 
 export function getFallbackQuestions(

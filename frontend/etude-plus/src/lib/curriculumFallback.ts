@@ -494,6 +494,18 @@ Object.assign(CURRICULUM_FALLBACK, {
   // ── Mathématiques — 2ème Technologie de l'Informatique (same as Sciences) ──
   "2eme/technologie_informatique/Mathématiques": MATHS_2EME_SCIENCES_TECH,
 
+  // ── Mathématiques — 2ème Économie et Services (distinct 8-chapter book) ────
+  "2eme/economie_services/Mathématiques": [
+    { name: "Chapitre 1: Les pourcentages",                                            group: "Activités numériques" },
+    { name: "Chapitre 2: Proportion",                                                  group: "Activités numériques" },
+    { name: "Chapitre 3: Suites arithmétiques - Suites géométriques",                  group: "Activités numériques" },
+    { name: "Chapitre 4: Statistiques et Dénombrement",                                group: "Statistiques"         },
+    { name: "Chapitre 5: Problèmes du premier degré à une inconnue",                   group: "Activités algébriques" },
+    { name: "Chapitre 6: Problèmes du premier degré à deux ou trois inconnues",        group: "Activités algébriques" },
+    { name: "Chapitre 7: Problèmes du second degré",                                   group: "Activités algébriques" },
+    { name: "Chapitre 8: Exemples de fonctions de références",                         group: "Fonctions"            },
+  ] as FallbackChapter[],
+
   // ── Physique-Chimie — 2ème Sciences ────────────────────────────────────────
   "2eme/sciences/Physique-Chimie": [
     { name: "Chapitre 1: Puissance et énergie électrique", group: "Partie 1: Circuits électriques" },
