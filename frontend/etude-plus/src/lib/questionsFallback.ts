@@ -37,7 +37,7 @@ export interface FallbackQuestion {
   estimatedTimeMinutes: number;
   requiresCalculator:   boolean;
   direction:            "ltr" | "rtl";
-  source:               "manual-starter" | "manual-starter-2eme";
+  source:               "manual-starter" | "manual-starter-2eme" | "manual-starter-3eme";
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -1361,6 +1361,7 @@ const ISLAM_1ERE: Record<string, FallbackQuestion[]> = {
 // ──────────────────────────────────────────────────────────────────────────────
 
 import { QUESTIONS_FALLBACK_2EME } from "./questionsFallback2eme";
+import { QUESTIONS_FALLBACK_3EME } from "./questionsFallback3eme";
 
 export const QUESTIONS_FALLBACK: Record<string, FallbackQuestion[]> = {
   ...MATH_1ERE,
@@ -1372,6 +1373,11 @@ export const QUESTIONS_FALLBACK: Record<string, FallbackQuestion[]> = {
   ...TECHNIQUE_1ERE,
   ...ISLAM_1ERE,
   ...QUESTIONS_FALLBACK_2EME,
+  // 3eme questions use "__special__" keys for branch-shared subjects. The frontend
+  // fallback lookup will not find them via getFallbackQuestions() — that's fine,
+  // they live in Neon post-seed. They're spread here so the keys are still
+  // type-checked by TypeScript at build time.
+  ...QUESTIONS_FALLBACK_3EME,
 };
 
 export function getFallbackQuestions(
